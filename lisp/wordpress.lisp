@@ -28,11 +28,12 @@
 
 (defun defunwp (params) 
   (destructuring-bind (name service &rest rest) params
-	(setf (fdefinition name) (compile nil `(lambda (host ,@rest  &optional (url "/xmlrpc.php")) (block ,name 
-																	 (xml-rpc-call 
-																	   (encode-xml-rpc-call ,service ,@rest)
-																	   :host host
-																	   :url url)))))
+	(setf (fdefinition name) (compile nil `(lambda (host ,@rest &optional (url "/xmlrpc.php")) 
+											 (block ,name 
+													(xml-rpc-call 
+													  (encode-xml-rpc-call ,service ,@rest)
+													  :host host
+													  :url url)))))
 	name))
 
 (mapcar #'(lambda (interface) (defunwp interface) (export (car interface))) +interfaces+)
