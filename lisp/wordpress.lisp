@@ -36,4 +36,4 @@
 													  :url url)))))
 	name))
 
-(mapcar #'(lambda (interface) (defunwp interface) (export (car interface))) +interfaces+)
+(mapcar #'(lambda (interface) (export (defunwp interface))) +interfaces+)
