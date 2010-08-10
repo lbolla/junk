@@ -1,0 +1,18 @@
+(defun split-first (str delimiter)
+  (unless (null str)
+	(let ((end (position delimiter str)))
+	  (if (null end)
+		(list str)
+		(list (subseq str 0 end) (subseq str (1+ end)))))))
+
+(defun split (str &optional (delimiter #\,))
+  (unless (null str)
+	(let ((s (split-first str delimiter)))
+	  (cons (car s) (split (cadr s) delimiter)))))
+
+(defun test ()
+	(print (split nil #\,))
+	(print (split "" #\,))
+	(print (split "unoduetre" #\,))
+	(print (split "uno,due,tre" #\,))
+	(print (split "uno,due,tre," #\,)))

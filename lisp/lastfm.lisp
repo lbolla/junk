@@ -36,3 +36,12 @@
 		  "user" username))
 	  :host host
 	  :url url))
+
+;; TODO not working
+; (defmacro defunlastfm (name service &rest rest)
+;   `(defun ,name (,@rest &optional (host "ws.audioscrobbler.com") (url "/2.0"))
+;      (xml-rpc-call 
+;        (encode-xml-rpc-call ,service
+;                             ,@(mapcar #'(lambda (p) `(xml-rpc-struct (symbol-name ,p) (symbol-value ,p))) rest))
+;        :host host
+;        :url url)))
