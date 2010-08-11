@@ -1,0 +1,7 @@
+(defun pack (lst)
+  (labels ((rec (lst inner-acc acc)
+				(cond ((null lst) (cons inner-acc acc))
+					  ((eql (car lst) (car inner-acc))
+					   (rec (cdr lst) (cons (car lst) inner-acc) acc))
+					  (t (rec (cdr lst) (list (car lst)) (cons inner-acc acc))))))
+	(nreverse (rec (cdr lst) (list (car lst)) '()))))

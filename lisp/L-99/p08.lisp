@@ -1,0 +1,6 @@
+(defun compress (lst)
+  (labels ((rec (lst item acc)
+				(cond ((null lst) acc)
+					  ((eql item (car lst)) (rec (cdr lst) item acc))
+					  (t (rec (cdr lst) (car lst) (cons (car lst) acc))))))
+	(nreverse (rec lst nil '()))))
