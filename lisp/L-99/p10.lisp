@@ -1,0 +1,7 @@
+(defun pack (lst)
+  (labels ((rec (lst item counter acc)
+				(cond ((null lst) (when (> counter 0) (cons (list counter item) acc)))
+					  ((eql (car lst) item)
+					   (rec (cdr lst) item (1+ counter) acc))
+					  (t (rec (cdr lst) (car lst) 1 (if (= counter 0) acc (cons (list counter item) acc)))))))
+	(nreverse (rec lst nil  0 '()))))
