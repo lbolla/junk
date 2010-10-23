@@ -1,0 +1,5 @@
+(defun dupli (lst)
+  (let ((acc '()))
+	(dolist (item lst)
+	  (setf acc (nconc (list item item) acc)))
+	(nreverse acc)))

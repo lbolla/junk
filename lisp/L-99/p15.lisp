@@ -1,0 +1,7 @@
+(defun repli (lst n)
+  (flet ((rep (item n)
+			  (let ((acc '()))
+				(dotimes (i n) (push item acc))
+				acc)))
+	(cond ((null lst) lst)
+		  (t (append (rep (car lst) n) (repli (cdr lst) n))))))
