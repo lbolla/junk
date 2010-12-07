@@ -15,6 +15,8 @@
 ;;    Modified by Witali Kusnezow 2008-12-02
 ;;      * use right shift instead of truncate for division in eval-A
 ;;      * redefine eval-A as a macro
+;;    Modified by Lorenzo Bolla 2010-12-06
+;;      * added declaim at top of file
 
 
 ;; This is our most expensive function.  Optimized with the knowledge
