@@ -1,3 +1,8 @@
+;; The Computer Language Benchmarks Game
+;; http://shootout.alioth.debian.org/
+;;
+;; Adapted from the C (gcc) code by Lorenzo Bolla
+
 (declaim (optimize (speed 3) (safety 0) (debug 0)))
 
 (defparameter *tmp1* (make-alien mpz-struct))

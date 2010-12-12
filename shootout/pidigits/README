@@ -1,0 +1,3 @@
+To run the test do:
+$> make gcc.run N=1000
+$> make sbcl.run N=1000
