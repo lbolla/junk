@@ -74,5 +74,6 @@
   (let ((n (or n-supplied 
 			   (parse-integer (car (last sb-ext:*posix-argv*))) 
 			   100)))
-	(pidigits n)))
+	(pidigits n)
+	(cleanup)))
 
