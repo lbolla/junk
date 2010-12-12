@@ -1,5 +1,3 @@
-(defvar *libgmp-so* (load-shared-object "/usr/lib/libgmp.so"))
-
 (define-alien-type mp-limb-t unsigned-int)
 (define-alien-type mp-bitcnt-t unsigned-long)
 (define-alien-type mpz-struct

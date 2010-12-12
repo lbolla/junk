@@ -1,4 +1,4 @@
-(declaim (optimize (speed 3) (safety 0) (debug 0)))
+; (declaim (optimize (speed 3) (safety 0) (debug 0)))
 
 (defparameter *tmp1* (make-alien mpz-struct))
 (defparameter *tmp2* (make-alien mpz-struct))
@@ -68,6 +68,13 @@
 	  (format t "   :~A~%" n))))
 
 (defun main ()
-  (pidigits 2000)
+  ; (let ((n (or n-supplied
+  ;              (parse-integer (or (car (last #+sbcl sb-ext:*posix-argv*
+  ;                                            #+clisp ext:*args*
+  ;                                            #+cmu extensions:*command-line-strings*
+  ;                                            #+gcl  si::*command-args*))
+  ;                                 "2000")))))
+  (load-shared-object "/usr/lib/libgmp.so")
+  (pidigits 100)
   (cleanup))
 

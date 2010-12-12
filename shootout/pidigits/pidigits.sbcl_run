@@ -1,4 +1,1 @@
-(load "gmp.sbcl")
-(load "pidigits.sbcl")
-
-(main)
+(main) (quit)

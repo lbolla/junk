@@ -1,0 +1,5 @@
+(handler-bind ((sb-ext:defconstant-uneql
+				 (lambda (c) (abort c))))
+  (load (compile-file "gmp.sbcl"))
+  (load (compile-file "pidigits.sbcl")))
+(save-lisp-and-die "sbcl.core" :purify t)
