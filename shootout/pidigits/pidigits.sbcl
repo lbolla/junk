@@ -1,7 +1,5 @@
 (declaim (optimize (speed 3) (safety 0) (debug 0)))
 
-(defvar *libgmp* (load-shared-object "libgmp.so"))
-
 (defparameter *tmp1* (make-alien mpz-struct))
 (defparameter *tmp2* (make-alien mpz-struct))
 (defparameter *num* (make-alien mpz-struct))
@@ -30,11 +28,11 @@
 
 (defun next-term (k)
   (let ((y2 (1+ (* 2 k))))
-	  (mpz-mul-2exp *tmp1* *num* 1)
-	  (mpz-add *acc* *acc* *tmp1*)
-	  (mpz-mul-ui *acc* *acc* y2)
-	  (mpz-mul-ui *num* *num* k)
-	  (mpz-mul-ui *den* *den* y2)))
+	(mpz-mul-2exp *tmp1* *num* 1)
+	(mpz-add *acc* *acc* *tmp1*)
+	(mpz-mul-ui *acc* *acc* y2)
+	(mpz-mul-ui *num* *num* k)
+	(mpz-mul-ui *den* *den* y2)))
 
 (defun eliminate-digit (d)
   (mpz-submul-ui *acc* *den* d)
@@ -58,16 +56,16 @@
 		(setf d (extract-digit))
 		(unless (= d -1)
 		  (return)))
-	  (format t "~A" d)
+	  (format t "~D" d)
 	  (incf i)
 	  (setf m (rem i 10))
 	  (when (= m 0)
-		(format t "   :~A~%" i))
+		(format t "	:~D~%" i))
 	  (when (>= i n)
 		(return))
 	  (eliminate-digit d))
 	(unless (= m 0)
-	  (format t "   :~A~%" n))))
+	  (format t "	:~D~%" n))))
 
 (defun main (&optional n-supplied)
   (let ((n (or n-supplied 
