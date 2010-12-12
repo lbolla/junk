@@ -27,6 +27,7 @@
 		(mpz-get-ui *tmp1*)))))
 
 (defun next-term (k)
+  (declare (type fixnum k))
   (let ((y2 (1+ (* 2 k))))
 	(mpz-mul-2exp *tmp1* *num* 1)
 	(mpz-add *acc* *acc* *tmp1*)
@@ -40,10 +41,12 @@
   (mpz-mul-ui *num* *num* 10))
 
 (defun pidigits (n)
+  (declare (type fixnum n))
   (let ((d 0)
 		(k 0)
 		(i 0)
 		(m 0))
+	(declare (type fixnum d k i m))
 	(mpz-init *tmp1*)
 	(mpz-init *tmp2*)
 	(mpz-init-set-ui *num* 1)
