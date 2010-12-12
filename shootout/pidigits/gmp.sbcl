@@ -1,0 +1,76 @@
+(defvar *libgmp-so* (load-shared-object "/usr/lib/libgmp.so"))
+
+(define-alien-type mp-limb-t unsigned-int)
+(define-alien-type mp-bitcnt-t unsigned-long)
+(define-alien-type mpz-struct
+				   (struct nil
+						   (mp-alloc int)
+						   (mp-size int)
+						   (mp-d mp-limb-t)))
+(define-alien-type mpz-ptr (* mpz-struct))
+(define-alien-type mpz-srcptr (* mpz-struct))
+
+(declaim (inline mpz-init))
+(define-alien-routine ("__gmpz_init" mpz-init)
+					  void
+					  (a mpz-ptr))
+
+(declaim (inline mpz-init-set-ui))
+(define-alien-routine ("__gmpz_init_set_ui" mpz-init-set-ui)
+					  void
+					  (a mpz-ptr)
+					  (b unsigned-long))
+
+(declaim (inline mpz-get-ui))
+(define-alien-routine ("__gmpz_get_ui" mpz-get-ui)
+					  unsigned-long
+					  (a mpz-srcptr))
+
+(declaim (inline mpz-set-ui))
+(define-alien-routine ("__gmpz_set_ui" mpz-set-ui)
+					  void
+					  (a mpz-ptr)
+					  (b unsigned-long))
+
+(declaim (inline mpz-cmp))
+(define-alien-routine ("__gmpz_cmp" mpz-cmp)
+					  int
+					  (a mpz-srcptr)
+					  (b mpz-srcptr))
+
+(declaim (inline mpz-add))
+(define-alien-routine ("__gmpz_add" mpz-add)
+					  void
+					  (a mpz-ptr)
+					  (b mpz-srcptr)
+					  (c mpz-srcptr))
+
+(declaim (inline mpz-mul-2exp))
+(define-alien-routine ("__gmpz_mul_2exp" mpz-mul-2exp)
+					  void
+					  (a mpz-ptr)
+					  (b mpz-srcptr)
+					  (c mp-bitcnt-t))
+
+(declaim (inline mpz-fdiv-qr))
+(define-alien-routine ("__gmpz_fdiv_qr" mpz-fdiv-qr)
+					  void
+					  (a mpz-ptr)
+					  (b mpz-ptr)
+					  (c mpz-srcptr)
+					  (d mpz-srcptr))
+
+(declaim (inline mpz-mul-ui))
+(define-alien-routine ("__gmpz_mul_ui" mpz-mul-ui)
+					  void
+					  (a mpz-ptr)
+					  (b mpz-srcptr)
+					  (c unsigned-long))
+
+(declaim (inline mpz-submul-ui))
+(define-alien-routine ("__gmpz_submul_ui" mpz-submul-ui)
+					  void
+					  (a mpz-ptr)
+					  (b mpz-srcptr)
+					  (c unsigned-long))
+

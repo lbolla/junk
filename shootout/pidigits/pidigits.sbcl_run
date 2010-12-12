@@ -1,0 +1,4 @@
+(load "gmp.sbcl")
+(load "pidigits.sbcl")
+
+(main)
