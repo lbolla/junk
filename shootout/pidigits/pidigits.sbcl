@@ -152,12 +152,10 @@
 (defun main (&optional n-supplied)
   (load-shared-object "libgmp.so")
   (let ((n (or n-supplied
-               (parse-integer (or (car (last #+sbcl sb-ext:*posix-argv*
-                                             #+clisp ext:*args*
-                                             #+cmu extensions:*command-line-strings*
-                                             #+gcl  si::*command-args*))
-                                  "2000")))))
-	(pidigits n)
-	;;(cleanup)
-	))
+			   (parse-integer (or (car (last #+sbcl sb-ext:*posix-argv*
+											 #+clisp ext:*args*
+											 #+cmu extensions:*command-line-strings*
+											 #+gcl  si::*command-args*))
+								  "2000")))))
+	(pidigits n)))
 

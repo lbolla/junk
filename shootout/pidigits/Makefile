@@ -12,7 +12,7 @@ gcc.clean:
 	rm -f pidigits.gcc_run
 
 pidigits.sbcl_compile: pidigits.sbcl
-sbcl.core: pidigits.sbcl_compile
+sbcl.core: pidigits.sbcl_compile pidigits.sbcl
 	time ${SBCL} --userinit /dev/null --eval '(load "pidigits.sbcl_compile")'
 sbcl.run: sbcl.core pidigits.sbcl_run
 	time ${SBCL} --noinform --core sbcl.core --userinit /dev/null --load pidigits.sbcl_run ${N}
