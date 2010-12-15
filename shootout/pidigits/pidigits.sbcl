@@ -79,11 +79,19 @@
 					  (b mpz-srcptr)
 					  (c unsigned-long))
 
-(defparameter *tmp1* (make-alien mpz-struct))
-(defparameter *tmp2* (make-alien mpz-struct))
-(defparameter *num* (make-alien mpz-struct))
-(defparameter *acc* (make-alien mpz-struct))
-(defparameter *den* (make-alien mpz-struct))
+(defvar *libgmp-so* (load-shared-object "libgmp.so"))
+(defvar *tmp1*)
+(defvar *tmp2*)
+(defvar *num*)
+(defvar *acc*)
+(defvar *den*)
+
+(defun init ()
+  (setf *tmp1* (make-alien mpz-struct))
+  (setf *tmp2* (make-alien mpz-struct))
+  (setf *num* (make-alien mpz-struct))
+  (setf *acc* (make-alien mpz-struct))
+  (setf *den* (make-alien mpz-struct)))
 
 (defun cleanup ()
   (free-alien *tmp1*)
@@ -150,12 +158,13 @@
 	  (format t "	:~D~%" n))))
 
 (defun main (&optional n-supplied)
-  (load-shared-object "libgmp.so")
   (let ((n (or n-supplied
 			   (parse-integer (or (car (last #+sbcl sb-ext:*posix-argv*
 											 #+clisp ext:*args*
 											 #+cmu extensions:*command-line-strings*
 											 #+gcl  si::*command-args*))
 								  "2000")))))
-	(pidigits n)))
+	(init)
+	(pidigits n)
+	(cleanup)))
 
