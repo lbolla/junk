@@ -30,7 +30,7 @@
 	  ((<= m 0))
 	  (declare (type fixnum pos m bytes))
 	  (write-sequence buf *standard-output* :start pos :end (+ pos bytes))
-	  (princ #\Newline))))
+	  (terpri))))
 
 (defun main (&optional in-n)
   (let ((n (or in-n
