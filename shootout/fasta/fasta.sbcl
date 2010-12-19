@@ -1,0 +1,45 @@
+;; The Computer Language Benchmarks Game
+;; http://shootout.alioth.debian.org/
+;;
+;; Contributed by Lorenzo Bolla
+
+(declaim (optimize (speed 3) (debug 0) (safety 0)))
+
+(declaim (fixnum +line-length+))
+(defconstant +line-length+ 60)
+
+(declaim (base-string *alu*))
+(defparameter *alu* (concatenate 'base-string
+								 "GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGG"
+								 "GAGGCCGAGGCGGGCGGATCACCTGAGGTCAGGAGTTCGAGA"
+								 "CCAGCCTGGCCAACATGGTGAAACCCCGTCTCTACTAAAAAT"
+								 "ACAAAAATTAGCCGGGCGTGGTGGCGCGCGCCTGTAATCCCA"
+								 "GCTACTCGGGAGGCTGAGGCAGGAGAATCGCTTGAACCCGGG"
+								 "AGGCGGAGGTTGCAGTGAGCCGAGATCGCGCCACTGCACTCC"
+								 "AGCCTGGGCGACAGAGCGAGACTCCGTCTCAAAAA"))
+
+(defun repeat (alu title n)
+  (declare (type base-string alu title) (type fixnum n))
+  (let ((str *standard-output*)
+		(len (length alu))
+		(buf (concatenate 'base-string alu (subseq alu 0 +line-length+))))
+	(declare (type fixnum len) (type base-string buf))
+	(write-line title str)
+	(do* ((pos-start 0 (mod pos-end len))
+		  (m n (- m bytes))
+		  (bytes (min n +line-length+) (min m +line-length+))
+		  (pos-end (+ pos-start bytes) (+ pos-start bytes)))
+	  ((<= m 0) (finish-output str))
+	  (declare (type fixnum pos-start pos-end m bytes))
+	  (write-line buf str :start pos-start :end pos-end))))
+
+(defun main (&optional in-n)
+  (let ((n (or in-n
+			   (ignore-errors
+				 (parse-integer (car (last #+sbcl sb-ext:*posix-argv*
+										   #+cmu  extensions:*command-line-strings*
+										   #+gcl  si::*command-args*
+										   #+clisp nil))))
+			   1000)))
+	(declare (fixnum n))
+	(repeat *alu* ">ONE Homo sapiens alu" (the fixnum (* n 2)))))
