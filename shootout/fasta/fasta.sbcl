@@ -3,7 +3,7 @@
 ;;
 ;; Contributed by Lorenzo Bolla
 
-(declaim (optimize (speed 3) (debug 0) (safety 0)))
+; (declaim (optimize (speed 3) (debug 0) (safety 0)))
 
 (declaim (fixnum +line-length+))
 (defconstant +line-length+ 60)
@@ -18,20 +18,66 @@
 								 "AGGCGGAGGTTGCAGTGAGCCGAGATCGCGCCACTGCACTCC"
 								 "AGCCTGGGCGACAGAGCGAGACTCCGTCTCAAAAA"))
 
+(defstruct amino-acid
+  sym prob cprob)
+
+(defparameter *amino-acids*
+  (let ((c 0))
+	(make-array 15
+				:element-type 'amino-acid
+				:initial-contents (mapcar 
+									#'(lambda (s p) (make-amino-acid :sym s :prob p :cprob (incf c p)))
+									'(#\a #\c #\g #\t #\B #\D #\H #\K #\M #\N #\R #\S #\V #\W #\Y)
+									'(0.27 0.12 0.12 0.27 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02)))))
+
+(let ((r 42)
+	  (im 139968)
+	  (ia 3877)
+	  (ic 29573))
+  (defun reset-random () (setf r 42))
+  (defun next-random ()
+	(setf r (mod (+ (* r ia) ic) im))
+	(float (/ r im))))
+
+(defun bisect (x lst &key (key #'aref) (retkey #'aref))
+  (labels ((rec (x lst i j)
+				(if (<= j i)
+				  (funcall retkey lst i)
+				  (let ((mid (floor (/ (+ i j) 2))))
+					(cond ((< x (funcall key lst mid))
+						   (rec x lst i mid))
+						  (t
+							(rec x lst (1+ mid) j)))))))
+	(rec x lst 0 (1- (length lst)))))
+
+(defun find-amino-acid (amino-acids p)
+  (bisect p amino-acids :key #'(lambda (lst i) (amino-acid-cprob (aref lst i)))))
+
+(defun randomize (amino-acids title n)
+  (write-line title *standard-output*)
+  (dotimes (i n)
+	(when (= (mod i +line-length+) 0)
+	  (terpri))
+	(write-char (amino-acid-sym (find-amino-acid amino-acids (next-random))) 
+				*standard-output*)))
+
 (defun repeat (alu title n)
-  (declare (type base-string alu title) (type fixnum n))
-  (let ((str *standard-output*)
-		(len (length alu))
-		(buf (concatenate 'base-string alu (subseq alu 0 +line-length+))))
-	(declare (type fixnum len) (type base-string buf))
-	(write-line title str)
+  (declare (type base-string alu) 
+		   (type fixnum n))
+  (let ((len (length alu))
+		(buf (concatenate 'base-string 
+						  alu 
+						  (subseq alu 0 +line-length+))))
+	(declare (type fixnum len) 
+			 (type base-string buf))
+	(write-line title *standard-output*)
 	(do* ((pos-start 0 (mod pos-end len))
 		  (m n (- m bytes))
 		  (bytes (min n +line-length+) (min m +line-length+))
 		  (pos-end (+ pos-start bytes) (+ pos-start bytes)))
-	  ((<= m 0) (finish-output str))
+	  ((<= m 0) (finish-output *standard-output*))
 	  (declare (type fixnum pos-start pos-end m bytes))
-	  (write-line buf str :start pos-start :end pos-end))))
+	  (write-line buf *standard-output* :start pos-start :end pos-end))))
 
 (defun main (&optional in-n)
   (let ((n (or in-n
