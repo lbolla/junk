@@ -5,8 +5,9 @@
 
 (declaim (optimize (speed 3) (debug 0) (safety 0)))
 
-(declaim (fixnum +line-length+))
+(declaim (fixnum +line-length+ +im+))
 (defconstant +line-length+ 60)
+(defconstant +im+ 139968)
 
 (declaim (base-string *alu*))
 (defparameter *alu* (concatenate 'base-string
@@ -20,34 +21,38 @@
 
 (defun cumsum (lst)
   (let ((c 0))
-	(mapcar #'(lambda (x) (incf c x) c) lst)))
+	(mapcar #'(lambda (x) (incf c x) (the fixnum (floor (* +im+ c)))) lst))) ; FIXME or ceiling?
 
 (defparameter *amino-acids-syms* "acgtBDHKMNRSVWY")
 (defparameter *amino-acids-cprobs* 
   (make-array 15 
-			  :element-type 'single-float
+			  :element-type 'fixnum
 			  :initial-contents (cumsum '(0.27 0.12 0.12 0.27 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02))))
 
+(defparameter *homo-sapiens-syms* "acgt")
+(defparameter *homo-sapiens-cprobs* 
+  (make-array 4
+			  :element-type 'fixnum
+			  :initial-contents (cumsum '(0.3029549426680 0.1979883004921 0.1975473066391 0.3015094502008))))
+
 ; FIXME
-; moltiply cumsum by im and remove im^-1
+; wrong formatting in randomize (line too short)
+; simplify randomize: no buf
 
 (let ((r 42)
-	  (im 139968)
-	  (im^-1 (/ 1.0 139968))
 	  (ia 3877)
 	  (ic 29573))
-  (declare (type fixnum r im ia ic)
-		   (type single-float im^-1))
+  (declare (type fixnum r ia ic))
   (defun reset-random () (setf r (the fixnum 42)))
   (declaim (inline next-random))
   (defun next-random ()
-	(declare (values single-float))
-	(* (setf r (mod (+ (the (integer 0 542655936) (* r ia)) ic) im)) im^-1)))
+	(declare (values fixnum))
+	(setf r (mod (+ (the (integer 0 542655936) (* r ia)) ic) +im+))))
 
 (defun find-amino-acid (amino-acids-syms amino-acids-cprobs p)
-  (declare (type (simple-array single-float (*)) amino-acids-cprobs)
+  (declare (type (simple-array fixnum (*)) amino-acids-cprobs)
 		   (type simple-string amino-acids-syms)
-		   (type single-float p))
+		   (type fixnum p))
   (let* ((i 0)
 		 (j (length amino-acids-syms)))
 	(declare (type fixnum i j))
@@ -119,7 +124,7 @@
 			   1000)))
 	(declare (fixnum n))
 	(reset-random)
-	; (repeat *alu* ">ONE Homo sapiens alu" (the fixnum (* n 2)))
+	(repeat *alu* ">ONE Homo sapiens alu" (the fixnum (* n 2)))
 	(randomize *amino-acids-syms* *amino-acids-cprobs* ">TWO IUB ambiguity codes" (the fixnum (* n 3)))
-	; (randomize *homo-sapiens* ">THREE Home sapiens frequency" (the fixnum (* n 5)))))
+	(randomize *homo-sapiens-syms* *homo-sapiens-cprobs* ">THREE Home sapiens frequency" (the fixnum (* n 5)))
 	))
