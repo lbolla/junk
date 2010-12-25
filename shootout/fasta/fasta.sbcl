@@ -3,7 +3,7 @@
 ;;
 ;; Contributed by Lorenzo Bolla
 
-; (declaim (optimize (speed 3) (debug 0) (safety 0)))
+(declaim (optimize (speed 3) (debug 0) (safety 0)))
 
 (declaim (fixnum +line-length+))
 (defconstant +line-length+ 60)
@@ -18,48 +18,78 @@
 								 "AGGCGGAGGTTGCAGTGAGCCGAGATCGCGCCACTGCACTCC"
 								 "AGCCTGGGCGACAGAGCGAGACTCCGTCTCAAAAA"))
 
-(defstruct amino-acid
-  sym prob cprob)
-
-(defparameter *amino-acids*
+(defun cumsum (lst)
   (let ((c 0))
-	(make-array 15
-				:element-type 'amino-acid
-				:initial-contents (mapcar 
-									#'(lambda (s p) (make-amino-acid :sym s :prob p :cprob (incf c p)))
-									'(#\a #\c #\g #\t #\B #\D #\H #\K #\M #\N #\R #\S #\V #\W #\Y)
-									'(0.27 0.12 0.12 0.27 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02)))))
+	(mapcar #'(lambda (x) (incf c x) c) lst)))
+
+(defparameter *amino-acids-syms* "acgtBDHKMNRSVWY")
+(defparameter *amino-acids-cprobs* 
+  (make-array 15 
+			  :element-type 'single-float
+			  :initial-contents (cumsum '(0.27 0.12 0.12 0.27 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02))))
+
+; FIXME
+; moltiply cumsum by im and remove im^-1
 
 (let ((r 42)
 	  (im 139968)
+	  (im^-1 (/ 1.0 139968))
 	  (ia 3877)
 	  (ic 29573))
-  (defun reset-random () (setf r 42))
+  (declare (type fixnum r im ia ic)
+		   (type single-float im^-1))
+  (defun reset-random () (setf r (the fixnum 42)))
+  (declaim (inline next-random))
   (defun next-random ()
-	(setf r (mod (+ (* r ia) ic) im))
-	(float (/ r im))))
+	(declare (values single-float))
+	(* (setf r (mod (+ (the (integer 0 542655936) (* r ia)) ic) im)) im^-1)))
 
-(defun bisect (x lst &key (key #'aref) (retkey #'aref))
-  (labels ((rec (x lst i j)
-				(if (<= j i)
-				  (funcall retkey lst i)
-				  (let ((mid (floor (/ (+ i j) 2))))
-					(cond ((< x (funcall key lst mid))
-						   (rec x lst i mid))
-						  (t
-							(rec x lst (1+ mid) j)))))))
-	(rec x lst 0 (1- (length lst)))))
+(defun find-amino-acid (amino-acids-syms amino-acids-cprobs p)
+  (declare (type (simple-array single-float (*)) amino-acids-cprobs)
+		   (type simple-string amino-acids-syms)
+		   (type single-float p))
+  (let* ((i 0)
+		 (j (length amino-acids-syms)))
+	(declare (type fixnum i j))
+	(loop
+	  (when (<= j i) 
+		(return (aref amino-acids-syms i)))
+	  (let* ((mid (ash (+ i j) -1))
+			 (c (aref amino-acids-cprobs mid)))
+		(cond ((< p c)
+			   (setf j mid))
+			  (t
+				(setf i (1+ mid))))))))
 
-(defun find-amino-acid (amino-acids p)
-  (bisect p amino-acids :key #'(lambda (lst i) (amino-acid-cprob (aref lst i)))))
+(declaim (inline output-line flush))
+(defun output-line (line &key (start 0) (end nil))
+  (write-line line sb-sys:*stdout* :start start :end end))
+(defun flush ()
+  (finish-output sb-sys:*stdout*))
 
-(defun randomize (amino-acids title n)
-  (write-line title *standard-output*)
-  (dotimes (i n)
-	(when (= (mod i +line-length+) 0)
-	  (terpri))
-	(write-char (amino-acid-sym (find-amino-acid amino-acids (next-random))) 
-				*standard-output*)))
+(defconstant +buffer-size+ 30000)
+
+(defun randomize (amino-acids-syms amino-acids-cprobs title n)
+  (declare (type fixnum n))
+  (write-string title sb-sys:*stdout*)
+  (let ((buf (make-string +buffer-size+))
+		(j 0)
+		(z 0))
+	(declare (type fixnum j)
+			 (type simple-string buf))
+	(dotimes (i n)
+	  (declare (type fixnum i))
+	  (setf z (mod i +buffer-size+))
+	  (when (= (the fixnum 0) z)
+		(write-string buf sb-sys:*stdout*)
+		(setf z (the fixnum 0)))
+	  (setf j (mod i +line-length+))
+	  (if (= (the fixnum 0) j)
+		(progn
+		  (setf (aref buf z) #\Newline)
+		  (setf z (the fixnum 0))) 
+		(setf (aref buf z) (find-amino-acid amino-acids-syms amino-acids-cprobs (next-random)))))
+	(write-line buf sb-sys:*stdout* :start 0 :end z)))
 
 (defun repeat (alu title n)
   (declare (type base-string alu) 
@@ -70,14 +100,14 @@
 						  (subseq alu 0 +line-length+))))
 	(declare (type fixnum len) 
 			 (type base-string buf))
-	(write-line title *standard-output*)
+	(output-line title)
 	(do* ((pos-start 0 (mod pos-end len))
 		  (m n (- m bytes))
 		  (bytes (min n +line-length+) (min m +line-length+))
 		  (pos-end (+ pos-start bytes) (+ pos-start bytes)))
-	  ((<= m 0) (finish-output *standard-output*))
+	  ((<= m 0) (flush))
 	  (declare (type fixnum pos-start pos-end m bytes))
-	  (write-line buf *standard-output* :start pos-start :end pos-end))))
+	  (output-line buf :start pos-start :end pos-end))))
 
 (defun main (&optional in-n)
   (let ((n (or in-n
@@ -88,4 +118,8 @@
 										   #+clisp nil))))
 			   1000)))
 	(declare (fixnum n))
-	(repeat *alu* ">ONE Homo sapiens alu" (the fixnum (* n 2)))))
+	(reset-random)
+	; (repeat *alu* ">ONE Homo sapiens alu" (the fixnum (* n 2)))
+	(randomize *amino-acids-syms* *amino-acids-cprobs* ">TWO IUB ambiguity codes" (the fixnum (* n 3)))
+	; (randomize *homo-sapiens* ">THREE Home sapiens frequency" (the fixnum (* n 5)))))
+	))
