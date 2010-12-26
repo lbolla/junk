@@ -25,8 +25,7 @@
 	(mapcar #'(lambda (x) 
 				(declare (type single-float x)
 						 (values fixnum))
-				(incf c x) 
-				(the fixnum (ceiling (* +im+ c))))
+				(the fixnum (ceiling (* +im+ (incf c x)))))
 			lst)))
 
 (defun make-cprob (probs)
