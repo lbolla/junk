@@ -167,11 +167,11 @@ main(int argc, const char **argv) {
 
     random_init(&rand);
 
-	/* repeat(alu, ">ONE Homo sapiens alu\n", n*2); */
+	repeat(alu, ">ONE Homo sapiens alu\n", n*2);
 	randomize(amino_acid, ARRAY_SIZE(amino_acid),
 			">TWO IUB ambiguity codes\n", n*3, &rand);
-	/* randomize(homo_sapiens, ARRAY_SIZE(homo_sapiens), */
-	/*         ">THREE Homo sapiens frequency\n", n*5, &rand); */
+	randomize(homo_sapiens, ARRAY_SIZE(homo_sapiens),
+			">THREE Homo sapiens frequency\n", n*5, &rand);
 
     return 0;
 }

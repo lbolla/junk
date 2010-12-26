@@ -14,7 +14,13 @@ gcc.clean:
 fasta.sbcl_compile: fasta.sbcl
 sbcl.core: fasta.sbcl_compile fasta.sbcl
 	time ${SBCL} --userinit /dev/null --eval '(load "fasta.sbcl_compile")'
+sbcl-orig.core: fasta.sbcl_compile fasta-orig.sbcl
+	time ${SBCL} --userinit /dev/null --eval '(load "fasta-orig.sbcl_compile")'
+sbcl-orig2.core: fasta.sbcl_compile fasta-orig2.sbcl
+	time ${SBCL} --userinit /dev/null --eval '(load "fasta-orig2.sbcl_compile")'
 sbcl-orig.run: sbcl-orig.core
+	time ${SBCL} --noinform --core sbcl-orig.core --userinit /dev/null --load fasta.sbcl_run ${N}
+sbcl-orig2.run: sbcl-orig2.core
 	time ${SBCL} --noinform --core sbcl-orig.core --userinit /dev/null --load fasta.sbcl_run ${N}
 sbcl.run: sbcl.core fasta.sbcl_run
 	time ${SBCL} --noinform --core sbcl.core --userinit /dev/null --load fasta.sbcl_run ${N}

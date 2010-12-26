@@ -171,17 +171,18 @@
 					   #+cmu  extensions:*command-line-strings*
 					   #+gcl  si::*command-args*
 					   #+clisp nil))))
-	       1000)))
+	       10000)))
     (declare (fixnum n))
+
+	(setf *last-random* 42)
 
     (make-cumulative *iub*)
     (make-cumulative *homo-sapiens*)
 
-    (make-repeat-fasta "ONE" "Homo sapiens alu"
-		       *alu* (the fixnum (* n 2)) +line-length+)
-    (make-random-fasta "TWO" "IUB ambiguity codes"
-		       *iub* (length *iub*) (the fixnum (* n 3)) +line-length+)
-    (make-random-fasta "THREE"  "Homo sapiens frequency"
-		       *homo-sapiens* (length *homo-sapiens*)
-		       (the fixnum (* n 5)) +line-length+)))
-
+	(make-repeat-fasta "ONE" "Homo sapiens alu"
+			   *alu* (the fixnum (* n 2)) +line-length+)
+	(make-random-fasta "TWO" "IUB ambiguity codes"
+			   *iub* (length *iub*) (the fixnum (* n 3)) +line-length+)
+	(make-random-fasta "THREE"  "Homo sapiens frequency"
+			   *homo-sapiens* (length *homo-sapiens*)
+			   (the fixnum (* n 5)) +line-length+)))
