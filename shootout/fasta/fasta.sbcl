@@ -20,24 +20,27 @@
 								 "AGCCTGGGCGACAGAGCGAGACTCCGTCTCAAAAA"))
 
 (defun cumsum (lst)
-  (let ((c 0))
-	(mapcar #'(lambda (x) (incf c x) (the fixnum (floor (* +im+ c)))) lst))) ; FIXME or ceiling?
+  (let ((c 0.0))
+	(declare (type single-float c))
+	(mapcar #'(lambda (x) 
+				(declare (type single-float x)
+						 (values fixnum))
+				(incf c x) 
+				(the fixnum (ceiling (* +im+ c)))) ; FIXME 
+			lst)))
+
+(defun make-cprob (probs)
+  (make-array (length probs)
+			   :element-type 'fixnum
+			   :initial-contents (cumsum probs)))
 
 (defparameter *amino-acids-syms* "acgtBDHKMNRSVWY")
 (defparameter *amino-acids-cprobs* 
-  (make-array 15 
-			  :element-type 'fixnum
-			  :initial-contents (cumsum '(0.27 0.12 0.12 0.27 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02))))
+  (make-cprob '(0.27 0.12 0.12 0.27 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02)))
 
 (defparameter *homo-sapiens-syms* "acgt")
 (defparameter *homo-sapiens-cprobs* 
-  (make-array 4
-			  :element-type 'fixnum
-			  :initial-contents (cumsum '(0.3029549426680 0.1979883004921 0.1975473066391 0.3015094502008))))
-
-; FIXME
-; wrong formatting in randomize (line too short)
-; simplify randomize: no buf
+  (make-cprob '(0.3029549426680 0.1979883004921 0.1975473066391 0.3015094502008)))
 
 (let ((r 42)
 	  (ia 3877)
@@ -68,33 +71,24 @@
 
 (declaim (inline output-line flush))
 (defun output-line (line &key (start 0) (end nil))
-  (write-line line sb-sys:*stdout* :start start :end end))
+  (write-line line *standard-output* :start start :end end))
 (defun flush ()
-  (finish-output sb-sys:*stdout*))
-
-(defconstant +buffer-size+ 30000)
+  (finish-output *standard-output*))
 
 (defun randomize (amino-acids-syms amino-acids-cprobs title n)
   (declare (type fixnum n))
-  (write-string title sb-sys:*stdout*)
-  (let ((buf (make-string +buffer-size+))
-		(j 0)
-		(z 0))
-	(declare (type fixnum j)
-			 (type simple-string buf))
+  (output-line title)
+  (let ((buf (make-string +line-length+))
+		(j -1))
+	(declare (type simple-string buf)
+			 (type fixnum j))
 	(dotimes (i n)
 	  (declare (type fixnum i))
-	  (setf z (mod i +buffer-size+))
-	  (when (= (the fixnum 0) z)
-		(write-string buf sb-sys:*stdout*)
-		(setf z (the fixnum 0)))
-	  (setf j (mod i +line-length+))
-	  (if (= (the fixnum 0) j)
-		(progn
-		  (setf (aref buf z) #\Newline)
-		  (setf z (the fixnum 0))) 
-		(setf (aref buf z) (find-amino-acid amino-acids-syms amino-acids-cprobs (next-random)))))
-	(write-line buf sb-sys:*stdout* :start 0 :end z)))
+	  (when (= (incf j) +line-length+)
+		(output-line buf)
+		(setf j 0))
+	  (setf (aref buf j) (find-amino-acid amino-acids-syms amino-acids-cprobs (next-random))))
+	(output-line buf :start 0 :end (1+ j))))
 
 (defun repeat (alu title n)
   (declare (type base-string alu) 
@@ -126,5 +120,4 @@
 	(reset-random)
 	(repeat *alu* ">ONE Homo sapiens alu" (the fixnum (* n 2)))
 	(randomize *amino-acids-syms* *amino-acids-cprobs* ">TWO IUB ambiguity codes" (the fixnum (* n 3)))
-	(randomize *homo-sapiens-syms* *homo-sapiens-cprobs* ">THREE Home sapiens frequency" (the fixnum (* n 5)))
-	))
+	(randomize *homo-sapiens-syms* *homo-sapiens-cprobs* ">THREE Homo sapiens frequency" (the fixnum (* n 5)))))
