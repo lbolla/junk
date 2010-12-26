@@ -26,7 +26,7 @@
 				(declare (type single-float x)
 						 (values fixnum))
 				(incf c x) 
-				(the fixnum (ceiling (* +im+ c)))) ; FIXME 
+				(the fixnum (ceiling (* +im+ c))))
 			lst)))
 
 (defun make-cprob (probs)
