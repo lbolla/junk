@@ -1,0 +1,4 @@
+(handler-bind ((sb-ext:defconstant-uneql
+				 (lambda (c) (abort c))))
+  (load (compile-file "fannkuchredux.sbcl")))
+(save-lisp-and-die "sbcl.core" :purify t)
