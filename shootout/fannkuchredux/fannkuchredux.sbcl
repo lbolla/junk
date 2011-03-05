@@ -1,2 +1,12 @@
-(defun main ()
-  (print "hello"))
+(defun fannkuchredux (n)
+  (print n))
+
+(defun main (&optional in-n)
+  (let ((n (or in-n
+			   (ignore-errors
+				 (parse-integer (car (last #+sbcl sb-ext:*posix-argv*
+										   #+cmu  extensions:*command-line-strings*
+										   #+gcl  si::*command-args*
+										   #+clisp nil))))
+			   5)))
+	(fannkuchredux n)))
