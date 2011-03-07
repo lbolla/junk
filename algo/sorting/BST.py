@@ -44,7 +44,15 @@ class Node(object):
 		self.left is not None and self.left.postorder(callback)
 		self.right is not None and self.right.postorder(callback)
 		callback(self.val)
-		
+
+	def levelorder(self, callback):
+		queue = list()
+		queue.append(self)
+		while queue:
+			curr = queue.pop(0)
+			callback(curr.val)
+			curr.left is not None and queue.append(curr.left)
+			curr.right is not None and queue.append(curr.right)
 
 def BST_sort(x):
 	t = Node()
