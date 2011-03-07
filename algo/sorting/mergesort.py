@@ -24,9 +24,13 @@ def mergesort(v):
 		return v
 	return merge(mergesort(v[:l/2]), mergesort(v[l/2:]))
 
-v = range(10) * 2
-random.shuffle(v)
+def main():
+	v = range(10) * 2
+	random.shuffle(v)
 
-print(v)
-u = mergesort(v)
-print(u)
+	print(v)
+	u = mergesort(v)
+	print(u)
+
+if __name__ == '__main__':
+	main()

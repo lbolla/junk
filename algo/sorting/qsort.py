@@ -21,24 +21,24 @@ def qsort_naive(x):
 	left, right, p = partition(x)
 	return qsort_naive(left) + [p] + qsort_naive(right)
 
+def swap(x, i, j):
+	x[i], x[j] = x[j], x[i]
+
+def partition(x, left, right, p_idx):
+	p_val = x[p_idx]
+	swap(x, p_idx, right) # pivot out of the way
+	s_idx = left
+	for i in xrange(left, right):
+		if x[i] < p_val:
+			swap(x, i, s_idx) # put lesser value in store
+			s_idx += 1 # advance store
+	swap(x, s_idx, right)
+	return s_idx
+
 def qsort(x, left, right):
 	'''Inplay quicksort -- O(n log n), O(log n) space.
 	http://en.wikipedia.org/wiki/Quicksort#Complex_version
 	'''
-
-	def swap(x, i, j):
-		x[i], x[j] = x[j], x[i]
-
-	def partition(x, left, right, p_idx):
-		p_val = x[p_idx]
-		swap(x, p_idx, right) # pivot out of the way
-		s_idx = left
-		for i in xrange(left, right):
-			if x[i] <= p_val:
-				swap(x, i, s_idx) # put lesser value in store
-				s_idx += 1 # advance store
-		swap(x, s_idx, right)
-		return s_idx
 
 	if right > left:
 		p_idx = left + (right - left) / 2 # no overflow
@@ -47,22 +47,26 @@ def qsort(x, left, right):
 		qsort(x, p_new_idx + 1, right)
 
 
-n = 100
-big = range(n)
-random.shuffle(big)
+def main():
+	n = 100
+	big = range(n)
+	random.shuffle(big)
 
-for a in [
-		[],
-		[1],
-		[1,2],
-		[11,1,1,2,3,3,32,2,2,3,3,3,3,3,3],
-		big,
-		]:
-	b = qsort_naive(a)
-	assert b == sorted(a)
+	for a in [
+			[],
+			[1],
+			[1,2],
+			[11,1,1,2,3,3,32,2,2,3,3,3,3,3,3],
+			big,
+			]:
+		b = qsort_naive(a)
+		assert b == sorted(a)
 
-	a2 = a[:]
-	qsort(a2, 0, len(a2) - 1)
-	assert a2 == b
+		a2 = a[:]
+		qsort(a2, 0, len(a2) - 1)
+		assert a2 == b
 
-print 'ok!'
+	print 'ok!'
+
+if __name__ == '__main__':
+	main()
