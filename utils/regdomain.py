@@ -3747,12 +3747,12 @@ def getRegisteredDomain(signingDomain):
 
 	result = findRegisteredDomain(signingDomainParts, tldTree)
 
-	if (result is None or result == ''):
+	if not result:
 		# this is an invalid domain name
 		return None
 
 	# assure there is at least 1 TLD in the stripped signing domain
-	if result.find('.') == -1:
+	if '.' not in result:
 		cnt = len(signingDomainParts)
 		if (cnt==1 or len(signingDomainParts) < cnt+2):
 			return None
@@ -3762,7 +3762,7 @@ def getRegisteredDomain(signingDomain):
 def findRegisteredDomain(remainingSigningDomainParts, treeNode):
 	"""Recursive helper method."""
 
-	if len(remainingSigningDomainParts) > 0:
+	if remainingSigningDomainParts:
 		sub = remainingSigningDomainParts.pop()
 	else:
 		sub = None
@@ -3777,9 +3777,9 @@ def findRegisteredDomain(remainingSigningDomainParts, treeNode):
 	else:
 		return sub
 
-	if (result == '#'):
+	if result == '#':
 		return sub
-	elif result is not None and len(result)>0:
+	elif result:
 		return result + '.' + sub
 	return None
 
