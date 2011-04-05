@@ -3812,8 +3812,8 @@ var RegDomain = (function () {
 
     return {
         getRegisteredDomain: getRegisteredDomain,
-        test: function () { test_getRegisteredDomain(); }
-    }
+        test: test_getRegisteredDomain
+    };
 
 })();
 
