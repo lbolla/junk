@@ -1,0 +1,4 @@
+content   cssearch                jar:chrome/cssearch.jar!/content/
+locale    cssearch    en-US       jar:chrome/cssearch.jar!/locale/en-US/
+
+overlay chrome://browser/content/browser.xul chrome://cssearch/content/main.xul

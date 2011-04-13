@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!DOCTYPE overlay SYSTEM "chrome://cssearch/locale/translations.dtd">
+
+<overlay id="cssearch-toolbar" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <script type="application/x-javascript" src="chrome://cssearch/content/main.js" />
+
+  <statusbar id="status-bar">
+      <statusbarpanel id="cssearch-status-bar" label="CSSearch" onclick="CSSearch.extension.toggleEnabled()" />
+  </statusbar>
+
+</overlay>
