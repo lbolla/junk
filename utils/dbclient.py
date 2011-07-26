@@ -35,6 +35,7 @@ def main():
             return 0
         except Exception:
             traceback.print_exc()
+            db.rollback()
 
 
 if __name__ == '__main__':
