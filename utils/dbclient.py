@@ -34,7 +34,7 @@ def print_result(res):
             if ir%rows == 0:
                 print head
             print '    '.join(map(fmt, map(str, r)))
-        print '%d row(s) found.' % res.rowcount
+        print '\n%d row(s) found.\n' % res.rowcount
 
     except:
         pass
