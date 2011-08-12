@@ -31,7 +31,7 @@ def print_result(res):
         head = '\n%s\n%s' % (headers, '_' * len(headers))
 
         for ir, r in enumerate(res):
-            if ir%10 == 0:
+            if ir%rows == 0:
                 print head
             print '    '.join(map(fmt, map(str, r)))
         print '%d row(s) found.' % res.rowcount
