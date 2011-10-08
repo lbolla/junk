@@ -18,7 +18,12 @@ class HashTable(object):
 		if self._data[idx] is None:
 			self._data[idx] = [(k,v)]
 		else:
-			self._data[idx].append((k,v))
+			for i, (_k,_v) in enumerate(self._data[idx]):
+				if k == _k:
+					self._data[idx][i] = (k,v)
+					break
+			else:
+				self._data[idx].append((k,v))
 
 	def get(self, k):
 		idx = self._get_idx(k)
@@ -44,10 +49,13 @@ def main():
 	h.set('one', 1)
 	h.set('two', 2)
 	h.set('three', 3)
+	h.set('three', 4)
+	h.set('four', 4)
 	print(h)
 	print(h.get('one'))
 	print(h.get('two'))
 	print(h.get('three'))
+	print(h.get('four'))
 
 if __name__ == '__main__':
 	main()
