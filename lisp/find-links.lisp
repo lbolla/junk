@@ -1,5 +1,5 @@
-(asdf:oos 'asdf:load-op :drakma)
-(asdf:oos 'asdf:load-op :cl-ppcre)
+(ql:quickload "drakma")
+(ql:quickload "cl-ppcre")
 
 (defparameter *url-re* "href\ *=\ *['\"](\\S+)['\"]")
 
