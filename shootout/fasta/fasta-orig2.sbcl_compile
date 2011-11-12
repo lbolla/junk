@@ -1,0 +1,4 @@
+(handler-bind ((sb-ext:defconstant-uneql
+				 (lambda (c) (abort c))))
+  (load (compile-file "fasta-orig2.sbcl")))
+(save-lisp-and-die "sbcl-orig2.core" :purify t)
