@@ -1,0 +1,1312 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 20. Systems Programming in Haskell</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="error-handling.html" title="Chapter 19. Error handling"><link rel="next" href="using-databases.html" title="Chapter 21. Using Databases"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 20. Systems Programming in Haskell</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="error-handling.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="using-databases.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="systems"><div class="titlepage"><div><div><h2 class="title">Chapter 20. Systems Programming in Haskell</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="systems-programming-in-haskell.html#systems.running">Running External Programs</a></span></dt><dt><span class="sect1"><a href="systems-programming-in-haskell.html#systems.directories">Directory and File Information</a></span></dt><dt><span class="sect1"><a href="systems-programming-in-haskell.html#system.termination">Program Termination</a></span></dt><dt><span class="sect1"><a href="systems-programming-in-haskell.html#systems.datetime">Dates and Times</a></span></dt><dd><dl><dt><span class="sect2"><a href="systems-programming-in-haskell.html#systems.datetime.types">ClockTime and CalendarTime</a></span></dt><dd><dl><dt><span class="sect3"><a href="systems-programming-in-haskell.html#systems.clocktime">Using ClockTime</a></span></dt><dt><span class="sect3"><a href="systems-programming-in-haskell.html#system.calendartime">Using CalendarTime</a></span></dt><dt><span class="sect3"><a href="systems-programming-in-haskell.html#system.timediff">TimeDiff for ClockTime</a></span></dt></dl></dd><dt><span class="sect2"><a href="systems-programming-in-haskell.html#systems.modtime">File Modification Times</a></span></dt></dl></dd><dt><span class="sect1"><a href="systems-programming-in-haskell.html#systems.piping">Extended Example: Piping</a></span></dt><dd><dl><dt><span class="sect2"><a href="systems-programming-in-haskell.html#systems.piping.theory">Using Pipes for Redirection</a></span></dt><dt><span class="sect2"><a href="systems-programming-in-haskell.html#piping.extended">Better Piping</a></span></dt><dt><span class="sect2"><a href="systems-programming-in-haskell.html#systems.piping.finalwords">Final Words on Pipes</a></span></dt></dl></dd></dl></div><p id="x_Ia"><a name="x_Ia"></a>
+    So far, we've been talking mostly about high-level concepts.  Haskell can
+    also be used for lower-level systems programming.  It is quite possible
+    to write programs that interface with the operating system at a low level
+    using Haskell.
+  </p><p id="x_Ja"><a name="x_Ja"></a>
+    In this chapter, we are going to attempt something ambitious: a Perl-like
+    "language" that is valid Haskell, implemented in pure Haskell, that makes
+    shell scripting easy.  We are going to implement piping, easy command
+    invocation, and some simple tools to handle tasks that might otherwise be
+    performed with <code class="literal">grep</code> or <code class="literal">sed</code>.
+  </p><p id="x_Ka"><a name="x_Ka"></a>
+    Specialized modules exist for different operating systems.  In this
+    chapter, we will use generic OS-independent modules as much as possible.
+    However, we will be focusing on the POSIX environment for much of the
+    chapter.  POSIX is a standard for Unix-like operating systems such as
+    Linux, FreeBSD, MacOS X, or Solaris.  Windows does not support POSIX by
+    default, but the Cygwin environment provides a POSIX compatibility layer
+    for Windows.
+  </p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="systems.running">Running External Programs</h2></div></div></div><p id="x_La"><a name="x_La"></a>
+      It is possible to invoke external commands from Haskell.  To do that,
+      we suggest using <code class="literal">rawSystem</code> from the
+      <code class="literal">System.Cmd</code> module.  This will invoke a specified
+      program, with the specified arguments, and return the exit code from
+      that program.  You can play with it in <span class="command"><strong>ghci</strong></span>:
+    </p><a name="rawSystem.ghci:s1"></a><pre id="rawSystem.ghci:s1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module System.Cmd</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>rawSystem "ls" ["-l", "/usr"]</code></strong>
+Loading package old-locale-1.0.0.0 ... linking ... done.
+Loading package old-time-1.0.0.0 ... linking ... done.
+Loading package filepath-1.1.0.0 ... linking ... done.
+Loading package directory-1.0.0.0 ... linking ... done.
+Loading package unix-2.3.0.0 ... linking ... done.
+Loading package process-1.0.0.0 ... linking ... done.
+total 124
+drwxr-xr-x   2 root root  49152 2008-08-18 11:04 bin
+drwxr-xr-x   2 root root   4096 2008-03-09 05:53 games
+drwxr-sr-x  10 jimb guile  4096 2006-02-04 09:13 guile
+drwxr-xr-x  47 root root   8192 2008-08-08 08:18 include
+drwxr-xr-x 107 root root  32768 2008-08-18 11:04 lib
+lrwxrwxrwx   1 root root      3 2007-09-24 16:55 lib64 -&gt; lib
+drwxrwsr-x  17 root staff  4096 2008-06-24 17:35 local
+drwxr-xr-x   2 root root   8192 2008-08-18 11:03 sbin
+drwxr-xr-x 181 root root   8192 2008-08-12 10:11 share
+drwxrwsr-x   2 root src    4096 2007-04-10 16:28 src
+drwxr-xr-x   3 root root   4096 2008-07-04 19:03 X11R6
+ExitSuccess
+</pre><p id="x_Ma"><a name="x_Ma"></a>
+      Here, we run the equivalent of the shell command <code class="literal">ls -l /usr</code>.  
+      <code class="literal">rawSystem</code> does not parse arguments from a string or
+      expand wildcards.<sup>[<a name="id664371" href="#ftn.id664371" class="footnote">43</a>]</sup>
+      Instead, it expects every argument to be contained
+      in a list.  If you don't want to pass any arguments, you can simply
+      pass an empty list like this:
+    </p><a name="rawSystem.ghci:s2"></a><pre id="rawSystem.ghci:s2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>rawSystem "ls" []</code></strong>
+calendartime.ghci  modtime.ghci    rp.ghci	  RunProcessSimple.hs
+cmd.ghci	   posixtime.hs    rps.ghci	  timediff.ghci
+dir.ghci	   rawSystem.ghci  RunProcess.hs  time.ghci
+ExitSuccess
+</pre></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="systems.directories">Directory and File Information</h2></div></div></div><p id="x_Oa"><a name="x_Oa"></a>
+      The <code class="literal">System.Directory</code> module contains quite a few
+      functions that can be used to obtain information from the filesystem.
+      You can get a list of files in a directory, rename or delete files,
+      copy files, change the current working directory, or create new
+      directories.  <code class="literal">System.Directory</code> is portable and works
+      on any platform where GHC itself works.
+    </p><p id="x_Pa"><a name="x_Pa"></a>
+      The <a class="ulink" href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/System-Directory.html" target="_top">library
+        reference for <code class="literal">System.Directory</code></a> provides a
+      comprehensive list of the functions available.  Let's use <span class="command"><strong>ghci</strong></span> to
+      demonstrate a few of them.  Most of these functions are straightforward
+      equivalents to C library calls or shell commands.
+    </p><a name="dir.ghci:setdir"></a><pre id="dir.ghci:setdir" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module System.Directory</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>setCurrentDirectory "/etc"</code></strong>
+Loading package old-locale-1.0.0.0 ... linking ... done.
+Loading package old-time-1.0.0.0 ... linking ... done.
+Loading package filepath-1.1.0.0 ... linking ... done.
+Loading package directory-1.0.0.0 ... linking ... done.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>getCurrentDirectory</code></strong>
+"/etc"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>setCurrentDirectory ".."</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>getCurrentDirectory</code></strong>
+"/"
+</pre><p id="x_Qa"><a name="x_Qa"></a>
+      Here we saw commands to change the current working directory and obtain
+      the current working directory from the system.  These are similar to
+      the <code class="literal">cd</code> and <code class="literal">pwd</code> commands in the
+      POSIX shell.
+    </p><a name="dir.ghci:contents"></a><pre id="dir.ghci:contents" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>getDirectoryContents "/"</code></strong>
+[".","..","lost+found","boot","etc","media","initrd.img","var","usr","bin","dev","home","lib","mnt","proc","root","sbin","tmp","sys","lib64","srv","opt","initrd","vmlinuz",".rnd","www","ultra60","emul",".fonts.cache-1","selinux","razor-agent.log",".svn","initrd.img.old","vmlinuz.old","ugid-survey.bulkdata","ugid-survey.brief"]
+</pre><p id="x_Ra"><a name="x_Ra"></a>
+      <code class="literal">getDirectoryContents</code> returns a list for every item
+      in a given directory.  Note that on POSIX systems, this list normally
+      includes the special values <code class="literal">"."</code> and
+      <code class="literal">".."</code>.  You will usually want to filter these out
+      when processing the content of the directory, perhaps like this:
+    </p><a name="dir.ghci:contents2"></a><pre id="dir.ghci:contents2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>getDirectoryContents "/" &gt;&gt;= return . filter (`notElem` [".", ".."])</code></strong>
+["lost+found","boot","etc","media","initrd.img","var","usr","bin","dev","home","lib","mnt","proc","root","sbin","tmp","sys","lib64","srv","opt","initrd","vmlinuz",".rnd","www","ultra60","emul",".fonts.cache-1","selinux","razor-agent.log",".svn","initrd.img.old","vmlinuz.old","ugid-survey.bulkdata","ugid-survey.brief"]
+</pre><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_ev"><a name="x_ev"></a>
+        For a more detailed discussion of filtering the results of
+        <code class="literal">getDirectoryContents</code>, refer to <a class="xref" href="efficient-file-processing-regular-expressions-and-file-name-matching.html" title="Chapter 8. Efficient file processing, regular expressions, and file name matching">Chapter 8, <i>Efficient file processing, regular expressions, and file name matching</i></a>.
+      </p><p id="x_fJ1"><a name="x_fJ1"></a>
+        Is the <code class="literal">filter (`notElem` [".", ".."])</code> part
+        confusing?  That could got also be written as <code class="literal">filter
+        (\c -&gt; not $ elem c [".", ".."])</code>.  The backticks in
+        this case effectively let us pass the second argument to
+        <code class="literal">notElem</code>; see <a class="xref" href="functional-programming.html#fp.infix" title="Infix functions">the section called “Infix functions”</a> for
+        more information on backticks.
+      </p></td></tr></table></div><p id="x_Sa"><a name="x_Sa"></a>
+      You can also query the system about the location of certain
+      directories.   This query will ask the underlying operating system for
+      the information.
+    </p><a name="dir.ghci:query"></a><pre id="dir.ghci:query" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>getHomeDirectory</code></strong>
+"/home/bos"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>getAppUserDataDirectory "myApp"</code></strong>
+"/home/bos/.myApp"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>getUserDocumentsDirectory</code></strong>
+"/home/bos"
+</pre></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="system.termination">Program Termination</h2></div></div></div><p id="x_Ta"><a name="x_Ta"></a>
+      Developers often write individual programs to accomplish particular
+      tasks.  These individual parts may be combined to accomplish larger
+      tasks.  A shell script or another program may execute them.  The
+      calling script often needs a way to discover whether the program was
+      able to complete its task successfully.  Haskell automatically
+      indicates a non-successful exit whenever a program is aborted by an
+      exception.
+    </p><p id="x_Ua"><a name="x_Ua"></a>However, you may need more fine-grained control over the
+      exit code than that.   Perhaps you need to return different codes for
+      different types of errors.
+      The <code class="literal">System.Exit</code> module provides a way to exit the
+      program and return a specific exit status code to the caller.  You can
+      call <code class="literal">exitWith ExitSuccess</code> to return a code
+      indicating a successful termination (0 on POSIX systems).  Or, you can
+      call something like <code class="literal">exitWith (ExitFailure 5)</code>, which
+      will return code 5 to the calling program.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="systems.datetime">Dates and Times</h2></div></div></div><p id="x_Va"><a name="x_Va"></a>
+      Everything from file timestamps to business transactions involve dates
+      and times.  Haskell provides ways for manipulating dates and times, as
+      well as features for obtaining date and time information from the
+      system.
+    </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="systems.datetime.types">ClockTime and CalendarTime</h3></div></div></div><p id="x_Wa"><a name="x_Wa"></a> In Haskell, the
+        <code class="literal">System.Time</code> module is primarily responsible for
+        date and time handling.  It defines two types: <code class="literal">ClockTime</code> and
+        <code class="literal">CalendarTime</code>.  </p><p id="x_Xa"><a name="x_Xa"></a> <code class="literal">ClockTime</code> is the Haskell version of
+        the traditional POSIX epoch.  A <code class="literal">ClockTime</code> represents a time
+         relative to midnight the morning of January 1, 1970, UTC.  A
+        negative <code class="literal">ClockTime</code> represents a number of seconds prior to that date, while a
+        positive number represents a count of seconds after it.  
+      </p><p id="x_Ya"><a name="x_Ya"></a>
+        <code class="literal">ClockTime</code> is convenient for computations.  Since it tracks
+        Coordinated Universal Time (UTC), it doesn't have to adjust for local
+        timezones, daylight saving time, or other special cases in time
+        handling.  Every day is exactly (60 * 60 * 24) or 86,400
+        seconds<sup>[<a name="id664881" href="#ftn.id664881" class="footnote">44</a>]</sup>, which makes time
+        interval calculations simple.  You can, for instance, check the
+        <code class="literal">ClockTime</code> at the start of a long task, again at the end, and simply
+        subtract the start time from the end time to determine how much time
+        elapsed.  You can then divide by 3600 and display the elapsed time as a
+        count of hours if you wish.
+      </p><p id="x_aa"><a name="x_aa"></a>
+        <code class="literal">ClockTime</code> is ideal for answering questions such as these:
+      </p><div class="itemizedlist"><ul type="disc"><li><p id="x_ba"><a name="x_ba"></a>How much time has elapsed?</p></li><li><p id="x_ca"><a name="x_ca"></a>What will be the <code class="literal">ClockTime</code> 14 days ahead of this
+            precise instant?</p></li><li><p id="x_da"><a name="x_da"></a>When was the file last modified?</p></li><li><p id="x_ea"><a name="x_ea"></a>What is the precise time right now?</p></li></ul></div><p id="x_fa"><a name="x_fa"></a>
+        These are good uses of <code class="literal">ClockTime</code> because they refer to precise,
+        unambiguous moments in time.  However, <code class="literal">ClockTime</code> is not as easily
+        used for questions such as:
+      </p><div class="itemizedlist"><ul type="disc"><li><p id="x_ga"><a name="x_ga"></a>Is today Monday?</p></li><li><p id="x_ia"><a name="x_ia"></a>What day of the week will May 1 fall on next
+            year?</p></li><li><p id="x_ja"><a name="x_ja"></a>What is the current time in my local timezone,
+            taking the potential presence of Daylight Saving Time (DST) into
+            account?</p></li></ul></div><p id="x_ka"><a name="x_ka"></a>
+        <code class="literal">CalendarTime</code> stores a time the way humans do: with a year, month,
+        day, hour, minute, second, timezone, and DST information.  It's easy
+        to convert this into a conveniently-displayable string, or to answer
+        questions about the local time.
+      </p><p id="x_la"><a name="x_la"></a>
+        You can convert between <code class="literal">ClockTime</code> and <code class="literal">CalendarTime</code> at will.
+        Haskell includes functions to convert a <code class="literal">ClockTime</code> to a
+        <code class="literal">CalendarTime</code> in the local timezone, or to a <code class="literal">CalendarTime</code>
+        representing UTC.
+      </p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="systems.clocktime">Using ClockTime</h4></div></div></div><p id="x_ma"><a name="x_ma"></a>
+          <code class="literal">ClockTime</code> is defined in <code class="literal">System.Time</code> like this:
+        </p><pre id="id665093" class="programlisting">
+data ClockTime = TOD Integer Integer
+        </pre><p id="x_na"><a name="x_na"></a>
+          The first <code class="literal">Integer</code> represents the number of seconds since the
+          epoch.  The second <code class="literal">Integer</code> represents an additional number of
+          picoseconds.  Because <code class="literal">ClockTime</code> in Haskell uses the unbounded
+          <code class="literal">Integer</code> type, it can effectively represent a date range limited only
+          by computational resources.
+        </p><p id="x_oa"><a name="x_oa"></a>
+          Let's look at some ways to use <code class="literal">ClockTime</code>.  First, there is the
+          <code class="literal">getClockTime</code> function that returns the current
+          time according to the system's clock.
+        </p><a name="time.ghci:getClockTime"></a><pre id="time.ghci:getClockTime" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module System.Time</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>getClockTime</code></strong>
+Loading package old-locale-1.0.0.0 ... linking ... done.
+Loading package old-time-1.0.0.0 ... linking ... done.
+Mon Aug 18 12:10:38 CDT 2008
+</pre><p id="x_pa"><a name="x_pa"></a>
+          If you wait a second and run <code class="literal">getClockTime</code> again,
+          you'll see it returning an updated time.  Notice that the output
+          from this command was a nice-looking string, complete with
+          day-of-week information.  That's due to the <code class="literal">Show</code> instance for
+          <code class="literal">ClockTime</code>.  Let's look at the <code class="literal">ClockTime</code> at a lower level:
+        </p><a name="time.ghci:ClockTime2"></a><pre id="time.ghci:ClockTime2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>TOD 1000 0</code></strong>
+Wed Dec 31 18:16:40 CST 1969
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>getClockTime &gt;&gt;= (\(TOD sec _) -&gt; return sec)</code></strong>
+1219079438
+</pre><p id="x_qa"><a name="x_qa"></a>
+          Here we first construct a <code class="literal">ClockTime</code> representing the point in
+          time 1000 seconds after midnight on January 1, 1970, UTC.
+          That moment in time is known as the <span class="emphasis"><em>epoch</em></span>.
+          Depending on your timezone, this moment in time may correspond to
+          the evening of December 31, 1969, in your local timezone.
+        </p><p id="x_ra"><a name="x_ra"></a>
+          The second example shows us pulling the number of seconds out of
+          the value returned by <code class="literal">getClockTime</code>.  We can now
+          manipulate it, like so:
+        </p><a name="time.ghci:ClockTime3"></a><pre id="time.ghci:ClockTime3" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>getClockTime &gt;&gt;= (\(TOD sec _) -&gt; return (TOD (sec + 86400) 0))</code></strong>
+Tue Aug 19 12:10:38 CDT 2008
+</pre><p id="x_sa"><a name="x_sa"></a>
+          This will display what the time will be exactly 24 hours from now
+          in your local timezone, since there are 86,400 seconds in 24 hours.
+        </p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="system.calendartime">Using CalendarTime</h4></div></div></div><p id="x_ta"><a name="x_ta"></a>
+          As its name implies, <code class="literal">CalendarTime</code> represents time like we would
+          on a calendar.  It has fields for information such as year, month,
+          and day.  <code class="literal">CalendarTime</code> and its associated types are defined like
+          this:
+        </p><pre id="id665339" class="programlisting">
+data CalendarTime = CalendarTime
+   {ctYear :: Int,         -- Year (post-Gregorian)
+    ctMonth :: Month, 
+    ctDay :: Int,          -- Day of the month (1 to 31)
+    ctHour :: Int,         -- Hour of the day (0 to 23)
+    ctMin :: Int,          -- Minutes (0 to 59)
+    ctSec :: Int,          -- Seconds (0 to 61, allowing for leap seconds)
+    ctPicosec :: Integer,  -- Picoseconds
+    ctWDay :: Day,         -- Day of the week
+    ctYDay :: Int,         -- Day of the year (0 to 364 or 365)
+    ctTZName :: String,    -- Name of timezone
+    ctTZ :: Int,           -- Variation from UTC in seconds
+    ctIsDST :: Bool        -- True if Daylight Saving Time in effect
+   }
+
+data Month = January | February | March | April | May | June 
+             | July | August | September | October | November | December
+
+data Day = Sunday | Monday | Tuesday | Wednesday
+           | Thursday | Friday | Saturday
+        </pre><p id="x_ua"><a name="x_ua"></a>
+          There are a few things about these structures that should be
+          highlighted:
+        </p><div class="itemizedlist"><ul type="disc"><li><p id="x_va"><a name="x_va"></a>
+              <code class="literal">ctWDay</code>, <code class="literal">ctYDay</code>, and <code class="literal">ctTZName</code> are generated by the library
+              functions that create a <code class="literal">CalendarTime</code>, but are not used
+              in calculations.  If you are creating a <code class="literal">CalendarTime</code> by hand,
+              it is not necessary to put accurate values into these fields,
+              unless your later calculations will depend upon them.
+            </p></li><li><p id="x_wa"><a name="x_wa"></a>
+              All of these three types are members of the <code class="literal">Eq</code>, <code class="literal">Ord</code>,
+              <code class="literal">Read</code>, and <code class="literal">Show</code> typeclasses.  In addition, 
+              <code class="literal">Month</code> and <code class="literal">Day</code> are declared as members of the
+              <code class="literal">Enum</code> and <code class="literal">Bounded</code> typeclasses.  For more information on
+              these typeclasses, refer to
+              <a class="xref" href="using-typeclasses.html#typeclasses.wellknown" title="Important Built-In Typeclasses">the section called “Important Built-In Typeclasses”</a>.
+            </p><p id="x_xa"><a name="x_xa"></a>
+              You can generate <code class="literal">CalendarTime</code> values several ways.  You could
+              start by converting a <code class="literal">ClockTime</code> to a <code class="literal">CalendarTime</code> such as
+              this:
+            </p><a name="calendartime.ghci:conv"></a><pre id="calendartime.ghci:conv" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module System.Time</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>now &lt;- getClockTime</code></strong>
+Loading package old-locale-1.0.0.0 ... linking ... done.
+Loading package old-time-1.0.0.0 ... linking ... done.
+Mon Aug 18 12:10:35 CDT 2008
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>nowCal &lt;- toCalendarTime now</code></strong>
+CalendarTime {ctYear = 2008, ctMonth = August, ctDay = 18, ctHour = 12, ctMin = 10, ctSec = 35, ctPicosec = 804267000000, ctWDay = Monday, ctYDay = 230, ctTZName = "CDT", ctTZ = -18000, ctIsDST = True}
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let nowUTC = toUTCTime now</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>nowCal</code></strong>
+CalendarTime {ctYear = 2008, ctMonth = August, ctDay = 18, ctHour = 12, ctMin = 10, ctSec = 35, ctPicosec = 804267000000, ctWDay = Monday, ctYDay = 230, ctTZName = "CDT", ctTZ = -18000, ctIsDST = True}
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>nowUTC</code></strong>
+CalendarTime {ctYear = 2008, ctMonth = August, ctDay = 18, ctHour = 17, ctMin = 10, ctSec = 35, ctPicosec = 804267000000, ctWDay = Monday, ctYDay = 230, ctTZName = "UTC", ctTZ = 0, ctIsDST = False}
+</pre><p id="x_ya"><a name="x_ya"></a>
+              We used <code class="literal">getClockTime</code> to obtain the current
+              <code class="literal">ClockTime</code> from the system's clock.  Next,
+              <code class="literal">toCalendarTime</code> converts the <code class="literal">ClockTime</code> to a
+              <code class="literal">CalendarTime</code> representing the time in the local timezone.
+              <code class="literal">toUTCtime</code> performs a similar conversion,
+              but its result is in the UTC timezone instead of the local
+              timezone.
+            </p><p id="x_za"><a name="x_za"></a>
+              Notice that <code class="literal">toCalendarTime</code> is an <span class="type">IO</span>
+              function, but <code class="literal">toUTCTime</code> is not.  The reason
+              is that <code class="literal">toCalendarTime</code> returns a different
+              result depending upon the locally-configured timezone, but
+              <code class="literal">toUTCTime</code> will return the exact same result
+              whenever it is passed the same source <code class="literal">ClockTime</code>.
+            </p><p id="x_Ab"><a name="x_Ab"></a>
+              It's easy to modify a <code class="literal">CalendarTime</code> value:
+            </p><a name="calendartime.ghci:mod"></a><pre id="calendartime.ghci:mod" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>nowCal {ctYear = 1960}</code></strong>
+CalendarTime {ctYear = 1960, ctMonth = August, ctDay = 18, ctHour = 12, ctMin = 10, ctSec = 35, ctPicosec = 804267000000, ctWDay = Monday, ctYDay = 230, ctTZName = "CDT", ctTZ = -18000, ctIsDST = True}
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(\(TOD sec _) -&gt; sec) (toClockTime nowCal)</code></strong>
+1219079435
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(\(TOD sec _) -&gt; sec) (toClockTime (nowCal {ctYear = 1960}))</code></strong>
+-295685365
+</pre><p id="x_Bb"><a name="x_Bb"></a>
+              In this example, we first took the <code class="literal">CalendarTime</code> value from
+              earlier and simply switched its year to 1960.  Then, we used
+              <code class="literal">toClockTime</code> to convert the unmodified value
+              to a <code class="literal">ClockTime</code>, and then the modified value, so you can see
+              the difference.  Notice that the modified value shows a
+              negative number of seconds once converted to <code class="literal">ClockTime</code>.
+              That's to be expected, since a <code class="literal">ClockTime</code> is an offset from
+              midnight on January 1, 1970, UTC, and this value is in 1960.
+            </p><p id="x_Cb"><a name="x_Cb"></a>
+              You can also create <code class="literal">CalendarTime</code> values manually:
+            </p><a name="calendartime.ghci:create"></a><pre id="calendartime.ghci:create" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let newCT = CalendarTime 2010 January 15 12 30 0 0 Sunday 0 "UTC" 0 False</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>newCT</code></strong>
+CalendarTime {ctYear = 2010, ctMonth = January, ctDay = 15, ctHour = 12, ctMin = 30, ctSec = 0, ctPicosec = 0, ctWDay = Sunday, ctYDay = 0, ctTZName = "UTC", ctTZ = 0, ctIsDST = False}
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(\(TOD sec _) -&gt; sec) (toClockTime newCT)</code></strong>
+1263558600
+</pre><p id="x_Db"><a name="x_Db"></a>
+              Note that even though January 15, 2010, isn't a Sunday -- and
+              isn't day 0 in the year -- the system was able to process this
+              just fine.  In fact, if we convert the value to a <code class="literal">ClockTime</code>
+              and then back to a <code class="literal">CalendarTime</code>, you'll find those fields
+              properly filled in:
+            </p><a name="calendartime.ghci:norm"></a><pre id="calendartime.ghci:norm" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>toUTCTime . toClockTime $ newCT</code></strong>
+CalendarTime {ctYear = 2010, ctMonth = January, ctDay = 15, ctHour = 12, ctMin = 30, ctSec = 0, ctPicosec = 0, ctWDay = Friday, ctYDay = 14, ctTZName = "UTC", ctTZ = 0, ctIsDST = False}
+</pre></li></ul></div></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="system.timediff">TimeDiff for ClockTime</h4></div></div></div><p id="x_Eb"><a name="x_Eb"></a>
+          Because it can be difficult to manage differences between
+          <code class="literal">ClockTime</code> values in a human-friendly way, the
+          <code class="literal">System.Time</code> module includes a <code class="literal">TimeDiff</code> type.
+          <code class="literal">TimeDiff</code> can be used, where convenient, to handle these
+          differences.  It is defined like this:
+        </p><pre id="id665901" class="programlisting">
+data TimeDiff = TimeDiff
+   {tdYear :: Int,
+    tdMonth :: Int,
+    tdDay :: Int,
+    tdHour :: Int,
+    tdMin :: Int,
+    tdSec :: Int,
+    tdPicosec :: Integer}
+        </pre><p id="x_Fb"><a name="x_Fb"></a>
+          Functions such as <code class="literal">diffClockTimes</code> and
+          <code class="literal">addToClockTime</code> take a <code class="literal">ClockTime</code> and a
+          <code class="literal">TimeDiff</code> and handle the calculations internally by converting to
+          a <code class="literal">CalendarTime</code> in UTC, applying the differences, and converting
+          back to a <code class="literal">ClockTime</code>.
+        </p><p id="x_Gb"><a name="x_Gb"></a>
+          Let's see how it works:
+        </p><a name="timediff.ghci:all"></a><pre id="timediff.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module System.Time</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let feb5 = toClockTime $ CalendarTime 2008 February 5 0 0 0 0 Sunday 0 "UTC" 0 False</code></strong>
+Loading package old-locale-1.0.0.0 ... linking ... done.
+Loading package old-time-1.0.0.0 ... linking ... done.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>feb5</code></strong>
+Mon Feb  4 18:00:00 CST 2008
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>addToClockTime (TimeDiff 0 1 0 0 0 0 0) feb5</code></strong>
+Tue Mar  4 18:00:00 CST 2008
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>toUTCTime $ addToClockTime (TimeDiff 0 1 0 0 0 0 0) feb5</code></strong>
+CalendarTime {ctYear = 2008, ctMonth = March, ctDay = 5, ctHour = 0, ctMin = 0, ctSec = 0, ctPicosec = 0, ctWDay = Wednesday, ctYDay = 64, ctTZName = "UTC", ctTZ = 0, ctIsDST = False}
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let jan30 = toClockTime $ CalendarTime 2009 January 30 0 0 0 0 Sunday 0 "UTC" 0 False</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>jan30</code></strong>
+Thu Jan 29 18:00:00 CST 2009
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>addToClockTime (TimeDiff 0 1 0 0 0 0 0) jan30</code></strong>
+Sun Mar  1 18:00:00 CST 2009
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>toUTCTime $ addToClockTime (TimeDiff 0 1 0 0 0 0 0) jan30</code></strong>
+CalendarTime {ctYear = 2009, ctMonth = March, ctDay = 2, ctHour = 0, ctMin = 0, ctSec = 0, ctPicosec = 0, ctWDay = Monday, ctYDay = 60, ctTZName = "UTC", ctTZ = 0, ctIsDST = False}
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>diffClockTimes jan30 feb5</code></strong>
+TimeDiff {tdYear = 0, tdMonth = 0, tdDay = 0, tdHour = 0, tdMin = 0, tdSec = 31104000, tdPicosec = 0}
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>normalizeTimeDiff $ diffClockTimes jan30 feb5</code></strong>
+TimeDiff {tdYear = 0, tdMonth = 12, tdDay = 0, tdHour = 0, tdMin = 0, tdSec = 0, tdPicosec = 0}
+</pre><p id="x_Hb"><a name="x_Hb"></a>
+          We started by generating a <code class="literal">ClockTime</code> representing midnight
+          February 5, 2008 in UTC.  Note that, unless your timezone is the
+          same as UTC, when this time is printed out on the display, it may
+          show up as the evening of February 4 because it is formatted for
+          your local timezone.
+        </p><p id="x_Ib"><a name="x_Ib"></a>
+          Next, we add one month to to it by calling
+          <code class="literal">addToClockTime</code>.  2008 is a leap year, but the
+          system handled that properly and we get a result that has the same
+          date and time in March.  By using <code class="literal">toUTCTime</code>, we
+          can see the effect on this in the original UTC timezone.
+        </p><p id="x_Jb"><a name="x_Jb"></a>
+          For a second experiment, we set up a time representing midnight 
+          on January 30, 2009 in UTC.  2009 is not a leap year, so we might
+          wonder what will happen when trying to add one month to it.  We can
+          see that, since neither February 29 or 30 exist in 2009, we wind up
+          with March 2.
+        </p><p id="x_Kb"><a name="x_Kb"></a>
+          Finally, we can see how <code class="literal">diffClockTimes</code> turns two
+          <code class="literal">ClockTime</code> values into a <code class="literal">TimeDiff</code>, though only the seconds and
+          picoseconds are filled in.  The
+          <code class="literal">normalizeTimeDiff</code> function takes such a
+          <code class="literal">TimeDiff</code> and reformats it as a human might expect to see it.
+        </p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="systems.modtime">File Modification Times</h3></div></div></div><p id="x_Lb"><a name="x_Lb"></a>
+        Many programs need to find out when particular files were last
+        modified.  Programs such as <code class="literal">ls</code> or graphical file
+        managers typically display the modification time of files.
+        The <code class="literal">System.Directory</code> module contains a
+        cross-platform <code class="literal">getModificationTime</code> function.  It
+        takes a filename and returns a <code class="literal">ClockTime</code> representing the time the
+        file was last modified.  For instance:
+      </p><a name="modtime.ghci:all"></a><pre id="modtime.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module System.Directory</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>getModificationTime "/etc/passwd"</code></strong>
+Loading package old-locale-1.0.0.0 ... linking ... done.
+Loading package old-time-1.0.0.0 ... linking ... done.
+Loading package filepath-1.1.0.0 ... linking ... done.
+Loading package directory-1.0.0.0 ... linking ... done.
+Fri Aug 15 08:29:48 CDT 2008
+</pre><p id="x_Mb"><a name="x_Mb"></a>
+        POSIX platforms maintain not just a modification time (known as
+        mtime), but also the time of last read or write access (atime) and
+        the time of last status change (ctime).  Since this information is
+        POSIX-specific, the cross-platform
+        <code class="literal">System.Directory</code> module does not provide access to
+        it.  Instead, you will need to use functions in
+        <code class="literal">System.Posix.Files</code>.  Here is an example function
+        to do that:
+      </p><a name="posixtime.hs:all"></a><pre id="posixtime.hs:all" class="programlisting">-- file: ch20/posixtime.hs
+-- posixtime.hs
+
+import System.Posix.Files
+import System.Time
+import System.Posix.Types
+
+-- | Given a path, returns (atime, mtime, ctime)
+getTimes :: FilePath -&gt; IO (ClockTime, ClockTime, ClockTime)
+getTimes fp =
+    do stat &lt;- getFileStatus fp
+       return (toct (accessTime stat),
+               toct (modificationTime stat),
+               toct (statusChangeTime stat))
+
+-- | Convert an EpochTime to a ClockTime
+toct :: EpochTime -&gt; ClockTime
+toct et = 
+    TOD (truncate (toRational et)) 0</pre><p id="x_Nb"><a name="x_Nb"></a>
+        Notice that call to <code class="literal">getFileStatus</code>.  That call maps
+        directly to the C function <code class="literal">stat()</code>.  Its return
+        value stores a vast assortment of information, including file
+        type, permissions, owner, group, and the three time values we're
+        interested in.  <code class="literal">System.Posix.Files</code> provides
+        various functions, such as <code class="literal">accessTime</code>, that
+        extract the information we're interested out of the opaque
+        <code class="literal">FileStatus</code> type returned by
+        <code class="literal">getFileStatus</code>.
+      </p><p id="x_gJ1"><a name="x_gJ1"></a>
+        The functions such as <code class="literal">accessTime</code> return
+        data in a POSIX-specific type called
+        <code class="literal">EpochTime</code>, which se convert to a
+        <code class="literal">ClockTime</code> using the <code class="literal">toct</code> function.
+        <code class="literal">System.Posix.Files</code> also provides a
+        <code class="literal">setFileTimes</code> function to set the atime and mtime
+        for a file.<sup>[<a name="id666386" href="#ftn.id666386" class="footnote">45</a>]</sup>
+      </p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="systems.piping">Extended Example: Piping</h2></div></div></div><p id="x_Tb"><a name="x_Tb"></a>
+      We've just seen how to invoke external programs.  Sometimes we need
+      more control that that.  Perhaps we need to obtain the output from
+      those programs, provide input, or even chain together multiple external
+      programs.  Piping can help with all of these needs.
+      Piping is often used in shell
+      scripts.  When you set up a pipe in the shell, you run multiple
+      programs.  The output of the first program is sent to the input of the
+      second.  Its output is sent to the third as input, and so on.  The last
+      program's output normally goes to the terminal, or it could go to a
+      file.  Here's an example session with the POSIX
+      shell to illustrate piping:
+    </p><pre id="id666421" class="screen">
+$ <strong class="userinput"><code>ls /etc | grep 'm.*ap' | tr a-z A-Z</code></strong>
+IDMAPD.CONF
+MAILCAP
+MAILCAP.ORDER
+MEDIAPRM
+TERMCAP
+    </pre><p id="x_Ub"><a name="x_Ub"></a>
+      This command runs three programs, piping data between them.  It starts
+      with <code class="literal">ls /etc</code>, which outputs a list of all files or
+      directories in <code class="literal">/etc</code>.  The output of
+      <code class="literal">ls</code> is sent as input to <code class="literal">grep</code>.  We
+      gave <code class="literal">grep</code> a regular expression that will cause it to
+      output only the lines that start with <code class="literal">'m'</code> and then
+      contain <code class="literal">"ap"</code> somewhere in the line.  Finally, the
+      result of that is sent to <code class="literal">tr</code>.  We gave
+      <code class="literal">tr</code> options to convert everything to uppercase.  The
+      output of <code class="literal">tr</code> isn't set anywhere in particular, so it
+      is displayed on the screen.
+    </p><p id="x_Vb"><a name="x_Vb"></a>
+      In this situation, the shell handles setting up all the pipelines
+      between programs.  By using some of the POSIX tools in Haskell, we can
+      accomplish the same thing.
+    </p><p id="x_Wb"><a name="x_Wb"></a>
+      Before describing how to do this, we should first warn you that the
+      <code class="literal">System.Posix</code> modules expose a very low-level
+      interface to Unix systems.  The interfaces can be complex and their
+      interactions can be complex as well, regardless of the programming
+      language you use to access them.  The full nature of these low-level
+      interfaces has been the topic of entire books themselves, so in this
+      chapter we will just scratch the surface.
+    </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="systems.piping.theory">Using Pipes for Redirection</h3></div></div></div><p id="x_Xb"><a name="x_Xb"></a>
+        POSIX defines a function that creates a pipe.  This function returns
+        two file descriptors (FDs), which are similar in concept to a Haskell
+        <code class="literal">Handle</code>.  One FD is the reading end of the pipe, and the other is the
+        writing end.  Anything that is written to the writing end can be read
+        by the reading end.  The data is "shoved through a pipe".
+        In Haskell, you call <code class="literal">createPipe</code> to access this
+        interface.
+      </p><p id="x_Yb"><a name="x_Yb"></a>
+        Having a pipe is the first step to being able to pipe data between
+        external programs.  We must also be able to redirect the output of a
+        program to a pipe, and the input of another program from a pipe.  The
+        Haskell function <code class="literal">dupTo</code> accomplishes this.  It takes
+        a FD and makes a copy of it at another FD number.  POSIX FDs for
+        standard input, standard output, and standard error have the predefined
+        FD numbers of 0, 1, and 2, respectively.  By renumbering an endpoint of
+        a pipe to one of those numbers, we effectively can cause programs to
+        have their input or output redirected.
+      </p><p id="x_Zb"><a name="x_Zb"></a>
+        There is another piece of the puzzle, however.  We can't just use
+        <code class="literal">dupTo</code> before a call such as
+        <code class="literal">rawSystem</code> because this would mess up the standard
+        input or output of our main Haskell process.  Moreover,
+        <code class="literal">rawSystem</code> blocks until the invoked program executes,
+        leaving us no way to start multiple processes running in parallel.  To
+        make this happen, we must use <code class="literal">forkProcess</code>.
+        This is a very special function.  It actually makes a copy of the
+        currently-running program and you wind up with two copies of the
+        program running at the same time.  Haskell's
+        <code class="literal">forkProcess</code> function takes a function to execute in
+        the new process (known as the child).  We have that function call
+        <code class="literal">dupTo</code>.  After it has done that, it calls
+        <code class="literal">executeFile</code> to actually invoke the command.  This is
+        also a special function: if all goes well, it <span class="emphasis"><em>never
+          returns</em></span>.  That's because <code class="literal">executeFile</code>
+        replaces the running process with a different program.  Eventually, the
+        original Haskell process will call <code class="literal">getProcessStatus</code>
+        to wait for the child processes to terminate and learn of their exit
+        codes.
+      </p><p id="x_ab"><a name="x_ab"></a>
+        Whenever you run a command on POSIX systems, whether you've just typed
+        <code class="literal">ls</code> on the command line or used
+        <code class="literal">rawSystem</code> in Haskell, under the hood,
+        <code class="literal">forkProcess</code>, <code class="literal">executeFile</code>, and
+        <code class="literal">getProcessStatus</code> (or their C equivalents) are always
+        being used.  To set up pipes, we are duplicating the process that the
+        system uses to start up programs, and adding a few steps involving
+        piping and redirection along the way.
+      </p><p id="x_bb"><a name="x_bb"></a>
+        There are a few other housekeeping things we must be careful about.
+        When you call <code class="literal">forkProcess</code>, just about everything
+        about your program is cloned<sup>[<a name="id666704" href="#ftn.id666704" class="footnote">46</a>]</sup>  That includes
+        the set of open file descriptors (handles).  Programs detect when
+        they're done receiving input from a pipe by checking the end-of-file
+        indicator.  When the process at the writing end of a pipe closes the
+        pipe, the process at the reading end will receive an end-of-file
+        indication.  However, if the writing file descriptor exists in more
+        than one process, the end-of-file indicator won't be sent until all
+        processes have closed that particular FD.  Therefore, we must keep
+        track of which FDs are opened so we can close them all in the child
+        processes.  We must also close the child ends of the pipes in the
+        parent process as soon as possible.
+      </p><p id="x_db"><a name="x_db"></a>
+        Here is an initial implementation of a system of piping in Haskell.
+      </p><a name="RunProcessSimple.hs:all"></a><pre id="RunProcessSimple.hs:all" class="programlisting">-- file: ch20/RunProcessSimple.hs
+{-# OPTIONS_GHC -fglasgow-exts #-}
+-- RunProcessSimple.hs
+
+module RunProcessSimple where
+
+import System.Process
+import Control.Concurrent
+import Control.Concurrent.MVar
+import System.IO
+import System.Exit
+import Text.Regex
+import System.Posix.Process
+import System.Posix.IO
+import System.Posix.Types
+
+{- | The type for running external commands.  The first part
+of the tuple is the program name.  The list represents the
+command-line parameters to pass to the command. -}
+type SysCommand = (String, [String])
+
+{- | The result of running any command -}
+data CommandResult = CommandResult {
+    cmdOutput :: IO String,              -- ^ IO action that yields the output
+    getExitStatus :: IO ProcessStatus    -- ^ IO action that yields exit result
+    }
+
+{- | The type for handling global lists of FDs to always close in the clients
+-}
+type CloseFDs = MVar [Fd]
+
+{- | Class representing anything that is a runnable command -}
+class CommandLike a where
+    {- | Given the command and a String representing input,
+         invokes the command.  Returns a String
+         representing the output of the command. -}
+    invoke :: a -&gt; CloseFDs -&gt; String -&gt; IO CommandResult
+
+-- Support for running system commands
+instance CommandLike SysCommand where
+    invoke (cmd, args) closefds input =
+        do -- Create two pipes: one to handle stdin and the other
+           -- to handle stdout.  We do not redirect stderr in this program.
+           (stdinread, stdinwrite) &lt;- createPipe
+           (stdoutread, stdoutwrite) &lt;- createPipe
+
+           -- We add the parent FDs to this list because we always need
+           -- to close them in the clients.
+           addCloseFDs closefds [stdinwrite, stdoutread]
+
+           -- Now, grab the closed FDs list and fork the child.
+           childPID &lt;- withMVar closefds (\fds -&gt;
+                          forkProcess (child fds stdinread stdoutwrite))
+
+           -- Now, on the parent, close the client-side FDs.
+           closeFd stdinread
+           closeFd stdoutwrite
+
+           -- Write the input to the command.
+           stdinhdl &lt;- fdToHandle stdinwrite
+           forkIO $ do hPutStr stdinhdl input
+                       hClose stdinhdl
+
+           -- Prepare to receive output from the command
+           stdouthdl &lt;- fdToHandle stdoutread
+
+           -- Set up the function to call when ready to wait for the
+           -- child to exit.
+           let waitfunc = 
+                do status &lt;- getProcessStatus True False childPID
+                   case status of
+                       Nothing -&gt; fail $ "Error: Nothing from getProcessStatus"
+                       Just ps -&gt; do removeCloseFDs closefds 
+                                          [stdinwrite, stdoutread]
+                                     return ps
+           return $ CommandResult {cmdOutput = hGetContents stdouthdl,
+                                   getExitStatus = waitfunc}
+
+        -- Define what happens in the child process
+        where child closefds stdinread stdoutwrite = 
+                do -- Copy our pipes over the regular stdin/stdout FDs
+                   dupTo stdinread stdInput
+                   dupTo stdoutwrite stdOutput
+
+                   -- Now close the original pipe FDs
+                   closeFd stdinread
+                   closeFd stdoutwrite
+
+                   -- Close all the open FDs we inherited from the parent
+                   mapM_ (\fd -&gt; catch (closeFd fd) (\_ -&gt; return ())) closefds
+
+                   -- Start the program
+                   executeFile cmd True args Nothing
+
+-- Add FDs to the list of FDs that must be closed post-fork in a child
+addCloseFDs :: CloseFDs -&gt; [Fd] -&gt; IO ()
+addCloseFDs closefds newfds =
+    modifyMVar_ closefds (\oldfds -&gt; return $ oldfds ++ newfds)
+
+-- Remove FDs from the list
+removeCloseFDs :: CloseFDs -&gt; [Fd] -&gt; IO ()
+removeCloseFDs closefds removethem =
+    modifyMVar_ closefds (\fdlist -&gt; return $ procfdlist fdlist removethem)
+
+    where
+    procfdlist fdlist [] = fdlist
+    procfdlist fdlist (x:xs) = procfdlist (removefd fdlist x) xs
+
+    -- We want to remove only the first occurance ot any given fd
+    removefd [] _ = []
+    removefd (x:xs) fd 
+        | fd == x = xs
+        | otherwise = x : removefd xs fd
+
+{- | Type representing a pipe.  A 'PipeCommand' consists of a source
+and destination part, both of which must be instances of
+'CommandLike'. -}
+data (CommandLike src, CommandLike dest) =&gt; 
+     PipeCommand src dest = PipeCommand src dest 
+
+{- | A convenient function for creating a 'PipeCommand'. -}
+(-|-) :: (CommandLike a, CommandLike b) =&gt; a -&gt; b -&gt; PipeCommand a b
+(-|-) = PipeCommand
+
+{- | Make 'PipeCommand' runnable as a command -}
+instance (CommandLike a, CommandLike b) =&gt;
+         CommandLike (PipeCommand a b) where
+    invoke (PipeCommand src dest) closefds input =
+        do res1 &lt;- invoke src closefds input
+           output1 &lt;- cmdOutput res1
+           res2 &lt;- invoke dest closefds output1
+           return $ CommandResult (cmdOutput res2) (getEC res1 res2)
+
+{- | Given two 'CommandResult' items, evaluate the exit codes for
+both and then return a "combined" exit code.  This will be ExitSuccess
+if both exited successfully.  Otherwise, it will reflect the first
+error encountered. -}
+getEC :: CommandResult -&gt; CommandResult -&gt; IO ProcessStatus 
+getEC src dest =
+    do sec &lt;- getExitStatus src
+       dec &lt;- getExitStatus dest
+       case sec of
+            Exited ExitSuccess -&gt; return dec
+            x -&gt; return x
+
+{- | Execute a 'CommandLike'. -}
+runIO :: CommandLike a =&gt; a -&gt; IO ()
+runIO cmd =
+    do -- Initialize our closefds list
+       closefds &lt;- newMVar []
+
+       -- Invoke the command
+       res &lt;- invoke cmd closefds []
+
+       -- Process its output
+       output &lt;- cmdOutput res
+       putStr output
+
+       -- Wait for termination and get exit status
+       ec &lt;- getExitStatus res
+       case ec of
+            Exited ExitSuccess -&gt; return ()
+            x -&gt; fail $ "Exited: " ++ show x</pre><p id="x_eb"><a name="x_eb"></a>
+        Let's experiment with this in <span class="command"><strong>ghci</strong></span> a bit before looking at how it
+        works.
+      </p><a name="rps.ghci:all"></a><pre id="rps.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load RunProcessSimple.hs</code></strong>
+
+RunProcessSimple.hs:12:7:
+    Could not find module `Text.Regex':
+      Use -v to see a list of the files searched for.
+Failed, modules loaded: none.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runIO $ ("pwd", []::[String])</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `runIO'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runIO $ ("ls", ["/usr"])</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `runIO'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runIO $ ("ls", ["/usr"]) -|- ("grep", ["^l"])</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `runIO'
+
+&lt;interactive&gt;:1:25: Not in scope: `-|-'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runIO $ ("ls", ["/etc"]) -|- ("grep", ["m.*ap"]) -|- ("tr", ["a-z", "A-Z"])</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `runIO'
+
+&lt;interactive&gt;:1:25: Not in scope: `-|-'
+
+&lt;interactive&gt;:1:49: Not in scope: `-|-'
+</pre><p id="x_fb"><a name="x_fb"></a>
+        We start by running a simple command, <code class="literal">pwd</code>, which
+        just prints the name of the current working directory.  We pass
+        <code class="literal">[]</code> for the list of arguments, because
+        <code class="literal">pwd</code> doesn't need any arguments.  Due to the
+        typeclasses used, Haskell can't infer the type of
+        <code class="literal">[]</code>, so we specifically mention that it's a
+        <code class="literal">String</code>.
+      </p><p id="x_gb"><a name="x_gb"></a>
+        Then we get into more complex commands.  We run
+        <code class="literal">ls</code>, sending it through <code class="literal">grep</code>.
+        At the end, we set up a pipe to run the exact same command that we
+        ran via a shell-built pipe at the start of this section.  It's not
+        yet as pleasant as it was in the shell, but then again our program is
+        still relatively simple when compared to the shell.
+      </p><p id="x_hb"><a name="x_hb"></a>
+        Let's look at the program.  The very first line has a special
+        <code class="literal">OPTIONS_GHC</code> clause.  This is the same as passing
+        <code class="literal">-fglasgow-exts</code> to <span class="command"><strong>ghc</strong></span> or <span class="command"><strong>ghci</strong></span>.  We are using a
+        GHC extension that permits us to use a <code class="literal">(String,
+          [String])</code> type as an instance of a
+        typeclass.<sup>[<a name="id667005" href="#ftn.id667005" class="footnote">47</a>]</sup>  By putting
+        it in the source file, we don't have to remember to specify it every
+        time we use this module.
+      </p><p id="x_jb"><a name="x_jb"></a>
+        After the <code class="literal">import</code> lines, we define a few types.
+        First, we define <code class="literal">type SysCommand = (String,
+          [String])</code> as an alias.  This is the type a command to be
+        executed by the system will take.  We used data of this type for each
+        command in the example execution above.  The
+        <code class="literal">CommandResult</code> type represents the result from
+        executing a given command, and the <code class="literal">CloseFDs</code> type
+        represents the list of FDs that we must close upon forking a new
+        child process.
+      </p><p id="x_kb"><a name="x_kb"></a>
+        Next, we define a class named <code class="literal">CommandLike</code>.  This
+        class will be used to run "things", where a "thing" might be a
+        standalone program, a pipe set up between two or more programs, or in
+        the future, even pure Haskell functions.  To be a member of this
+        class, only one function -- <code class="literal">invoke</code> -- needs to be
+        present for a given type.  This will let us use
+        <code class="literal">runIO</code> to start either a standalone command or a
+        pipeline.  It will also be useful for defining a pipeline, since we
+        may have a whole stack of commands on one or both sides of a given
+        command.
+      </p><p id="x_lb"><a name="x_lb"></a>
+        Our piping infrastructure is going to use strings as the way of
+        sending data from one process to another.  We can take advantage of
+        Haskell's support for lazy reading via <code class="literal">hGetContents</code> while reading
+        data, and use <code class="literal">forkIO</code> to let writing occur in the
+        background.  This will work well, although not as fast as connecting
+        the endpoints of two processes directly together.<sup>[<a name="id667108" href="#ftn.id667108" class="footnote">48</a>]</sup>  It makes implementation quite
+        simple, however.  We need only take care to do nothing that would
+        require the entire <code class="literal">String</code> to be buffered, and let Haskell's
+        laziness do the rest.
+      </p><p id="x_nb"><a name="x_nb"></a>
+        Next, we define an instance of
+        <code class="literal">CommandLike</code> for <code class="literal">SysCommand</code>.  We
+        create two pipes: one to use for the new process's standard input,
+        and the other for its standard output.  This creates four endpoints,
+        and thus four file descriptors.  We add the parent file descriptors
+        to the list of those that must be closed in all children.  These
+        would be the write end of the child's standard input, and the read
+        end of the child's standard output.  Next, we fork the child process.
+        In the parent, we can then close the file descriptors that correspond
+        to the child.  We can't do that before the fork, because then they
+        wouldn't be available to the child.  We obtain a handle for the
+        <code class="literal">stdinwrite</code> file descriptor, and start a thread via
+        <code class="literal">forkIO</code> to write the input data to it.  We then
+        define <code class="literal">waitfunc</code>, which is the action that the
+        caller will invoke when it is ready to wait for the called process to
+        terminate.  Meanwhile, the child uses <code class="literal">dupTo</code>,
+        closes the file descriptors it doesn't need, and executes the
+        command.
+      </p><p id="x_ob"><a name="x_ob"></a>
+        Next, we define some utility functions to manage the list of file
+        descriptors.  After that, we define the tools that help set up
+        pipelines.  First, we define a new type
+        <code class="literal">PipeCommand</code> that has a source and destination.
+        Both the source and destination must be members of
+        <code class="literal">CommandLike</code>.  We also define the
+        <code class="literal">-|-</code> convenience operator.  Then, we make
+        <code class="literal">PipeCommand</code> an instance of
+        <code class="literal">CommandLike</code>.  Its <code class="literal">invoke</code>
+        implementation starts the first command with the given input, obtains
+        its output, and passes that output to the invocation of the second
+        command.  It then returns the output of the second command, and
+        causes the <code class="literal">getExitStatus</code> function to wait for and
+        check the exit statuses from both commands.
+      </p><p id="x_pb"><a name="x_pb"></a>
+        We finish by defining <code class="literal">runIO</code>.  This function
+        establishes the list of FDs that must be closed in the client, starts
+        the command, displays its output, and checks its exit status.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="piping.extended">Better Piping</h3></div></div></div><p id="x_qb"><a name="x_qb"></a>
+        Our previous example solved the basic need of letting us set up
+        shell-like pipes.  There are some other features that it would be
+        nice to have though:
+      </p><div class="itemizedlist"><ul type="disc"><li><p id="x_rb"><a name="x_rb"></a>Supporting more shell-like
+            syntax</p></li><li><p id="x_sb"><a name="x_sb"></a>Letting people pipe data into external programs or
+            regular Haskell functions, freely mixing and matching the
+            two</p></li><li><p id="x_tb"><a name="x_tb"></a>Returning the final output and exit code in a way
+            that Haskell programs can readily use</p></li></ul></div><p id="x_ub"><a name="x_ub"></a>
+        Fortunately, we already have most of the pieces to support this in
+        place.  We need only add a few more instances of
+        <code class="literal">CommandLike</code> to support this, and a few more
+        functions similar to <code class="literal">runIO</code>.  Here is a revised
+        example that implements all of these features:
+      </p><a name="RunProcess.hs:all"></a><pre id="RunProcess.hs:all" class="programlisting">-- file: ch20/RunProcess.hs
+{-# OPTIONS_GHC -fglasgow-exts #-}
+
+module RunProcess where
+
+import System.Process
+import Control.Concurrent
+import Control.Concurrent.MVar
+import Control.Exception(evaluate)
+import System.Posix.Directory
+import System.Directory(setCurrentDirectory)
+import System.IO
+import System.Exit
+import Text.Regex
+import System.Posix.Process
+import System.Posix.IO
+import System.Posix.Types
+import Data.List
+import System.Posix.Env(getEnv)
+
+{- | The type for running external commands.  The first part
+of the tuple is the program name.  The list represents the
+command-line parameters to pass to the command. -}
+type SysCommand = (String, [String])
+
+{- | The result of running any command -}
+data CommandResult = CommandResult {
+    cmdOutput :: IO String,              -- ^ IO action that yields the output
+    getExitStatus :: IO ProcessStatus    -- ^ IO action that yields exit result
+    }
+
+{- | The type for handling global lists of FDs to always close in the clients
+-}
+type CloseFDs = MVar [Fd]
+
+{- | Class representing anything that is a runnable command -}
+class CommandLike a where
+    {- | Given the command and a String representing input,
+         invokes the command.  Returns a String
+         representing the output of the command. -}
+    invoke :: a -&gt; CloseFDs -&gt; String -&gt; IO CommandResult
+
+-- Support for running system commands
+instance CommandLike SysCommand where
+    invoke (cmd, args) closefds input =
+        do -- Create two pipes: one to handle stdin and the other
+           -- to handle stdout.  We do not redirect stderr in this program.
+           (stdinread, stdinwrite) &lt;- createPipe
+           (stdoutread, stdoutwrite) &lt;- createPipe
+
+           -- We add the parent FDs to this list because we always need
+           -- to close them in the clients.
+           addCloseFDs closefds [stdinwrite, stdoutread]
+
+           -- Now, grab the closed FDs list and fork the child.
+           childPID &lt;- withMVar closefds (\fds -&gt;
+                          forkProcess (child fds stdinread stdoutwrite))
+
+           -- Now, on the parent, close the client-side FDs.
+           closeFd stdinread
+           closeFd stdoutwrite
+
+           -- Write the input to the command.
+           stdinhdl &lt;- fdToHandle stdinwrite
+           forkIO $ do hPutStr stdinhdl input
+                       hClose stdinhdl
+
+           -- Prepare to receive output from the command
+           stdouthdl &lt;- fdToHandle stdoutread
+
+           -- Set up the function to call when ready to wait for the
+           -- child to exit.
+           let waitfunc = 
+                do status &lt;- getProcessStatus True False childPID
+                   case status of
+                       Nothing -&gt; fail $ "Error: Nothing from getProcessStatus"
+                       Just ps -&gt; do removeCloseFDs closefds 
+                                          [stdinwrite, stdoutread]
+                                     return ps
+           return $ CommandResult {cmdOutput = hGetContents stdouthdl,
+                                   getExitStatus = waitfunc}
+
+        -- Define what happens in the child process
+        where child closefds stdinread stdoutwrite = 
+                do -- Copy our pipes over the regular stdin/stdout FDs
+                   dupTo stdinread stdInput
+                   dupTo stdoutwrite stdOutput
+
+                   -- Now close the original pipe FDs
+                   closeFd stdinread
+                   closeFd stdoutwrite
+
+                   -- Close all the open FDs we inherited from the parent
+                   mapM_ (\fd -&gt; catch (closeFd fd) (\_ -&gt; return ())) closefds
+
+                   -- Start the program
+                   executeFile cmd True args Nothing
+
+{- | An instance of 'CommandLike' for an external command.  The String is
+passed to a shell for evaluation and invocation. -}
+instance CommandLike String where
+    invoke cmd closefds input =
+        do -- Use the shell given by the environment variable SHELL,
+           -- if any.  Otherwise, use /bin/sh
+           esh &lt;- getEnv "SHELL"
+           let sh = case esh of
+                       Nothing -&gt; "/bin/sh"
+                       Just x -&gt; x
+           invoke (sh, ["-c", cmd]) closefds input
+
+-- Add FDs to the list of FDs that must be closed post-fork in a child
+addCloseFDs :: CloseFDs -&gt; [Fd] -&gt; IO ()
+addCloseFDs closefds newfds =
+    modifyMVar_ closefds (\oldfds -&gt; return $ oldfds ++ newfds)
+
+-- Remove FDs from the list
+removeCloseFDs :: CloseFDs -&gt; [Fd] -&gt; IO ()
+removeCloseFDs closefds removethem =
+    modifyMVar_ closefds (\fdlist -&gt; return $ procfdlist fdlist removethem)
+
+    where
+    procfdlist fdlist [] = fdlist
+    procfdlist fdlist (x:xs) = procfdlist (removefd fdlist x) xs
+
+    -- We want to remove only the first occurance ot any given fd
+    removefd [] _ = []
+    removefd (x:xs) fd 
+        | fd == x = xs
+        | otherwise = x : removefd xs fd
+
+-- Support for running Haskell commands
+instance CommandLike (String -&gt; IO String) where
+    invoke func _ input =
+       return $ CommandResult (func input) (return (Exited ExitSuccess))
+
+-- Support pure Haskell functions by wrapping them in IO
+instance CommandLike (String -&gt; String) where
+    invoke func = invoke iofunc
+        where iofunc :: String -&gt; IO String
+              iofunc = return . func
+
+-- It's also useful to operate on lines.  Define support for line-based
+-- functions both within and without the IO monad.
+
+instance CommandLike ([String] -&gt; IO [String]) where
+    invoke func _ input =
+           return $ CommandResult linedfunc (return (Exited ExitSuccess))
+       where linedfunc = func (lines input) &gt;&gt;= (return . unlines)
+
+instance CommandLike ([String] -&gt; [String]) where
+    invoke func = invoke (unlines . func . lines)
+
+{- | Type representing a pipe.  A 'PipeCommand' consists of a source
+and destination part, both of which must be instances of
+'CommandLike'. -}
+data (CommandLike src, CommandLike dest) =&gt; 
+     PipeCommand src dest = PipeCommand src dest 
+
+{- | A convenient function for creating a 'PipeCommand'. -}
+(-|-) :: (CommandLike a, CommandLike b) =&gt; a -&gt; b -&gt; PipeCommand a b
+(-|-) = PipeCommand
+
+{- | Make 'PipeCommand' runnable as a command -}
+instance (CommandLike a, CommandLike b) =&gt;
+         CommandLike (PipeCommand a b) where
+    invoke (PipeCommand src dest) closefds input =
+        do res1 &lt;- invoke src closefds input
+           output1 &lt;- cmdOutput res1
+           res2 &lt;- invoke dest closefds output1
+           return $ CommandResult (cmdOutput res2) (getEC res1 res2)
+
+{- | Given two 'CommandResult' items, evaluate the exit codes for
+both and then return a "combined" exit code.  This will be ExitSuccess
+if both exited successfully.  Otherwise, it will reflect the first
+error encountered. -}
+getEC :: CommandResult -&gt; CommandResult -&gt; IO ProcessStatus 
+getEC src dest =
+    do sec &lt;- getExitStatus src
+       dec &lt;- getExitStatus dest
+       case sec of
+            Exited ExitSuccess -&gt; return dec
+            x -&gt; return x
+
+{- | Different ways to get data from 'run'.
+
+ * IO () runs, throws an exception on error, and sends stdout to stdout
+
+ * IO String runs, throws an exception on error, reads stdout into
+   a buffer, and returns it as a string.
+
+ * IO [String] is same as IO String, but returns the results as lines
+
+ * IO ProcessStatus runs and returns a ProcessStatus with the exit
+   information.  stdout is sent to stdout.  Exceptions are not thrown.
+
+ * IO (String, ProcessStatus) is like IO ProcessStatus, but also
+   includes a description of the last command in the pipe to have
+   an error (or the last command, if there was no error)
+
+ * IO Int returns the exit code from a program directly.  If a signal
+   caused the command to be reaped, returns 128 + SIGNUM.
+
+ * IO Bool returns True if the program exited normally (exit code 0,
+   not stopped by a signal) and False otherwise.
+
+-}
+class RunResult a where
+    {- | Runs a command (or pipe of commands), with results presented
+       in any number of different ways. -}
+    run :: (CommandLike b) =&gt; b -&gt; a
+
+-- | Utility function for use by 'RunResult' instances
+setUpCommand :: CommandLike a =&gt; a -&gt; IO CommandResult
+setUpCommand cmd = 
+    do -- Initialize our closefds list
+       closefds &lt;- newMVar []
+
+       -- Invoke the command
+       invoke cmd closefds []
+
+instance RunResult (IO ()) where
+    run cmd = run cmd &gt;&gt;= checkResult
+
+instance RunResult (IO ProcessStatus) where
+    run cmd = 
+        do res &lt;- setUpCommand cmd
+
+           -- Process its output
+           output &lt;- cmdOutput res
+           putStr output
+
+           getExitStatus res
+           
+instance RunResult (IO Int) where
+    run cmd = do rc &lt;- run cmd
+                 case rc of
+                   Exited (ExitSuccess) -&gt; return 0
+                   Exited (ExitFailure x) -&gt; return x
+                   Terminated x -&gt; return (128 + (fromIntegral x))
+                   Stopped x -&gt; return (128 + (fromIntegral x))
+
+instance RunResult (IO Bool) where
+    run cmd = do rc &lt;- run cmd
+                 return ((rc::Int) == 0)
+
+instance RunResult (IO [String]) where
+    run cmd = do r &lt;- run cmd
+                 return (lines r)
+
+instance RunResult (IO String) where
+    run cmd =
+        do res &lt;- setUpCommand cmd
+
+           output &lt;- cmdOutput res
+
+           -- Force output to be buffered
+           evaluate (length output)
+
+           ec &lt;- getExitStatus res
+           checkResult ec
+           return output
+
+checkResult :: ProcessStatus -&gt; IO ()
+checkResult ps =
+    case ps of
+         Exited (ExitSuccess) -&gt; return ()
+         x -&gt; fail (show x)
+
+{- | A convenience function.  Refers only to the version of 'run'
+that returns @IO ()@.  This prevents you from having to cast to it
+all the time when you do not care about the result of 'run'.
+-}
+runIO :: CommandLike a =&gt; a -&gt; IO ()
+runIO = run
+
+------------------------------------------------------------
+-- Utility Functions
+------------------------------------------------------------
+cd :: FilePath -&gt; IO ()
+cd = setCurrentDirectory
+ 
+{- | Takes a string and sends it on as standard output.
+The input to this function is never read. -}
+echo :: String -&gt; String -&gt; String
+echo inp _ = inp
+
+-- | Search for the regexp in the lines.  Return those that match.
+grep :: String -&gt; [String] -&gt; [String]
+grep pat = filter (ismatch regex)
+    where regex = mkRegex pat
+          ismatch r inp = case matchRegex r inp of
+                            Nothing -&gt; False
+                            Just _ -&gt; True
+
+{- | Creates the given directory.  A value of 0o755 for mode would be typical.
+An alias for System.Posix.Directory.createDirectory. -}
+mkdir :: FilePath -&gt; FileMode -&gt; IO ()
+mkdir = createDirectory
+
+{- | Remove duplicate lines from a file (like Unix uniq).
+Takes a String representing a file or output and plugs it through 
+lines and then nub to uniqify on a line basis. -}
+uniq :: String -&gt; String
+uniq = unlines . nub . lines
+
+-- | Count number of lines.  wc -l
+wcL, wcW :: [String] -&gt; [String]
+wcL inp = [show (genericLength inp :: Integer)]
+
+-- | Count number of words in a file (like wc -w)
+wcW inp = [show ((genericLength $ words $ unlines inp) :: Integer)]
+
+sortLines :: [String] -&gt; [String]
+sortLines = sort
+
+-- | Count the lines in the input
+countLines :: String -&gt; IO String
+countLines = return . (++) "\n" . show . length . lines</pre><p id="x_vb"><a name="x_vb"></a>
+        Here's what has changed:
+      </p><div class="itemizedlist"><ul type="disc"><li><p id="x_wb"><a name="x_wb"></a>A new <code class="literal">CommandLike</code> instance for
+            <code class="literal">String</code> that uses the shell to evaluate and invoke the string.
+        </p></li><li><p id="x_xb"><a name="x_xb"></a>New <code class="literal">CommandLike</code> instances for 
+            <code class="literal">String -&gt; IO String</code> and various other types
+            that are implemented in terms of this one.  These process Haskell
+            functions as commands.
+        </p></li><li><p id="x_yb"><a name="x_yb"></a>A new <code class="literal">RunResult</code> typeclass that
+            defines a function <code class="literal">run</code> that returns
+            information about the command in many different ways.  See the
+            comments in the source for more information.
+            <code class="literal">runIO</code> is now just an alias for one particular
+            <code class="literal">RunResult</code> instance.
+        </p></li><li><p id="x_zb"><a name="x_zb"></a>A few utility functions providing Haskell
+            implementations of familiar Unix shell commands.
+          </p></li></ul></div><p id="x_Ac"><a name="x_Ac"></a>
+        Let's try out the new shell features.  First, let's make sure that
+        the command we used in the previous example still works.  Then,
+        let's try it using a more shell-like syntax.
+      </p><a name="rp.ghci:shell"></a><pre id="rp.ghci:shell" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load RunProcess.hs</code></strong>
+
+RunProcess.hs:14:7:
+    Could not find module `Text.Regex':
+      Use -v to see a list of the files searched for.
+Failed, modules loaded: none.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runIO $ ("ls", ["/etc"]) -|- ("grep", ["m.*ap"]) -|- ("tr", ["a-z", "A-Z"])</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `runIO'
+
+&lt;interactive&gt;:1:25: Not in scope: `-|-'
+
+&lt;interactive&gt;:1:49: Not in scope: `-|-'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runIO $ "ls /etc" -|- "grep 'm.*ap'" -|- "tr a-z A-Z"</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `runIO'
+
+&lt;interactive&gt;:1:18: Not in scope: `-|-'
+
+&lt;interactive&gt;:1:37: Not in scope: `-|-'
+</pre><p id="x_Bc"><a name="x_Bc"></a>
+        That was a lot easier to type.  Let's try substituting our native
+        Haskell implementation of <code class="literal">grep</code> and try out some
+        other new features as well:
+      </p><a name="rp.ghci:hask"></a><pre id="rp.ghci:hask" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>runIO $ "ls /etc" -|- grep "m.*ap" -|- "tr a-z A-Z"</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `runIO'
+
+&lt;interactive&gt;:1:18: Not in scope: `-|-'
+
+&lt;interactive&gt;:1:22: Not in scope: `grep'
+
+&lt;interactive&gt;:1:35: Not in scope: `-|-'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>run $ "ls /etc" -|- grep "m.*ap" -|- "tr a-z A-Z" :: IO String</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `run'
+
+&lt;interactive&gt;:1:16: Not in scope: `-|-'
+
+&lt;interactive&gt;:1:20: Not in scope: `grep'
+
+&lt;interactive&gt;:1:33: Not in scope: `-|-'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>run $ "ls /etc" -|- grep "m.*ap" -|- "tr a-z A-Z" :: IO [String]</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `run'
+
+&lt;interactive&gt;:1:16: Not in scope: `-|-'
+
+&lt;interactive&gt;:1:20: Not in scope: `grep'
+
+&lt;interactive&gt;:1:33: Not in scope: `-|-'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>run $ "ls /nonexistant" :: IO String</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `run'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>run $ "ls /nonexistant" :: IO ProcessStatus</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `run'
+
+&lt;interactive&gt;:1:30:
+    Not in scope: type constructor or class `ProcessStatus'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>run $ "ls /nonexistant" :: IO Int</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `run'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runIO $ echo "Line1\nHi, test\n" -|- "tr a-z A-Z" -|- sortLines</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `runIO'
+
+&lt;interactive&gt;:1:8: Not in scope: `echo'
+
+&lt;interactive&gt;:1:33: Not in scope: `-|-'
+
+&lt;interactive&gt;:1:50: Not in scope: `-|-'
+
+&lt;interactive&gt;:1:54: Not in scope: `sortLines'
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="systems.piping.finalwords">Final Words on Pipes</h3></div></div></div><p id="x_Cc"><a name="x_Cc"></a>
+        We have developed a sophisticated system here.  We warned you earlier
+        that POSIX can be complex.  One other thing we need to highlight: you
+        must always make sure to evaluate the <code class="literal">String</code> returned by these
+        functions before you attempt to evaluate the exit code of the child
+        process.  The child process will often not exit until it can write all of
+        its data, and if you do this in the wrong order, your program will
+        hang.
+      </p><p id="x_Dc"><a name="x_Dc"></a>
+        In this chapter, we have developed, from the ground up, a simplified
+        version of HSH.  If you wish to use these shell-like capabilities in
+        your own programs, we recommend HSH instead of the example developed
+        here due to optimizations present in HSH.  HSH also comes with a
+        larger set of utility functions and more capabilities, but the source
+        code behind the library is much more complex and large.  Some of the
+        utility functions presented here, in fact, were copied verbatim from
+        HSH.  HSH is available from <a class="ulink" href="http://software.complete.org/hsh" target="_top">http://software.complete.org/hsh</a>.
+      </p></div></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id664371" href="#id664371" class="para">43</a>] </sup>There is also a function
+          <code class="literal">system</code> that takes only a single string and
+          passes it through the shell to parse.  We recommend using
+          <code class="literal">rawSystem</code> instead, because the shell attaches
+          special meaning to certain characters, which could lead to security
+          issues or unexpected behavior.</p></div><div class="footnote"><p><sup>[<a name="ftn.id664881" href="#id664881" class="para">44</a>] </sup>Some will note that UTC defines leap seconds
+            at irregular intervals.  The POSIX standard, which Haskell
+            follows, states that every day is exactly 86,400 seconds in
+            length in its representation, so you need not be concerned about
+            leap seconds when performing routine calculations.  The exact
+            manner of handling leap seconds is system-dependent and complex,
+            though usually it can be explained as having a "long second".
+            This nuance is generally only of interest when performing precise
+            subsecond calculations.</p></div><div class="footnote"><p><sup>[<a name="ftn.id666386" href="#id666386" class="para">45</a>] </sup>It is not normally possible to set the
+            ctime on POSIX systems.</p></div><div class="footnote"><p><sup>[<a name="ftn.id666704" href="#id666704" class="para">46</a>] </sup>The main exception is
+            threads, which are not cloned.</p></div><div class="footnote"><p><sup>[<a name="ftn.id667005" href="#id667005" class="para">47</a>] </sup>This extension is well-supported in the
+            Haskell community; Hugs users can access the same thing with
+            <code class="literal">hugs -98 +o</code>.</p></div><div class="footnote"><p><sup>[<a name="ftn.id667108" href="#id667108" class="para">48</a>] </sup>The
+            Haskell library HSH provides a similar API to that presented
+            here, but uses a more efficient (and much more complex) mechanism
+            of connecting pipes directly between external processes without
+            the data needing to pass through Haskell.  This is the same
+            approach that the shell takes, and reduces the CPU load of
+            handling piping.</p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="error-handling.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="using-databases.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 19. Error handling </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 21. Using Databases</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

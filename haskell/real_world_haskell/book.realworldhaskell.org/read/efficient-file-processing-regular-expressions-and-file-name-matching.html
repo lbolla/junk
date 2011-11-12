@@ -1,0 +1,919 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 8. Efficient file processing, regular expressions, and file name matching</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="io.html" title="Chapter 7. I/O"><link rel="next" href="io-case-study-a-library-for-searching-the-filesystem.html" title="Chapter 9. I/O case study: a library for searching the filesystem"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 8. Efficient file processing, regular expressions, and file name matching</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="io.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="io-case-study-a-library-for-searching-the-filesystem.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="glob"><div class="titlepage"><div><div><h2 class="title">Chapter 8. Efficient file processing, regular expressions, and file name matching</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#glob-bytestring">Efficient file processing</a></span></dt><dd><dl><dt><span class="sect2"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#id616188">Binary I/O and qualified imports</a></span></dt><dt><span class="sect2"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#id616460">Text I/O</a></span></dt></dl></dd><dt><span class="sect1"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#glob.fnmatch">File name matching</a></span></dt><dt><span class="sect1"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#glob.regex">Regular expressions in Haskell</a></span></dt><dd><dl><dt><span class="sect2"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#id617251">The many types of result</a></span></dt></dl></dd><dt><span class="sect1"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#id617813">More about regular expressions</a></span></dt><dd><dl><dt><span class="sect2"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#id617819">Mixing and matching string types</a></span></dt><dt><span class="sect2"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#id618092">Other things you should know</a></span></dt></dl></dd><dt><span class="sect1"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#glob.translate">Translating a glob pattern into a regular
+      expression</a></span></dt><dd><dl><dt><span class="sect2"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#id618693">Exercises</a></span></dt></dl></dd><dt><span class="sect1"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#glob.lazyfn">An important aside: writing lazy functions</a></span></dt><dt><span class="sect1"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#glob.use">Making use of our pattern matcher</a></span></dt><dd><dl><dt><span class="sect2"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#id619751">Exercises</a></span></dt></dl></dd><dt><span class="sect1"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#glob.errapi">Handling errors through API design</a></span></dt><dd><dl><dt><span class="sect2"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#id620049">Exercises</a></span></dt></dl></dd><dt><span class="sect1"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#glob.work">Putting our code to work</a></span></dt><dt><span class="sect1"><a href="efficient-file-processing-regular-expressions-and-file-name-matching.html#glob.exercises">Exercises</a></span></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="glob-bytestring">Efficient file processing</h2></div></div></div><p id="x_HE1"><a name="x_HE1"></a>This simple microbenchmark reads a text file full of
+      numbers, and prints their sum.</p><a name="SumFile.hs:main"></a><pre id="SumFile.hs:main" class="programlisting">-- file: ch08/SumFile.hs
+main = do
+    contents &lt;- getContents
+    print (sumFile contents)
+  where sumFile = sum . map read . words</pre><p id="x_IE1"><a name="x_IE1"></a>Although the <span class="type">String</span> type is the default used
+      for reading and writing files, it is not efficient, so a simple
+      program like this will perform badly.</p><p id="x_JE1"><a name="x_JE1"></a>A <span class="type">String</span> is represented as a list of
+      <span class="type">Char</span> values; each element of a list is allocated
+      individually, and has some book-keeping overhead. These factors
+      affect the memory consumption and performance of a program that
+      must read or write text or binary data.  On simple benchmarks
+      like this, even programs written in interpreted languages such
+      as Python can outperform Haskell code that uses
+      <span class="type">String</span> by an order of magnitude.</p><p id="x_KE1"><a name="x_KE1"></a>The <code class="code">bytestring</code> library provides a fast, cheap
+      alternative to the <span class="type">String</span> type. Code written with
+      <code class="code">bytestring</code> can often match or exceed the
+      performance and memory footprint of C, while maintaining
+      Haskell's expressivity and conciseness.</p><p id="x_LE1"><a name="x_LE1"></a>The library supplies two modules.  Each defines functions
+      that are nearly drop-in replacements for their
+      <span class="type">String</span> counterparts.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_ME1"><a name="x_ME1"></a>The <code class="code">Data.ByteString</code> module defines a
+	  <span class="emphasis"><em>strict</em></span> type named
+	  <span class="type">ByteString</span>.  This represents a string of binary
+	  or text data in a single array.</p></li><li><p id="x_NE1"><a name="x_NE1"></a>The <code class="code">Data.ByteString.Lazy</code> module provides a
+	  <span class="emphasis"><em>lazy</em></span> type, also named
+	  <span class="type">ByteString</span>.  This represents a string of data
+	  as a list of <span class="emphasis"><em>chunks</em></span>, arrays of up to
+	  64KB in size.</p></li></ul></div><p id="x_OE1"><a name="x_OE1"></a>Each <span class="type">ByteString</span> type performs better under
+      particular circumstances.  For streaming a large quantity
+      (hundreds of megabytes to terabytes) of data, the lazy
+      <span class="type">ByteString</span> type is usually best.  Its chunk size is
+      tuned to be friendly to a modern CPU's L1 cache, and a garbage
+      collector can quickly discard chunks of streamed data that are
+      no longer being used.</p><p id="x_PE1"><a name="x_PE1"></a>The strict <span class="type">ByteString</span> type performs best for
+      applications that are less concerned with memory footprint, or
+      that need to access data randomly.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id616188">Binary I/O and qualified imports</h3></div></div></div><p id="x_QE1"><a name="x_QE1"></a>Let's develop a small function to illustrate some of the
+	<code class="code">ByteString</code> API.  We will determine if a file is
+	an ELF object file: this is the format used for executables on
+	almost all modern Unix-like systems.</p><p id="x_RE1"><a name="x_RE1"></a>This is a simple matter of looking at the first four bytes
+	in the file, and seeing if they match a specific sequence of
+	bytes.  A byte sequence that identifies a file's type is often
+	known as a <span class="emphasis"><em>magic number</em></span>.</p><a name="ElfMagic.hs:hasElfMagic"></a><pre id="ElfMagic.hs:hasElfMagic" class="programlisting">-- file: ch08/ElfMagic.hs
+import qualified Data.ByteString.Lazy as L
+
+hasElfMagic :: L.ByteString -&gt; Bool
+hasElfMagic content = L.take 4 content == elfMagic
+    where elfMagic = L.pack [0x7f, 0x45, 0x4c, 0x46]</pre><p id="x_SE1"><a name="x_SE1"></a>We import the <code class="code">ByteString</code> modules using
+	Haskell's <span class="emphasis"><em>qualified import</em></span> syntax, the
+	<code class="code">import qualified</code> that we see above. This lets us
+	refer to a module with a name of our choosing.</p><p id="x_TE1"><a name="x_TE1"></a>For instance, when we want to refer to the lazy
+	<code class="code">ByteString</code> module's <code class="function">take</code>
+	function, we must write <code class="function">L.take</code>, since we
+	imported the module under the name <code class="code">L</code>.  	If we
+	are not explicit about which version of e.g.
+	<code class="function">take</code> we want, the compiler will report an
+	error.</p><p id="x_UE1"><a name="x_UE1"></a>We will always use qualified import syntax with the
+	<code class="code">ByteString</code> modules, because they provide many
+	functions that have the same names as Prelude
+	functions.</p><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_VE1"><a name="x_VE1"></a>Qualified imports make it easy to switch between
+	  <span class="type">ByteString</span> types. All you should need to do is
+	  modify an <code class="code">import</code> declaration at the top of your
+	  source file; the rest of your code will probably not need
+	  any changes.  You can thus handily benchmark the two types,
+	  to see which is best suited to your application's needs</p></td></tr></table></div><p id="x_WE1"><a name="x_WE1"></a>Whether or not we use qualified imports, we can always use
+	the entire name of a module to identify something
+	unambiguously.  For instance, both
+	<code class="function">Data.ByteString.Lazy.length</code> and
+	<code class="function">L.length</code> identify the same function, as
+	do <code class="function">Prelude.sum</code> and
+	<code class="function">sum</code>.</p><p id="x_XE1"><a name="x_XE1"></a>The lazy and strict <code class="code">ByteString</code> modules are
+	intended for binary I/O.  The Haskell data type for
+	representing bytes is <span class="type">Word8</span>; if we need to refer
+	to it by name, we import it from the <code class="code">Data.Word</code>
+	module.</p><p id="x_YE1"><a name="x_YE1"></a>The <code class="function">L.pack</code> function takes a list of
+	<span class="type">Word8</span> values, and packs them into a lazy
+	<span class="type">ByteString</span>.  (The <code class="function">L.unpack</code>
+	function performs the reverse conversion.)  Our
+	<code class="function">hasElfMagic</code> function simply compares the
+	first four bytes of a <code class="code">ByteString</code> against a magic
+	number.</p><p id="x_ZE1"><a name="x_ZE1"></a>We are writing in classic Haskell style, where our
+	<code class="function">hasElfMagic</code> function does not perform
+	I/O.  Here is the function that uses it on a file.</p><a name="ElfMagic.hs:isElfFile"></a><pre id="ElfMagic.hs:isElfFile" class="programlisting">-- file: ch08/ElfMagic.hs
+isElfFile :: FilePath -&gt; IO Bool
+isElfFile path = do
+  content &lt;- L.readFile path
+  return (hasElfMagic content)</pre><p id="x_aE1"><a name="x_aE1"></a>The <code class="function">L.readFile</code> function is the lazy
+	<span class="type">ByteString</span> equivalent of
+	<code class="function">readFile</code>.  It operates lazily, reading
+	the file as data is demanded.  It is also efficient, reading
+	chunks of up to 64KB at once.  The lazy
+	<span class="type">ByteString</span> is a good choice for our task: since
+	we only need to read at most the first four bytes of the file,
+	we can safely use this function on a file of any size.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id616460">Text I/O</h3></div></div></div><p id="x_bE1"><a name="x_bE1"></a>For convenience, the <code class="code">bytestring</code> library
+	provides two other modules with limited text I/O capabilities,
+	<code class="code">Data.ByteString.Char8</code> and
+	<code class="code">Data.ByteString.Lazy.Char8</code>.  These expose
+	individual string elements as <span class="type">Char</span> instead of
+	<span class="type">Word8</span>.</p><div class="warning"><table border="0" summary="Warning"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="/support/figs/warning.png"></td><th align="left">Warning</th></tr><tr><td align="left" valign="top"><p id="x_cE1"><a name="x_cE1"></a>The functions in these modules only work with byte-sized
+	  <span class="type">Char</span> values, so they are only suitable for use
+	  with ASCII and some European character sets.  Values above
+	  255 are truncated.</p></td></tr></table></div><p id="x_dE1"><a name="x_dE1"></a>The character-oriented <code class="code">bytestring</code> modules
+	provide useful functions for text processing.  Here is a file
+	that contains monthly stock prices for a well-known Internet
+	company from mid-2008.</p><a name="highestClose.ghci:readFile"></a><pre id="highestClose.ghci:readFile" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>putStr =&lt;&lt; readFile "prices.csv"</code></strong>
+Date,Open,High,Low,Close,Volume,Adj Close
+2008-08-01,20.09,20.12,19.53,19.80,19777000,19.80
+2008-06-30,21.12,21.20,20.60,20.66,17173500,20.66
+2008-05-30,27.07,27.10,26.63,26.76,17754100,26.76
+2008-04-30,27.17,27.78,26.76,27.41,30597400,27.41
+</pre><p id="x_eE1"><a name="x_eE1"></a>How can we find the highest closing price from a series of
+	entries like this?  Closing prices are in the fourth
+	comma-separated column.  This function obtains a closing price
+	from one line of data.</p><a name="HighestClose.hs:closing"></a><pre id="HighestClose.hs:closing" class="programlisting">-- file: ch08/HighestClose.hs
+import qualified Data.ByteString.Lazy.Char8 as L
+
+closing = readPrice . (!!4) . L.split ','</pre><p id="x_fE1"><a name="x_fE1"></a>Since this function is written in point-free style, we
+	read from right to left.  The <code class="function">L.split</code>
+	function splits a lazy <span class="type">ByteString</span> into a list of
+	them, every time it finds a matching character.  The
+	<code class="function">(!!)</code> operator retrieves the
+	<span class="emphasis"><em>k</em></span>th element of a list.  Our
+	<code class="function">readPrice</code> function turns a string
+	representing a fractional price into a whole number.</p><a name="HighestClose.hs:readPrice"></a><pre id="HighestClose.hs:readPrice" class="programlisting">-- file: ch08/HighestClose.hs
+readPrice :: L.ByteString -&gt; Maybe Int
+readPrice str =
+    case L.readInt str of
+      Nothing             -&gt; Nothing
+      Just (dollars,rest) -&gt;
+        case L.readInt (L.tail rest) of
+          Nothing           -&gt; Nothing
+          Just (cents,more) -&gt;
+            Just (dollars * 100 + cents)</pre><p id="x_gE1"><a name="x_gE1"></a>We use the <code class="function">L.readInt</code> function, which
+	parses an integer.  It returns both the integer and the
+	remainder of the string once a run of digits is consumed. Our
+	definition is slightly complicated by
+	<code class="function">L.readInt</code> returning <code class="code">Nothing</code>
+	if parsing fails.</p><p id="x_hE1"><a name="x_hE1"></a>Our function for finding the highest closing price is
+	straightforward.</p><a name="HighestClose.hs:highestClose"></a><pre id="HighestClose.hs:highestClose" class="programlisting">-- file: ch08/HighestClose.hs
+highestClose = maximum . (Nothing:) . map closing . L.lines
+
+highestCloseFrom path = do
+    contents &lt;- L.readFile path
+    print (highestClose contents)</pre><p id="x_iE1"><a name="x_iE1"></a>We use one trick to work around the fact that we cannot
+	supply an empty list to the <code class="function">maximum</code>
+	function.</p><a name="highestClose.ghci:maximum"></a><pre id="highestClose.ghci:maximum" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>maximum [3,6,2,9]</code></strong>
+9
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>maximum []</code></strong>
+*** Exception: Prelude.maximum: empty list
+</pre><p id="x_jE1"><a name="x_jE1"></a>Since we do not want our code to throw an exception if we
+	have no stock data, the <code class="code">(Nothing:)</code> expression
+	ensures that the list of <span class="type">Maybe Int</span> values that we
+	supply to <code class="function">maximum</code> will never be
+	empty.</p><a name="highestClose.ghci:maxList"></a><pre id="highestClose.ghci:maxList" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>maximum [Nothing, Just 1]</code></strong>
+Just 1
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>maximum [Nothing]</code></strong>
+Nothing
+</pre><p id="x_kE1"><a name="x_kE1"></a>Does our function work?</p><a name="highestClose.ghci:highestClose"></a><pre id="highestClose.ghci:highestClose" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load HighestClose</code></strong>
+[1 of 1] Compiling Main             ( HighestClose.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>highestCloseFrom "prices.csv"</code></strong>
+Loading package array-0.1.0.0 ... linking ... done.
+Loading package bytestring-0.9.0.1 ... linking ... done.
+Just 2741
+</pre><p id="x_lE1"><a name="x_lE1"></a>Since we have separated our I/O from our logic, we can
+	test the no-data case without having to create an empty
+	file.</p><a name="highestClose.ghci:highestEmpty"></a><pre id="highestClose.ghci:highestEmpty" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>highestClose L.empty</code></strong>
+Nothing
+</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="glob.fnmatch">File name matching</h2></div></div></div><p id="x_BF"><a name="x_BF"></a>Many systems-oriented programming languages
+      provide library routines that let us match a file name against a
+      pattern, or that will give a list of files that match the
+      pattern.  In other languages, this function is often named
+      <code class="function">fnmatch</code>.)  Although Haskell's standard
+      library generally has good systems programming
+      facilities, it doesn't provide these kinds of pattern matching
+      functions.  We'll take this as an opportunity to develop our
+      own.</p><p id="x_CF"><a name="x_CF"></a>The kinds of patterns we'll be dealing with are
+      commonly referred to as <span class="emphasis"><em>glob patterns</em></span> (the
+      term we'll use), wild card patterns, or shell-style patterns.
+      They have just a few simple rules.  You probably already know
+      them, but we'll quickly recap here.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_DF"><a name="x_DF"></a>Matching a string against a pattern starts at the
+	  beginning of the string, and finishes at the end.</p></li><li><p id="x_EF"><a name="x_EF"></a>Most literal characters match themselves.  For example,
+	  the text <code class="literal">foo</code> in a pattern will match
+	  <code class="literal">foo</code>, and only <code class="literal">foo</code>, in
+	  an input string.</p></li><li><p id="x_FF"><a name="x_FF"></a>The <code class="literal">*</code> (asterisk) character
+	  means “<span class="quote">match anything</span>”; it will match any text,
+	  including the empty string.  For instance, the pattern
+	  <code class="code">foo*</code> will match any string that begins with
+	  <code class="code">foo</code>, such as <code class="code">foo</code> itself,
+	  <code class="code">foobar</code>, or <code class="code">foo.c</code>.  The pattern
+	  <code class="code">quux*.c</code> will match any string that begins with
+	  <code class="code">quux</code> and ends in <code class="code">.c</code>, such as
+	  <code class="code">quuxbaz.c</code>.</p></li><li><p id="x_GF"><a name="x_GF"></a>The <code class="literal">?</code> (question mark)
+	  character matches any single character.  The pattern
+	  <code class="code">pic??.jpg</code> will match names like
+	  <code class="code">picaa.jpg</code> or <code class="code">pic01.jpg</code>.</p></li><li><p id="x_HF"><a name="x_HF"></a>A <code class="literal">[</code> (open square bracket) character
+	  begins a <span class="emphasis"><em>character class</em></span>, which is
+	  ended by a <code class="literal">]</code>.  Its meaning is
+	  “<span class="quote">match any character in this class</span>”.  A
+	  character class can be <span class="emphasis"><em>negated</em></span> by
+	  following the opening <code class="literal">[</code> with a
+	  <code class="literal">!</code>, so that it means “<span class="quote">match any
+	    character <span class="emphasis"><em>not</em></span> in this
+	    class</span>”.</p><p id="x_IF"><a name="x_IF"></a>As a shorthand, a character followed by a
+	  <code class="literal">-</code> (dash), followed by another character,
+	  denotes a <span class="emphasis"><em>range</em></span>: “<span class="quote">match any
+	    character within this set</span>”.</p><p id="x_JF"><a name="x_JF"></a>Character classes have an added subtlety; they
+	  can't be empty.  The first character after the opening
+	  <code class="literal">[</code> or <code class="literal">[!</code> is part of the
+	  class, so we can write a class containing the
+	  <code class="literal">]</code> character as
+	  <code class="literal">[]aeiou]</code>.  The pattern
+	  <code class="code">pic[0-9].[pP][nN][gG]</code> will match a name
+	  consisting of the string <code class="code">pic</code>, followed by a
+	  single digit, followed by any capitalization of the strig
+	  <code class="code">.png</code>.</p></li></ul></div><p id="x_KF"><a name="x_KF"></a>While Haskell doesn't provide a way to match glob
+      patterns among its standard libraries, it provides a good
+      regular expression matching library.  Glob patterns are nothing
+      more than cut-down regular expressions with slightly different
+      syntax.  It's easy to convert glob patterns into regular
+      expressions, but to do so, we must first understand how to use
+      regular expressions in Haskell.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="glob.regex">Regular expressions in Haskell</h2></div></div></div><p id="x_LF"><a name="x_LF"></a>In this section, we will be assume that you are
+      already familiar with regular expressions by way of some other
+      language, such as Python, Perl, or Java<sup>[<a name="id617121" href="#ftn.id617121" class="footnote">26</a>]</sup>.</p><p id="x_nE1"><a name="x_nE1"></a>For brevity, we will abbreviate “<span class="quote">regular
+	expression</span>” as <span class="emphasis"><em>regexp</em></span> from here
+      on.</p><p id="x_oE1"><a name="x_oE1"></a>Rather than introduce regexps as something new, we will
+      focus on what's different about regexp handling in Haskell,
+      compared to other languages. Haskell's regular expression
+      matching libraries are a lot more expressive than those of other
+      languages, so there's plenty to talk about.</p><p id="x_MF"><a name="x_MF"></a>To begin our exploration of the regexp libraries,
+      the only module we'll need to work with is <code class="classname">Text.Regex.Posix</code>.  As usual, the
+      most convenient way to explore this module is by interacting
+      with it via <span class="command"><strong>ghci</strong></span>.</p><a name="regexp.ghci:load"></a><pre id="regexp.ghci:load" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Text.Regex.Posix</code></strong>
+</pre><p id="x_NF"><a name="x_NF"></a>The only function that we're likely to need for
+      normal use is the regexp matching function, an infix operator
+      named <code class="function">(=~)</code> (borrowed from Perl).  The first
+      hurdle to overcome is that Haskell's regexp libraries make heavy
+      use of polymorphism.  As a result, the type signature of the
+      <code class="function">(=~)</code> operator is difficult to understand,
+      so we will not explain it here. </p><p id="x_OF"><a name="x_OF"></a>The
+      <code class="function">=~</code> operator uses typeclasses for both of
+      its arguments, and also for its return type.  The first argument
+      (on the left of the <code class="function">=~</code>) is the text to
+      match; the second (on the right) is the regular expression to
+      match against.  We can pass either a <span class="type">String</span> or a
+      <span class="type">ByteString</span> as either argument.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id617251">The many types of result</h3></div></div></div><p id="x_PF"><a name="x_PF"></a>The <code class="function">=~</code> operator is
+	polymorphic in its return type, so the Haskell compiler needs
+	some way to know what type of result we would like.  In real
+	code, it may be able to infer the right type, due to the way
+	we subsequently use the result.  But such cues are often
+	lacking when we're exploring with <span class="command"><strong>ghci</strong></span>.  If
+	we omit a specific type for the result, we'll get an
+	error from the interpreter, as it does not have enough
+	information to successfuly infer the result type.</p><p id="x_QF"><a name="x_QF"></a>When <span class="command"><strong>ghci</strong></span> can't infer the
+	<code class="varname">target</code> type, we tell it
+	what we'd like the type to be.  If we want a result of
+	type <span class="type">Bool</span>, we'll get a pass/fail answer.</p><a name="regexp.ghci:bool.passfail"></a><pre id="regexp.ghci:bool.passfail" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"my left foot" =~ "foo" :: Bool</code></strong>
+Loading package array-0.1.0.0 ... linking ... done.
+Loading package containers-0.1.0.1 ... linking ... done.
+Loading package bytestring-0.9.0.1 ... linking ... done.
+Loading package mtl-1.1.0.0 ... linking ... done.
+Loading package regex-base-0.93.1 ... linking ... done.
+Loading package regex-posix-0.93.1 ... linking ... done.
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"your right hand" =~ "bar" :: Bool</code></strong>
+False
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"your right hand" =~ "(hand|foot)" :: Bool</code></strong>
+True
+</pre><p id="x_RF"><a name="x_RF"></a>In the bowels of the regexp libraries,
+	there's a typeclass named <code class="classname">RegexContext</code>
+	that describes how a <code class="varname">target</code> type should behave; the
+	base library defines many instances of this typeclass for us.
+	The <span class="type">Bool</span> type is an instance of this typeclass,
+	so we get back a usable result. Another such instance is
+	<span class="type">Int</span>, which gives us a count of the number of
+	times the regexp matches.</p><a name="regexp.ghci:int.count"></a><pre id="regexp.ghci:int.count" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"a star called henry" =~ "planet" :: Int</code></strong>
+0
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"honorificabilitudinitatibus" =~ "[aeiou]" :: Int</code></strong>
+13
+</pre><p id="x_SF"><a name="x_SF"></a>If we ask for a <span class="type">String</span> result,
+	we'll get the first substring that matches, or an empty string
+	if nothing matches.</p><a name="regexp.ghci:string"></a><pre id="regexp.ghci:string" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"I, B. Ionsonii, uurit a lift'd batch" =~ "(uu|ii)" :: String</code></strong>
+"ii"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"hi ludi, F. Baconis nati, tuiti orbi" =~ "Shakespeare" :: String</code></strong>
+""
+</pre><p id="x_TF"><a name="x_TF"></a>Another valid type of result is
+	<span class="type">[String]</span>, which returns a list of
+	<span class="emphasis"><em>all</em></span> matching strings.</p><a name="regexp.ghci:list.string"></a><pre id="regexp.ghci:list.string" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"I, B. Ionsonii, uurit a lift'd batch" =~ "(uu|ii)" :: [String]</code></strong>
+
+&lt;interactive&gt;:1:0:
+    No instance for (RegexContext Regex [Char] [String])
+      arising from a use of `=~' at &lt;interactive&gt;:1:0-50
+    Possible fix:
+      add an instance declaration for
+      (RegexContext Regex [Char] [String])
+    In the expression:
+            "I, B. Ionsonii, uurit a lift'd batch" =~ "(uu|ii)" :: [String]
+    In the definition of `it':
+        it = "I, B. Ionsonii, uurit a lift'd batch" =~ "(uu|ii)" ::
+             [String]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"hi ludi, F. Baconis nati, tuiti orbi" =~ "Shakespeare" :: [String]</code></strong>
+
+&lt;interactive&gt;:1:0:
+    No instance for (RegexContext Regex [Char] [String])
+      arising from a use of `=~' at &lt;interactive&gt;:1:0-54
+    Possible fix:
+      add an instance declaration for
+      (RegexContext Regex [Char] [String])
+    In the expression:
+            "hi ludi, F. Baconis nati, tuiti orbi" =~ "Shakespeare" :: [String]
+    In the definition of `it':
+        it = "hi ludi, F. Baconis nati, tuiti orbi" =~ "Shakespeare" ::
+             [String]
+</pre><div class="note"><table border="0" summary="Note: Watch out for String results"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Watch out for String results</th></tr><tr><td align="left" valign="top"><p id="x_UF"><a name="x_UF"></a>If you want a result that's a plain
+	  <span class="type">String</span>, beware.  Since
+	  <code class="function">(=~)</code> returns an empty string to signify
+	  “<span class="quote">no match</span>”, this poses an obvious difficulty if
+	  the empty string could also be a valid match for the regexp.
+	  If such a case arises, you should use a different return
+	  type instead, such as <span class="type">[String]</span>.</p></td></tr></table></div><p id="x_VF"><a name="x_VF"></a>That's about it for “<span class="quote">simple</span>” result
+	types, but we're not by any means finished.  Before we
+	continue, let's use a single pattern for our remaining
+	examples.  We can define this pattern as a variable in <span class="command"><strong>ghci</strong></span>,
+	to save a little typing.</p><a name="regexp.ghci:let"></a><pre id="regexp.ghci:let" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let pat = "(foo[a-z]*bar|quux)"</code></strong>
+</pre><p id="x_WF"><a name="x_WF"></a>We can obtain quite a lot of information about
+	the context in which a match occurs.  If we ask for a
+	<span class="type">(String, String, String)</span> tuple, we'll get back the text
+	<span class="emphasis"><em>before</em></span> the first match, the text
+	<span class="emphasis"><em>of</em></span> that match, and the text that
+	<span class="emphasis"><em>follows</em></span> it.</p><a name="regexp.ghci:3tuple.match"></a><pre id="regexp.ghci:3tuple.match" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"before foodiebar after" =~ pat :: (String,String,String)</code></strong>
+("before ","foodiebar"," after")
+</pre><p id="x_XF"><a name="x_XF"></a>If the match fails, the entire text is returned
+	as the “<span class="quote">before</span>” element of the tuple, with the
+	other two elements left empty.</p><a name="regexp.ghci:3tuple.nomatch"></a><pre id="regexp.ghci:3tuple.nomatch" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"no match here" =~ pat :: (String,String,String)</code></strong>
+("no match here","","")
+</pre><p id="x_YF"><a name="x_YF"></a>Asking for a four-element tuple gives us a
+	fourth element that's a list of all groups in the pattern that
+	matched.</p><a name="regexp.ghci:4tuple"></a><pre id="regexp.ghci:4tuple" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"before foodiebar after" =~ pat :: (String,String,String,[String])</code></strong>
+("before ","foodiebar"," after",["foodiebar"])
+</pre><p id="x_ZF"><a name="x_ZF"></a>We can get  numeric information about matches,
+	too.  A pair of <span class="type">Int</span>s gives us the starting offset
+	of the first match, and its length.  If we ask for a list of
+	these pairs, we'll get this information for all
+	matches.</p><a name="regexp.ghci:2tuple.match"></a><pre id="regexp.ghci:2tuple.match" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"before foodiebar after" =~ pat :: (Int,Int)</code></strong>
+(7,9)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"i foobarbar a quux" =~ pat :: [(Int,Int)]</code></strong>
+
+&lt;interactive&gt;:1:0:
+    No instance for (RegexContext Regex [Char] [(Int, Int)])
+      arising from a use of `=~' at &lt;interactive&gt;:1:0-26
+    Possible fix:
+      add an instance declaration for
+      (RegexContext Regex [Char] [(Int, Int)])
+    In the expression: "i foobarbar a quux" =~ pat :: [(Int, Int)]
+    In the definition of `it':
+        it = "i foobarbar a quux" =~ pat :: [(Int, Int)]
+</pre><p id="x_aF"><a name="x_aF"></a>A failed match is represented by the value
+	<code class="literal">-1</code> as the first element of the tuple (the
+	match offset) if we've asked for a single tuple, or an empty
+	list if we've asked for a list of tuples.</p><a name="regexp.ghci:2tuple.nomatch"></a><pre id="regexp.ghci:2tuple.nomatch" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"eleemosynary" =~ pat :: (Int,Int)</code></strong>
+(-1,0)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"mondegreen" =~ pat :: [(Int,Int)]</code></strong>
+
+&lt;interactive&gt;:1:0:
+    No instance for (RegexContext Regex [Char] [(Int, Int)])
+      arising from a use of `=~' at &lt;interactive&gt;:1:0-18
+    Possible fix:
+      add an instance declaration for
+      (RegexContext Regex [Char] [(Int, Int)])
+    In the expression: "mondegreen" =~ pat :: [(Int, Int)]
+    In the definition of `it': it = "mondegreen" =~ pat :: [(Int, Int)]
+</pre><p id="x_bF"><a name="x_bF"></a>This is not a comprehensive list of built-in
+	instances of the <code class="classname">RegexContext</code>
+	typeclass.  For a complete list, see the documentation for the
+	<code class="classname">Text.Regex.Base.Context</code>
+	module.</p><p id="x_pE1"><a name="x_pE1"></a>This ability to make a function polymorphic in its result
+	type is an unusual feature for a statically typed language.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id617813">More about regular expressions</h2></div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id617819">Mixing and matching string types</h3></div></div></div><p id="x_cF"><a name="x_cF"></a>As we noted earlier, the <code class="function">=~</code>
+	operator uses typeclasses for its argument types and its
+	return type. We can use either <span class="type">String</span> or
+	strict <span class="type">ByteString</span> values for both the
+	regular expression and the text to match against.</p><a name="regexp.ghci:mix.pack"></a><pre id="regexp.ghci:mix.pack" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Data.ByteString.Char8</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type pack "foo"</code></strong>
+pack "foo" :: ByteString
+</pre><p id="x_dF"><a name="x_dF"></a>We can then try using different combinations of
+	<span class="type">String</span> and <span class="type">ByteString</span>.</p><a name="regexp.ghci:mix.simple"></a><pre id="regexp.ghci:mix.simple" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>pack "foo" =~ "bar" :: Bool</code></strong>
+False
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"foo" =~ pack "bar" :: Int</code></strong>
+0
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>pack "foo" =~ pack "o" :: [(Int, Int)]</code></strong>
+
+&lt;interactive&gt;:1:0:
+    No instance for (RegexContext Regex ByteString [(Int, Int)])
+      arising from a use of `=~' at &lt;interactive&gt;:1:0-21
+    Possible fix:
+      add an instance declaration for
+      (RegexContext Regex ByteString [(Int, Int)])
+    In the expression: pack "foo" =~ pack "o" :: [(Int, Int)]
+    In the definition of `it':
+        it = pack "foo" =~ pack "o" :: [(Int, Int)]
+</pre><p id="x_eF"><a name="x_eF"></a>However, we need to be aware that if we want a
+	string value in the result of a match, the text we're matching
+	against must be the same type of string.  Let's see what this
+	means in practice.</p><a name="regexp.ghci:mix.match"></a><pre id="regexp.ghci:mix.match" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>pack "good food" =~ ".ood" :: [ByteString]</code></strong>
+
+&lt;interactive&gt;:1:0:
+    No instance for (RegexContext Regex ByteString [ByteString])
+      arising from a use of `=~' at &lt;interactive&gt;:1:0-25
+    Possible fix:
+      add an instance declaration for
+      (RegexContext Regex ByteString [ByteString])
+    In the expression: pack "good food" =~ ".ood" :: [ByteString]
+    In the definition of `it':
+        it = pack "good food" =~ ".ood" :: [ByteString]
+</pre><p id="x_fF"><a name="x_fF"></a>In the above example, we've used the
+	<code class="function">pack</code> to turn a <span class="type">String</span> into a
+	<span class="type">ByteString</span>.  The type checker accepts this
+	because <span class="type">ByteString</span> appears in the result type.
+	But if we try getting a <span class="type">String</span> out, that
+	<span class="emphasis"><em>won't</em></span> work.</p><a name="regexp.ghci:mix.nomatch"></a><pre id="regexp.ghci:mix.nomatch" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"good food" =~ ".ood" :: [ByteString]</code></strong>
+
+&lt;interactive&gt;:1:0:
+    No instance for (RegexContext Regex [Char] [ByteString])
+      arising from a use of `=~' at &lt;interactive&gt;:1:0-20
+    Possible fix:
+      add an instance declaration for
+      (RegexContext Regex [Char] [ByteString])
+    In the expression: "good food" =~ ".ood" :: [ByteString]
+    In the definition of `it':
+        it = "good food" =~ ".ood" :: [ByteString]
+</pre><p id="x_gF"><a name="x_gF"></a>We can easily fix this problem by making the
+	string types of the left hand side and the result match once
+	again.</p><a name="regexp.ghci:mix.rematch"></a><pre id="regexp.ghci:mix.rematch" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"good food" =~ ".ood" :: [String]</code></strong>
+
+&lt;interactive&gt;:1:0:
+    No instance for (RegexContext Regex [Char] [String])
+      arising from a use of `=~' at &lt;interactive&gt;:1:0-20
+    Possible fix:
+      add an instance declaration for
+      (RegexContext Regex [Char] [String])
+    In the expression: "good food" =~ ".ood" :: [String]
+    In the definition of `it': it = "good food" =~ ".ood" :: [String]
+</pre><p id="x_hF"><a name="x_hF"></a>This restriction does <span class="emphasis"><em>not</em></span>
+	apply to the type of the regexp we're matching against.  It
+	can be either a <span class="type">String</span> or
+	<span class="type">ByteString</span>, unconstrained by the other types in
+	use.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id618092">Other things you should know</h3></div></div></div><p id="x_iF"><a name="x_iF"></a>When you look through Haskell library
+	documentation, you'll see several regexp-related modules.  The
+	modules under <code class="classname">Text.Regex.Base</code> define the common
+	API adhered to by all of the other regexp modules. It's
+	possible to have multiple implementations of the regexp API
+	installed at one time.  At the time of writing,
+	<span class="application">GHC</span> is bundled with one
+	implementation, <code class="classname">Text.Regex.Posix</code>.  As its name
+	suggests, this package provides POSIX regexp semantics.</p><div class="note"><table border="0" summary="Note: Perl and POSIX regular expressions"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Perl and POSIX regular expressions</th></tr><tr><td align="left" valign="top"><p id="x_jF"><a name="x_jF"></a>If you're coming to Haskell from a language
+	  like Perl, Python, or Java, and you've used regular
+	  expressions in one of those languages, you should be aware
+	  that the POSIX regexps handled by the <code class="classname">Text.Regex.Posix</code> module are
+	  different in some significant ways from Perl-style regexps.
+	  Here are a few of the more notable differences.</p><p id="x_kF"><a name="x_kF"></a>Perl regexp engines perform left-biased matching
+	  when matching alternatives, whereas POSIX engines choose the
+	  greediest match.  What this means is that given a regexp of
+	  <code class="literal">(foo|fo*)</code> and a text string of
+	  <code class="literal">foooooo</code>, a Perl-style engine will give a
+	  match of <code class="literal">foo</code> (the leftmost match), while
+	  a POSIX engine will match the entire string (the greediest
+	  match).</p><p id="x_lF"><a name="x_lF"></a>POSIX regexps have less uniform syntax than
+	  Perl-style regexps.  They also lack a number of capabilities
+	  provided by Perl-style regexps, such as zero-width
+	  assertions and control over greedy matching.</p></td></tr></table></div><p id="x_mF"><a name="x_mF"></a>Other Haskell regexp packages are available for
+	download from Hackage.  Some provide better performance than
+	the current POSIX engine (e.g. <code class="code">regex-tdfa</code>);
+	others provide the Perl-style matching that most programmers
+	are now familiar with (e.g. <code class="code">regex-pcre</code>). All
+	follow the standard API that we have covered in this
+	section.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="glob.translate">Translating a glob pattern into a regular
+      expression</h2></div></div></div><p id="x_nF"><a name="x_nF"></a>Now that we've seen the myriad of ways to match text against
+      regular expressions, let's turn our attention back to glob
+      patterns.  We want to write a function that will take a glob
+      pattern and return its representation as a regular expression.
+      Both glob patterns and regexps are text strings, so the type
+      that our function ought to have seems clear.</p><a name="GlobRegex.hs:type"></a><pre id="GlobRegex.hs:type" class="programlisting">-- file: ch08/GlobRegex.hs
+module GlobRegex
+    (
+      globToRegex
+    , matchesGlob
+    ) where
+
+import Text.Regex.Posix ((=~))
+
+globToRegex :: String -&gt; String</pre><p id="x_oF"><a name="x_oF"></a>The regular expression that we generate must be
+      <span class="emphasis"><em>anchored</em></span>, so that it starts matching from
+      the beginning of a string and finishes at the end.</p><a name="GlobRegex.hs:rooted"></a><pre id="GlobRegex.hs:rooted" class="programlisting">-- file: ch08/GlobRegex.hs
+globToRegex cs = '^' : globToRegex' cs ++ "$"</pre><p id="x_pF"><a name="x_pF"></a>Recall that the <span class="type">String</span> is just a synonym for
+      <span class="type">[Char]</span>, a list of <span class="type">Char</span>s.  The
+      <code class="function">:</code> operator puts a value (the
+      <code class="literal">^</code> character in this case) onto the front of a
+      list, where the list is the value returned by the yet-to-be-seen
+      <code class="function">globToRegex'</code> function.</p><div class="note"><table border="0" summary="Note: Using a value before defining it"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Using a value before defining it</th></tr><tr><td align="left" valign="top"><p id="x_rF"><a name="x_rF"></a>Haskell does not require that a value or function be
+	declared or defined in a source file before it's used.  It's
+	perfectly normal for a definition to come
+	<span class="emphasis"><em>after</em></span> the first place it's used.  The
+	Haskell compiler doesn't care about ordering at this level.
+	This grants us the flexibility to structure our code in the
+	manner that makes most logical sense to us, rather than follow
+	an order that makes the compiler writer's life easiest.</p><p id="x_sF"><a name="x_sF"></a>Haskell module writers often use this
+	flexibility to put “<span class="quote">more important</span>” code earlier
+	in a source file, relegating “<span class="quote">plumbing</span>” to later.
+	This is exactly how we are presenting the
+	<code class="function">globToRegex</code> function and its helpers
+	here.</p></td></tr></table></div><p id="x_tF"><a name="x_tF"></a>With the regular expression rooted, the
+      <code class="function">globToRegex'</code> function will do the bulk of
+      the translation work.  We'll use the convenience of Haskell's
+      pattern matching to enumerate each of the cases we'll need to
+      cover.</p><a name="GlobRegex.hs:asterisk"></a><pre id="GlobRegex.hs:asterisk" class="programlisting">-- file: ch08/GlobRegex.hs
+globToRegex' :: String -&gt; String
+globToRegex' "" = ""
+
+globToRegex' ('*':cs) = ".*" ++ globToRegex' cs
+
+globToRegex' ('?':cs) = '.' : globToRegex' cs
+
+globToRegex' ('[':'!':c:cs) = "[^" ++ c : charClass cs
+globToRegex' ('[':c:cs)     = '['  :  c : charClass cs
+globToRegex' ('[':_)        = error "unterminated character class"
+
+globToRegex' (c:cs) = escape c ++ globToRegex' cs</pre><p id="x_uF"><a name="x_uF"></a>Our first
+      clause stipulates that if we hit the end of our glob pattern (by
+      which time we'll be looking at the empty string), we return
+      <code class="literal">$</code>, the regular expression symbol for
+      “<span class="quote">match end-of-line</span>”.  Following this is a series of
+      clauses that switch our pattern from glob syntax to regexp syntax.
+      The last clause passes every other character through, possibly
+      escaping it first.</p><p id="x_CG"><a name="x_CG"></a>The <code class="function">escape</code> function ensures that the
+      regexp engine will not interpret certain characters as pieces of
+      regular expression syntax.</p><a name="GlobRegex.hs:escape"></a><pre id="GlobRegex.hs:escape" class="programlisting">-- file: ch08/GlobRegex.hs
+escape :: Char -&gt; String
+escape c | c `elem` regexChars = '\\' : [c]
+         | otherwise = [c]
+    where regexChars = "\\+()^$.{}]|"</pre><p id="x_DG"><a name="x_DG"></a>The <code class="function">charClass</code> helper function
+      only checks that a character class is correctly terminated.  It
+      passes its input through unmodified until it hits a
+      <code class="literal">]</code>, when it hands control back to
+      <code class="function">globToRegex'</code>.</p><a name="GlobRegex.hs:charClass"></a><pre id="GlobRegex.hs:charClass" class="programlisting">-- file: ch08/GlobRegex.hs
+charClass :: String -&gt; String
+charClass (']':cs) = ']' : globToRegex' cs
+charClass (c:cs)   = c : charClass cs
+charClass []       = error "unterminated character class"</pre><p id="x_EG"><a name="x_EG"></a>Now that we've finished defining
+      <code class="function">globToRegex</code> and its helpers, let's load it
+      into <span class="command"><strong>ghci</strong></span> and try it out.</p><a name="glob-regexp.ghci:real"></a><pre id="glob-regexp.ghci:real" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load GlobRegex.hs</code></strong>
+[1 of 1] Compiling GlobRegex        ( GlobRegex.hs, interpreted )
+Ok, modules loaded: GlobRegex.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Text.Regex.Posix</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>globToRegex "f??.c"</code></strong>
+Loading package array-0.1.0.0 ... linking ... done.
+Loading package containers-0.1.0.1 ... linking ... done.
+Loading package bytestring-0.9.0.1 ... linking ... done.
+Loading package mtl-1.1.0.0 ... linking ... done.
+Loading package regex-base-0.93.1 ... linking ... done.
+Loading package regex-posix-0.93.1 ... linking ... done.
+"^f..\\.c$"
+</pre><p id="x_FG"><a name="x_FG"></a>Sure enough, that looks like a reasonable regexp.  Can we
+      use it to match against a string?</p><a name="glob-regexp.ghci:matches"></a><pre id="glob-regexp.ghci:matches" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"foo.c" =~ globToRegex "f??.c" :: Bool</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"test.c" =~ globToRegex "t[ea]s*" :: Bool</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"taste.txt" =~ globToRegex "t[ea]s*" :: Bool</code></strong>
+True
+</pre><p id="x_GG"><a name="x_GG"></a>It works!  Now let's play around a little with
+      <span class="command"><strong>ghci</strong></span>.  We can create a temporary definition for
+      <code class="function">fnmatch</code> and try it out.</p><a name="glob-regexp.ghci:fnmatch"></a><pre id="glob-regexp.ghci:fnmatch" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let fnmatch pat name  =  name =~ globToRegex pat :: Bool</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type fnmatch</code></strong>
+fnmatch :: (RegexLike Regex source1) =&gt; String -&gt; source1 -&gt; Bool
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>fnmatch "d*" "myname"</code></strong>
+False
+</pre><p id="x_HG"><a name="x_HG"></a>The name <code class="function">fnmatch</code> doesn't
+      really have the “<span class="quote">Haskell nature</span>”, though.  By far
+      the most common Haskell style is for functions to have
+      descriptive, “<span class="quote">camel cased</span>” names.  Camel casing
+      concatenates words, capitalising all but possibly the first
+      word.  For instance, the words “<span class="quote">file name matches</span>”
+      would become the name <code class="code">fileNameMatches</code>. The name
+      “<span class="quote">camel case</span>” comes from the “<span class="quote">humps</span>”
+      introduced by the capital letters.  In our library, we'll give
+      this function the name <code class="function">matchesGlob</code>.</p><a name="GlobRegex.hs:matchesGlob"></a><pre id="GlobRegex.hs:matchesGlob" class="programlisting">-- file: ch08/GlobRegex.hs
+matchesGlob :: FilePath -&gt; String -&gt; Bool
+name `matchesGlob` pat = name =~ globToRegex pat</pre><p id="x_qE1"><a name="x_qE1"></a>You may have noticed that most of the names that we have
+      used for variables so far have been short.  As a rule of thumb,
+      descriptive variable names are more useful in longer function
+      definitions, as they aid readability.  For a two-line function,
+      a long variable name has less value.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id618693">Exercises</h3></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id618703"></a><a name="ch07.q.error"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_JG"><a name="x_JG"></a>Use <span class="command"><strong>ghci</strong></span> to explore what happens if you pass a
+	      malformed pattern, such as <code class="literal">[</code>, to
+	      <code class="function">globToRegex</code>.  Write a small
+	      function that calls <code class="function">globToRegex</code>,
+	      and pass it a malformed pattern.  What happens?</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id618745"></a><a name="id618747"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_KG"><a name="x_KG"></a>While filesystems on Unix are usually sensitive to
+	      case (e.g. “<span class="quote">G</span>” vs. “<span class="quote">g</span>”) in
+	      file names, Windows filesystems are not. Add a parameter
+	      to the <code class="function">globToRegex</code> and
+	      <code class="function">matchesGlob</code> functions that allows
+	      control over case sensitive matching.</p></td></tr></tbody></table></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="glob.lazyfn">An important aside: writing lazy functions</h2></div></div></div><p id="x_LG"><a name="x_LG"></a>In an imperative language, the
+      <code class="function">globToRegex'</code> function is one that we'd
+      usually express as a loop. For example, Python's standard
+      <span class="package">fnmatch</span> module includes a function named
+      <code class="function">translate</code> that does exactly the same job as
+      our <code class="function">globToRegex</code> function.  It's written as
+      a loop.</p><p id="x_MG"><a name="x_MG"></a>If you've been exposed to functional programming
+      through a language such as Scheme or ML, you've probably had
+      drilled into your head the notion that “<span class="quote">the way to emulate
+	a loop is via tail recursion</span>”.</p><p id="x_NG"><a name="x_NG"></a>Looking at the <code class="function">globToRegex'</code>
+      function, we can see that it is <span class="emphasis"><em>not</em></span> tail
+      recursive. To see why, examine its final clause again
+      (several of its other clauses are structured similarly).</p><a name="GlobRegex.hs:last"></a><pre id="GlobRegex.hs:last" class="programlisting">-- file: ch08/GlobRegex.hs
+globToRegex' (c:cs) = escape c ++ globToRegex' cs</pre><p id="x_OG"><a name="x_OG"></a>It applies itself recursively, and the result of
+      the recursive application is used as a parameter to the
+      <code class="function">(++)</code> function. Since the recursive
+      application <span class="emphasis"><em>isn't</em></span> the last thing the
+      function does, <code class="function">globToRegex'</code> is not tail
+      recursive. </p><p id="x_PG"><a name="x_PG"></a>Why is our definition of this function not tail
+      recursive?  The answer lies with Haskell's non-strict evaluation
+      strategy.  Before we start talking about that, let's quickly
+      talk about why, in a traditional language, we'd try to
+      avoid this kind of recursive definition.  Here is a simpler
+      definition, of the <code class="function">(++)</code> operator.  It is
+      recursivem, but not tail recursive.</p><a name="append.hs:append"></a><pre id="append.hs:append" class="programlisting">-- file: ch08/append.hs
+(++) :: [a] -&gt; [a] -&gt; [a]
+
+(x:xs) ++ ys = x : (xs ++ ys)
+[]     ++ ys = ys</pre><p id="x_rE1"><a name="x_rE1"></a>In a strict language, if we evaluate <code class="code">"foo" ++
+	"bar"</code>, the entire list is constructed, then returned.
+      Non-strict evaluation defers much of the work until it is
+      needed.</p><p id="x_bG"><a name="x_bG"></a>If we demand an element of the expression
+      <code class="code">"foo" ++ "bar"</code>, the first pattern of the function's
+      definition matches, and we return the expression <code class="code">x : (xs
+	++ ys)</code>. Because the <code class="code">(:)</code> constructor is
+      non-strict, the evaluation of <code class="code">xs ++ ys</code> can be
+      deferred: we generate more elements of the result at whatever
+      rate they are demanded.  When we generate more of the result, we
+      will no longer be using <code class="varname">x</code>, so the garbage
+      collector can reclaim it.  Since we generate elements of the
+      result on demand, and do not hold onto parts that we are done
+      with, the compiler can evaluate our code in constant
+      space.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="glob.use">Making use of our pattern matcher</h2></div></div></div><p id="x_cG"><a name="x_cG"></a>It's all very well to have a function that can
+      match glob patterns, but we'd like to be able to put this to
+      practical use. On Unix-like systems, the
+      <code class="function">glob</code> function returns the names of all
+      files and directories that match a given glob pattern.  Let's
+      build a similar function in Haskell. Following the Haskell norm
+      of descriptive naming, we'll call our function
+      <code class="function">namesMatching</code>.</p><a name="Glob.hs:module"></a><pre id="Glob.hs:module" class="programlisting">-- file: ch08/Glob.hs
+module Glob (namesMatching) where</pre><p id="x_sE1"><a name="x_sE1"></a>We specify that <code class="function">namesMatching</code> is the
+      only name that users of our <code class="code">Glob</code> module will be
+      able to see.</p><p id="x_dG"><a name="x_dG"></a>This function will obviously have to manipulate
+      filesystem paths a lot, splicing and joining them as it goes.
+      We'll need to use a few previously unfamiliar modules along the
+      way.</p><p id="x_eG"><a name="x_eG"></a>The <code class="classname">System.Directory</code> module provides
+      standard functions for working with directories and their
+      contents.</p><a name="Glob.hs:import.directory"></a><pre id="Glob.hs:import.directory" class="programlisting">-- file: ch08/Glob.hs
+import System.Directory (doesDirectoryExist, doesFileExist,
+                         getCurrentDirectory, getDirectoryContents)</pre><p id="x_fG"><a name="x_fG"></a>The <code class="classname">System.FilePath</code> module abstracts the
+      details of an operating system's path name conventions.  The
+      <code class="function">(&lt;/&gt;)</code> function joins two path
+      components.</p><a name="filepath.ghci:join"></a><pre id="filepath.ghci:join" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m +System.FilePath</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"foo" &lt;/&gt; "bar"</code></strong>
+Loading package filepath-1.1.0.0 ... linking ... done.
+"foo/bar"
+</pre><p id="x_tE1"><a name="x_tE1"></a>The name of the
+      <code class="function">dropTrailingPathSeparator</code> function is
+      perfectly descriptive.</p><a name="filepath.ghci:dropTrailingPathSeparator"></a><pre id="filepath.ghci:dropTrailingPathSeparator" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>dropTrailingPathSeparator "foo/"</code></strong>
+"foo"
+</pre><p id="x_uE1"><a name="x_uE1"></a>The <code class="function">splitFileName</code> function splits a
+      path at the last slash.</p><a name="filepath.ghci:splitFileName"></a><pre id="filepath.ghci:splitFileName" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>splitFileName "foo/bar/Quux.hs"</code></strong>
+("foo/bar/","Quux.hs")
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>splitFileName "zippity"</code></strong>
+("","zippity")
+</pre><p id="x_vE1"><a name="x_vE1"></a>Using <code class="code">System.FilePath</code> together with the
+      <code class="classname">System.Directory</code> module, we
+      can write a portable <code class="function">namesMatching</code> function
+      that will run on both Unix-like and Windows systems.</p><a name="Glob.hs:import.filepath"></a><pre id="Glob.hs:import.filepath" class="programlisting">-- file: ch08/Glob.hs
+import System.FilePath (dropTrailingPathSeparator, splitFileName, (&lt;/&gt;))</pre><p id="x_gG"><a name="x_gG"></a>In this module, we'll be emulating a
+      “<span class="quote">for</span>” loop; getting our first taste of exception
+      handling in Haskell; and of course using the
+      <code class="function">matchesGlob</code> function we just wrote.</p><a name="Glob.hs:import.rest"></a><pre id="Glob.hs:import.rest" class="programlisting">-- file: ch08/Glob.hs
+import Control.Exception (handle)
+import Control.Monad (forM)
+import GlobRegex (matchesGlob)</pre><p id="x_hG"><a name="x_hG"></a>Since directories and files live in the
+      “<span class="quote">real world</span>” of activities that have effects, our
+      globbing function will have to have <code class="classname">IO</code> in
+      its result type.</p><p id="x_iG"><a name="x_iG"></a>If the string we're passed contains no pattern
+      characters, we simply check that the given name exists in the
+      filesystem.  (Notice that we use Haskell's function guard syntax
+      here to write a nice tidy definition.  An “<span class="quote">if</span>”
+      would do, but isn't as aesthetically pleasing.)</p><a name="Glob.hs:namesMatching"></a><pre id="Glob.hs:namesMatching" class="programlisting">-- file: ch08/Glob.hs
+isPattern :: String -&gt; Bool
+isPattern = any (`elem` "[*?")
+
+namesMatching pat
+  | not (isPattern pat) = do
+    exists &lt;- doesNameExist pat
+    return (if exists then [pat] else [])</pre><p id="x_jG"><a name="x_jG"></a>The name <code class="function">doesNameExist</code> refers
+      to a function that we will define shortly.</p><p id="x_kG"><a name="x_kG"></a>What if the string <span class="emphasis"><em>is</em></span> a glob
+      pattern?  Our function definition continues.</p><a name="Glob.hs:namesMatching2"></a><pre id="Glob.hs:namesMatching2" class="programlisting">-- file: ch08/Glob.hs
+  | otherwise = do
+    case splitFileName pat of
+      ("", baseName) -&gt; do
+          curDir &lt;- getCurrentDirectory
+          listMatches curDir baseName
+      (dirName, baseName) -&gt; do
+          dirs &lt;- if isPattern dirName
+                  then namesMatching (dropTrailingPathSeparator dirName)
+                  else return [dirName]
+          let listDir = if isPattern baseName
+                        then listMatches
+                        else listPlain
+          pathNames &lt;- forM dirs $ \dir -&gt; do
+                           baseNames &lt;- listDir dir baseName
+                           return (map (dir &lt;/&gt;) baseNames)
+          return (concat pathNames)</pre><p id="x_lG"><a name="x_lG"></a>We use <code class="function">splitFileName</code> to split
+      the string into a pair of “<span class="quote">everything but the final
+	name</span>” and “<span class="quote">the final name</span>”.  If the first
+      element is empty, we're looking for a pattern in the current
+      directory. Otherwise, we must check the directory name and see
+      if it contains patterns.  If it does not, we create a singleton
+      list of the directory name.  If it contains a pattern, we list
+      all of the matching directories.</p><div class="note"><table border="0" summary="Note: Things to watch out for"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Things to watch out for</th></tr><tr><td align="left" valign="top"><p id="x_nG"><a name="x_nG"></a>The <code class="classname">System.FilePath</code> module can be a
+	little tricky.  Above is a case in point; the
+	<code class="function">splitFileName</code> function leaves a trailing
+	slash on the end of the directory name that it returns.</p><a name="glob.ghci:split"></a><pre id="glob.ghci:split" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +System.FilePath</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>splitFileName "foo/bar"</code></strong>
+Loading package filepath-1.1.0.0 ... linking ... done.
+("foo/","bar")
+</pre><p id="x_oG"><a name="x_oG"></a>If we didn't remember (or know enough) to remove
+	that slash, we'd recurse endlessly in
+	<code class="function">namesMatching</code>, because of the following
+	behaviour of <code class="function">splitFileName</code>.</p><a name="glob.ghci:tricksy"></a><pre id="glob.ghci:tricksy" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>splitFileName "foo/"</code></strong>
+("foo/","")
+</pre><p id="x_pG"><a name="x_pG"></a>You can guess what happened to us that led us to
+	add this note!</p></td></tr></table></div><p id="x_qG"><a name="x_qG"></a>Finally, we collect all matches in every
+      directory, giving us a list of lists, and concatenate them into
+      a single list of names.</p><p id="x_rG"><a name="x_rG"></a>The unfamiliar <code class="function">forM</code> function
+      above acts a little like a “<span class="quote">for</span>” loop: it maps its
+      second argument (an action) over its first (a list), and returns
+      the list of results.</p><p id="x_sG"><a name="x_sG"></a>We have a few loose ends to clean up.  The first
+      is the definition of the <code class="function">doesNameExist</code>
+      function, used above.  The <code class="classname">System.Directory</code> module doesn't let
+      us check to see if a name exists in the filesystem.  It forces
+      us to decide whether we want to check for a file or a directory.
+      This API is ungainly, so we roll the two checks into a single
+      function.  In the name of performance, we make the check for a
+      file first, since files are far more common than
+      directories.</p><a name="Glob.hs:doesNameExist"></a><pre id="Glob.hs:doesNameExist" class="programlisting">-- file: ch08/Glob.hs
+doesNameExist :: FilePath -&gt; IO Bool
+
+doesNameExist name = do
+    fileExists &lt;- doesFileExist name
+    if fileExists
+      then return True
+      else doesDirectoryExist name</pre><p id="x_tG"><a name="x_tG"></a>We have two other functions to define, each of
+      which returns a list of names in a directory.  The
+      <code class="function">listMatches</code> function returns a list of all
+      files matching the given glob pattern in a directory.</p><a name="Glob.hs:listMatches"></a><pre id="Glob.hs:listMatches" class="programlisting">-- file: ch08/Glob.hs
+listMatches :: FilePath -&gt; String -&gt; IO [String]
+listMatches dirName pat = do
+    dirName' &lt;- if null dirName
+                then getCurrentDirectory
+                else return dirName
+    handle (const (return [])) $ do
+        names &lt;- getDirectoryContents dirName'
+        let names' = if isHidden pat
+                     then filter isHidden names
+                     else filter (not . isHidden) names
+        return (filter (`matchesGlob` pat) names')
+
+isHidden ('.':_) = True
+isHidden _       = False</pre><p id="x_wE1"><a name="x_wE1"></a>The <code class="function">listPlain</code> function returns either
+      an empty or singleton list, depending on whether the single name
+      it's passed exists.</p><a name="Glob.hs:listPlain"></a><pre id="Glob.hs:listPlain" class="programlisting">-- file: ch08/Glob.hs
+listPlain :: FilePath -&gt; String -&gt; IO [String]
+listPlain dirName baseName = do
+    exists &lt;- if null baseName
+              then doesDirectoryExist dirName
+              else doesNameExist (dirName &lt;/&gt; baseName)
+    return (if exists then [baseName] else [])</pre><p id="x_uG"><a name="x_uG"></a>If we look closely at the definition of
+      <code class="function">listMatches</code> above, we'll see a call to a
+      function named <code class="function">handle</code>.  Earlier on, we
+      imported this from the <code class="classname">Control.Exception</code> module; as that
+      import implies, this gives us our first taste of exception
+      handling in Haskell.  Let's drop into <span class="command"><strong>ghci</strong></span> and see what we can
+      find out.</p><a name="handle.ghci:type.handle"></a><pre id="handle.ghci:type.handle" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Control.Exception</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type handle</code></strong>
+handle :: (Exception -&gt; IO a) -&gt; IO a -&gt; IO a
+</pre><p id="x_vG"><a name="x_vG"></a>This is telling us that
+      <code class="function">handle</code> takes two arguments.  The first is a
+      function that is passed an exception value, and can have side
+      effects (see the <span class="type">IO</span> type in its return value); this
+      is the handler to run if an exception is thrown. The second
+      argument is the code that might throw an exception.</p><p id="x_wG"><a name="x_wG"></a>As for the exception handler, the type of the
+      <code class="function">handle</code> constrains it to return the same
+      type of value as the body of code that threw the exception.  So
+      its choices are to either throw an exception or, as in our case,
+      return a list of <span class="type">String</span>s.</p><p id="x_xG"><a name="x_xG"></a>The <code class="function">const</code> function takes two
+      arguments; it always returns its first argument, no matter what
+      its second argument is.</p><a name="handle.ghci:type.const"></a><pre id="handle.ghci:type.const" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type const</code></strong>
+const :: a -&gt; b -&gt; a
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type return []</code></strong>
+return [] :: (Monad m) =&gt; m [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type handle (const (return []))</code></strong>
+handle (const (return [])) :: IO [a] -&gt; IO [a]
+</pre><p id="x_xE1"><a name="x_xE1"></a>We use <code class="function">const</code> to write an exception
+      handler that ignores the exception it is passed.  Instead, it
+      causes our code to return an empty list if we catch an
+      exception.</p><p id="x_yG"><a name="x_yG"></a>We won't have anything more to say about exception
+      handling here.  There's plenty more to cover, though, so we'll
+      be returning to the subject of exceptions in chapter <a class="xref" href="error-handling.html" title="Chapter 19. Error handling">Chapter 19, <i>Error handling</i></a>.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id619751">Exercises</h3></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id619760"></a><a name="id619762"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_zG"><a name="x_zG"></a>Although we've gone to some lengths to
+	      write a portable <code class="function">namesMatching</code>
+	      function, the function uses our case sensitive
+	      <code class="function">globToRegex</code> function.  Find a way
+	      to modify <code class="function">namesMatching</code> to be case
+	      sensitive on Unix, and case insensitive on Windows,
+	      without modifying its type signature.</p></td></tr><tr class="answer"><td align="left" valign="top"></td><td align="left" valign="top"><p id="x_AH"><a name="x_AH"></a><span class="emphasis"><em>Hint</em></span>: consider
+	      reading the documentation for <code class="classname">System.FilePath</code> to look for
+	      a variable that tells us whether we're running on a
+	      Unix-like system, or on Windows.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id619813"></a><a name="id619816"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_BH"><a name="x_BH"></a>If you're on a Unix-like system, look
+	      through the documentation for the <code class="classname">System.Posix.Files</code> module,
+	      and see if you can find a replacement for the
+	      <code class="function">doesNameExist</code> function.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id619840"></a><a name="id619842"></a><p><b>3.</b></p></td><td align="left" valign="top"><p id="x_CH"><a name="x_CH"></a>The <code class="literal">*</code> wild card only
+	      matches names within a single directory.  Many shells
+	      have an extended wild card syntax,
+	      <code class="literal">**</code>, that matches names recursively in
+	      all directories.  For example, <code class="literal">**.c</code>
+	      would mean “<span class="quote">match a name ending in
+		<code class="literal">.c</code> in this directory or any
+		subdirectory at any depth</span>”.  Implement matching
+	      on <code class="literal">**</code> wildcards.</p></td></tr></tbody></table></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="glob.errapi">Handling errors through API design</h2></div></div></div><p id="x_DH"><a name="x_DH"></a>It's not necessarily a disaster if our
+      <code class="function">globToRegex</code> is passed a malformed pattern.
+      Perhaps a user mistyped a pattern, in which case we'd like to be
+      able to report a meaningful error message.</p><p id="x_EH"><a name="x_EH"></a>Calling the <code class="function">error</code> function when this
+      kind of problem occurs can be a drastic response (exploring its
+      consequences was the focus of exercise <a class="xref" href="efficient-file-processing-regular-expressions-and-file-name-matching.html#ch07.q.error" title="Question">Q: 1</a>).  The <code class="function">error</code>
+      throws an exception.  Pure Haskell code cannot deal with
+      exceptions, so control is going to rocket out of our pure code
+      into the nearest caller that lives in <code class="classname">IO</code>
+      and has an appropriate exception handler installed.  If no such
+      handler is installed, the Haskell runtime will default to
+      terminating our program (or print a nasty error message, in
+      <span class="command"><strong>ghci</strong></span>).</p><p id="x_FH"><a name="x_FH"></a>So calling <code class="function">error</code> is a little like
+      pulling the handle of a fighter plane's ejection seat.  We're
+      bailing out of a catastrophic situation that we can't deal with
+      gracefully, and there's likely to be a lot of flaming wreckage
+      strewn about by the time we hit the ground.</p><p id="x_GH"><a name="x_GH"></a>We've established that <code class="function">error</code> is for
+      disasters, but we're still using it in
+      <code class="function">globToRegex</code>.  In that case, malformed input
+      should be rejected, but not turned into a big deal.  What would
+      be a better way to handle this?</p><p id="x_HH"><a name="x_HH"></a>Haskell's type system and libraries to the rescue!  We can
+      encode the possibility of failure in the type signature of
+      <code class="function">globToRegex</code>, using the predefined
+      <span class="type">Either</span> type.</p><a name="GlobRegexEither.hs:type"></a><pre id="GlobRegexEither.hs:type" class="programlisting">-- file: ch08/GlobRegexEither.hs
+type GlobError = String
+
+globToRegex :: String -&gt; Either GlobError String</pre><p id="x_IH"><a name="x_IH"></a>A value returned by <code class="function">globToRegex</code> will
+      now be either <code class="literal">Left "an error message"</code> or
+      <code class="literal">Right "a valid regexp"</code>.  This return type
+      forces our callers to deal with the possibility of error.
+      (You'll find that this use of the <span class="type">Either</span> type
+      occurs frequently in Haskell code.)</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id620049">Exercises</h3></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id620059"></a><a name="id620061"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_JH"><a name="x_JH"></a>Write a version of <code class="function">globToRegex</code>
+	      that uses the type signature above.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id620079"></a><a name="id620081"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_KH"><a name="x_KH"></a>Modify the type signature of
+	      <code class="function">namesMatching</code> so that it encodes
+	      the possibility of a bad pattern, and make it use your
+	      rewritten <code class="function">globToRegex</code>
+	      function.</p><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_yE1"><a name="x_yE1"></a>You may find the amount of work involved to be
+		surprisingly large.  Don't worry; we will introduce
+		more concise and sophisticated ways of dealing with
+		errors in later chapters.</p></td></tr></table></div></td></tr></tbody></table></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="glob.work">Putting our code to work</h2></div></div></div><p id="x_LH"><a name="x_LH"></a>The <code class="function">namesMatching</code> function isn't very
+      exciting by itself, but it's a useful building block.  Combine
+      it with a few more functions, and we can start to do interesting
+      things.</p><p id="x_MH"><a name="x_MH"></a>Here's one such example.  Let's define a
+      <code class="function">renameWith</code> function that, instead of simply
+      renaming a file, applies a function to the file's name, and
+      renames the file to whatever that function returns.</p><a name="Useful.hs:renameWith"></a><pre id="Useful.hs:renameWith" class="programlisting">-- file: ch08/Useful.hs
+import System.FilePath (replaceExtension)
+import System.Directory (doesFileExist, renameDirectory, renameFile)
+import Glob (namesMatching)
+
+renameWith :: (FilePath -&gt; FilePath)
+           -&gt; FilePath
+           -&gt; IO FilePath
+
+renameWith f path = do
+    let path' = f path
+    rename path path'
+    return path'</pre><p id="x_NH"><a name="x_NH"></a>Once again, we work around the ungainly
+      file/directory split in <code class="classname">System.Directory</code> with a helper
+      function.</p><a name="Useful.hs:rename"></a><pre id="Useful.hs:rename" class="programlisting">-- file: ch08/Useful.hs
+rename :: FilePath -&gt; FilePath -&gt; IO ()
+
+rename old new = do
+    isFile &lt;- doesFileExist old
+    let f = if isFile then renameFile else renameDirectory
+    f old new</pre><p id="x_OH"><a name="x_OH"></a>The <code class="classname">System.FilePath</code>
+      module provides many useful functions for manipulating file
+      names.  These functions mesh nicely with our
+      <code class="function">renameWith</code> and
+      <code class="function">namesMatching</code> functions, so that we can
+      quickly use them to create functions with complex behaviour.  As
+      an example, this terse function changes the file name suffixing
+      convention for C++ source files.</p><a name="Useful.hs:cc2cpp"></a><pre id="Useful.hs:cc2cpp" class="programlisting">-- file: ch08/Useful.hs
+cc2cpp =
+  mapM (renameWith (flip replaceExtension ".cpp")) =&lt;&lt; namesMatching "*.cc"</pre><p id="x_PH"><a name="x_PH"></a>The <code class="function">cc2cpp</code> function uses a
+      few functions we'll be seeing over and over.  The
+      <code class="function">flip</code> function takes another function as
+      argument, and swaps the order of its arguments (inspect the type
+      of <code class="function">replaceExtension</code> in <span class="command"><strong>ghci</strong></span> to see why).
+      The <code class="function">=&lt;&lt;</code> function feeds the result of
+      the action on its right side to the action on its left.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="glob.exercises">Exercises</h2></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id620289"></a><a name="id620291"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_QH"><a name="x_QH"></a>Glob patterns are simple enough to interpret that it's
+	    easy to write a matcher directly in Haskell, rather than
+	    going through the regexp machinery.  Give it a try.</p></td></tr></tbody></table></div></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id617121" href="#id617121" class="para">26</a>] </sup>If you are not acquainted with regular expressions, we
+	  recommend Jeffrey Friedl's book <span class="emphasis"><em>Mastering Regular
+	    Expressions</em></span>.</p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="io.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="io-case-study-a-library-for-searching-the-filesystem.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 7. I/O </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 9. I/O case study: a library for searching the
+    filesystem</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

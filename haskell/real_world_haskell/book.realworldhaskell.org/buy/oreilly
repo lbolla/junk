@@ -1,0 +1,1229 @@
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+
+<html>
+    <head>
+        
+
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta content="15137500430" property="fb:page_id"/>
+  <meta content="141300433,549810759" property="fb:admins"/>
+  <meta content="http://covers.oreilly.com/images/9780596514983/bkt.gif" property="og:image"/>
+  <meta content="book" property="og:type"/>
+  <meta content="9780596514983" property="og:isbn"/>
+  <meta content="http://shop.oreilly.com/product/9780596514983.do" property="og:url"/>
+  <meta content="Real World Haskell" property="og:title"/>
+  <meta name="book_title" content="Real World Haskell"/>
+  <meta name="mobileurl" content="http://shop.oreilly.com/product/mobile/9780596514983.do"/>
+  <meta name="author" content="Bryan O'Sullivan, John Goerzen, Donald Bruce Stewart"/>
+  <meta name="publisher" content="O'Reilly Media"/>
+  <meta name="graphic_large" content="http://covers.oreilly.com/images/9780596514983/cat.gif"/>
+  <meta name="graphic_medium" content="http://covers.oreilly.com/images/9780596514983/bkt.gif"/>
+  <meta name="graphic" content="http://covers.oreilly.com/images/9780596514983/sm.gif"/>
+  <meta name="target" content="Real World Haskell, 0596514980, 0-596-51498-0, 9780596514983, 978-0-596-51498-3"/>
+  <meta name="keywords" content="Real World Haskell, languages, functional languages, haskell, programming, functional programming, concurrent, 0-596-51498-0, 0596514980, 9780596514983, 978-0-596-51498-3, Bryan O'Sullivan, John Goerzen, Donald Bruce Stewart,oreilly, O'Reilly, o'reilly"/>
+  <meta name="description" content="This easy-to-use, fast-moving tutorial introduces you to functional programming with Haskell. You'll learn how to use Haskell in a variety of practical ways, from short scripts to large and demanding applications. Real World Haskell takes you through..."/>
+  <meta name="date" content="Nov. 14, 2008"/>
+  <meta name="search_date" content="2008-11-14"/>
+  <meta name="ean" content="9780596514983"/>
+  <meta name="search_isbn" content="9780596514983"/>
+  <meta name="Category" content="Books"/>
+  <meta name="SubCategory" content="Format~Format~Format~Publisher"/>
+  <meta name="SubCategory_Value" content="Print~Ebook~Safari Books Online~O'Reilly Media"/>
+  <meta name="Format" content="Print~Ebook~Safari Books Online~"/>
+  <meta name="status" content="100"/>
+  <meta name="edition" content="1"/>
+  <meta name="edition_full" content="1st Edition"/>
+  <meta name="bookeditionsorder" content="1st Edition"/>
+  <meta name="bookeditionsreference" content="9780596514983"/>
+  <meta name="book.tags" content="oreilly,"/>
+  <meta name="object.type" content="book"/>
+  <meta name="book.title" content="Real World Haskell"/>
+  <meta name="book.author" content="Bryan O'Sullivan, John Goerzen, Donald Bruce Stewart"/>
+  <meta name="book.isbn" content="9780596514983"/>
+  <meta name="book.link" content="http://shop.oreilly.com/product/9780596514983.do"/>
+  <meta name="book.image" content="http://covers.oreilly.com/images/9780596514983/bkt.gif"/>
+  <meta name="book.year" content="2008"/>
+  <meta name="sr" content="307"/><title>Real World Haskell&nbsp;-&nbsp;O'Reilly Media</title>
+	<link rel="canonical" href="http://shop.oreilly.com/product/9780596514983.do"/>
+
+<script type="text/javascript">var _sf_startpt=(new Date()).getTime()</script>
+<script type="text/javascript" src="/includes/jquery/jquery-1.4.min.js"></script>
+<script type="text/javascript" src="/includes/jquery/plugins/jquery.hoverIntent.minified.js"></script>
+<script type="text/javascript" src="/includes/jquery/plugins/jquery.bgiframe.min.js"></script>
+<script type="text/javascript" src="/includes/jquery/plugins/jquery.popDown.js"></script>
+<script type="text/javascript" src="/includes/jquery/plugins/jquery.autocomplete.js"></script>
+
+<script src="/mod/productquickview/includes/pqv.compressed.js"></script>
+
+<link href="/mod/productquickview/includes/themes/default.css" rel="stylesheet" type="text/css"></link>
+<link href="/mod/productquickview/includes/themes/pqv.css" rel="stylesheet" type="text/css"></link>
+
+    <LINK REL="stylesheet" TYPE="text/css" HREF="/includes/stylesheet.css" TITLE="style" />
+  
+        <link rel="shortcut icon" href="/images/oreilly/en_us/favicon.ico" type="image/vnd.microsoft.icon">
+        <script type="text/javascript" src="/includes/headerScripts.js"></script>
+        
+<!-- MyBuys libraries and style sheet - Place in <head> element -->
+<link
+  href="http://t.p.mybuys.com/css/mbstyles.css"
+  type="text/css"
+  rel="stylesheet"
+  id="mybuysstyles">
+<script
+  type="text/javascript"
+  src="http://t.p.mybuys.com/js/mybuys3.js">
+</script>
+<script
+  type="text/javascript"
+  src="http://t.p.mybuys.com/clients/OREILLY/js/setup.js">
+</script>
+
+
+<!-- End MyBuys libraries and style sheet -->
+    </head>
+<body class="main">
+
+
+<script>var iPop_imagePath='/images/oreilly/en_us/';//use this image path along with the IPop.js</script>
+<script src="/includes/lPop.js"></script>
+<!-- removing duplicate autocomplete.js ORLY-634 -->
+<div id="popdiv"></div>
+
+<table width="990" border="0" cellpadding="0" cellspacing="0" class="mainLayoutTable">
+
+  <tr>
+    <td colspan="3" class=navheaderbg>
+		  <div><!--TopNav Start-->
+
+
+<script type="text/javascript">
+  function checkIfDefault(keyword) {
+    var defaultSearchTerm = "Search";
+    if(keyword==defaultSearchTerm) {
+      return '';
+    }
+    else {
+      return keyword;
+    }
+  }
+</script>
+
+
+<div id="header" style="width:990px;">
+
+		<div class="logo">
+			<a href="/home.do"><img src="/images/oreilly/en_us/global/globalnav/logo01.gif" border=0 alt="O'Reilly Media, Inc."></a>
+		</div>
+	
+
+
+	<div class="tools">
+		
+				<p>
+				<a href="https://members.oreilly.com/" class="signInLinkmy">Your Account:&nbsp;</a>
+				<a href="https://members.oreilly.com/" class="signInLink">Sign In</a>
+				</p>
+			
+
+<script  type="text/javascript">
+jQuery(document).ready(function(){
+	jQuery("#globalBasket").popDown({navLink:"/basket.do?nav=%2Fproduct%2Fid%2F103507&gc=1",navOverClass:"globalCartNavOver",closeDelay:300});
+});
+</script>
+
+
+<div
+	id="globalBasket"
+	class="
+		popDownWrapper
+		globalCartWrapper
+		"
+	style="
+		margin:2px 0px 0px 0px;
+		width:239px;
+		">
+
+	<div class="popDownNav globalCartNav">
+
+		<div class="globalCartBasketImg" style=""><img src=/images/oreilly/en_us/global/globalgraphics/basketicon.gif border=0 alt=Shopping Cart></div>
+		<div class="globalCartBasketInfo" style="">
+			<span class="navHeader">Shopping Cart</span>
+			<span class="navQty">0 items</span> <span class="navTotal">$0.00</span>
+		</div>
+	</div>
+	<div class="popDownLayer globalCartLayer" style="margin:3px 0px 0px 0px;">
+
+		
+			<div class="globalCartEmpty">Your shopping cart is empty.</div>
+		  
+
+	</div>
+</div>
+
+
+	</div>
+				
+
+			<div id="search-box" class="yui-skin-sam"> 
+			<form name="searchform" method="get" id="search-form" action="http://search.oreilly.com/">
+			<div class="search"> 
+			<fieldset> 
+			<span id="search-input"> 
+			<div class="searchInput"> 
+			<span id="search-field"><input type="text" value="Search" name="q" value="" maxlength="64" id="q" onFocus="this.value=checkIfDefault(this.value);" /></span> 
+			</div> 
+			<span id="search-button">
+			
+				<input
+					type="image"
+					value="SEARCH"
+					src="/images/oreilly/en_us/global/globalgraphics/search_btn.gif"
+					border="0"
+					style="float:left"
+					alt="Search"
+					align="top"/>
+			 
+			</span> 
+			</span> 
+			<div id="autocomplete"></div> 
+			</fieldset> 
+			</div> 
+			</form> 
+			</div> 
+				
+
+</div>
+
+<ul id="primarynav">
+
+	<li><a href="http://oreilly.com" title="">Home</a></li>
+	
+		<li class="current"><a href="http://shop.oreilly.com" title="" class="current">Shop</a></li>
+	
+	<li><a href="http://radar.oreilly.com/" title="">Radar: News & Commentary</a></li>
+	<li><a href="http://answers.oreilly.com/" title="">Answers</a></li>
+	<li><a href="http://safari.oreilly.com/?cid=orm-nav-global" title="">Safari Books Online</a></li>
+	<li><a href="http://conferences.oreilly.com/" title="">Conferences</a></li>
+	<li><a href="http://training.oreilly.com/" title="">Training</a></li>
+	<li><a href="http://www.oreillyschool.com/" title="">School of Technology</a></li>
+	<li style="border: 0px;"><a href="http://people.oreilly.com/index.php?app=members&section=view&module=list" title="">Community</a></li>
+</ul>
+</div>
+      <div>
+
+<!--CatNav Start-->
+
+		<div id="sf-menu-text-nav">
+
+			
+
+<!-- dhtml menu start -->
+<script type="text/javascript" src="/includes/jquery/plugins/jquery.hoverIntent.minified.js"></script>
+<script type="text/javascript" src="/includes/jquery/plugins/jquery.bgiframe.min.js"></script>
+<script type="text/javascript" src="/includes/jquery/plugins/superfish.js"></script>
+<script type="text/javascript" src="/includes/jquery/plugins/supersubs.js"></script>
+
+<ul class='sf-menu'><li><div id="tnc_100015"><a class="sf-top-level-link current" href="http://shop.oreilly.com/category/browse-subjects.do"><span>Browse Subjects</span></a></div><ul><li class="DHTMLTop">&nbsp;</li><li><a href='http://shop.oreilly.com/category/browse-subjects/apple-mac.do'>Apple & Mac</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/business-culture.do'>Business & Culture</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/certification-training.do'>Certification & Training</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/databases.do'>Databases</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/design-graphics.do'>Design & Graphics</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/digital-audio-video.do'>Digital Audio & Video</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/digital-photography.do'>Digital Photography</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/hardware.do'>Hardware</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/home-office.do'>Home & Office</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/microsoft.do'>Microsoft</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/mobile-devices.do'>Mobile & Smart Devices</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/networking.do'>Networking & Sys Admin</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/operating-systems.do'>Operating Systems</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/programming.do'>Programming</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/science-math.do'>Science & Math</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/security.do'>Security</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/software-engineering.do'>Software Engineering</a></li><li><a href='http://shop.oreilly.com/category/browse-subjects/web-development.do'>Web Development</a></li><li class="DHTMLPlate">&nbsp;</li></ul></li><li><div id="tnc_100164"><a class="sf-top-level-link" href="http://shop.oreilly.com/category/new.do"  ><span>New</span></a></div></li><li><div id="tnc_100165"><a class="sf-top-level-link" href="http://shop.oreilly.com/category/upcoming.do"  ><span>Upcoming</span></a></div></li><li><div id="tnc_100166"><a class="sf-top-level-link" href="http://shop.oreilly.com/category/bestselling.do"  ><span>Bestselling</span></a></div></li><li><div id="tnc_100167"><a class="sf-top-level-link" href="http://shop.oreilly.com/category/ebooks.do"  ><span>Ebooks</span></a></div><ul><li class="DHTMLTop">&nbsp;</li><li><a href='http://shop.oreilly.com/category/ebooks/apple-mac.do'>Apple & Mac</a></li><li><a href='http://shop.oreilly.com/category/ebooks/business-culture.do'>Business & Culture</a></li><li><a href='http://shop.oreilly.com/category/ebooks/certification-training.do'>Certification & Training</a></li><li><a href='http://shop.oreilly.com/category/ebooks/databases.do'>Databases</a></li><li><a href='http://shop.oreilly.com/category/ebooks/design-graphics.do'>Design & Graphics</a></li><li><a href='http://shop.oreilly.com/category/ebooks/digital-audio-video.do'>Digital Audio & Video</a></li><li><a href='http://shop.oreilly.com/category/ebooks/digital-photography.do'>Digital Photography</a></li><li><a href='http://shop.oreilly.com/category/ebooks/hardware.do'>Hardware</a></li><li><a href='http://shop.oreilly.com/category/ebooks/home-office.do'>Home & Office</a></li><li><a href='http://shop.oreilly.com/category/ebooks/microsoft.do'>Microsoft</a></li><li><a href='http://shop.oreilly.com/category/ebooks/mobile-devices.do'>Mobile & Smart Devices</a></li><li><a href='http://shop.oreilly.com/category/ebooks/networking.do'>Networking & Sys Admin</a></li><li><a href='http://shop.oreilly.com/category/ebooks/operating-systems.do'>Operating Systems</a></li><li><a href='http://shop.oreilly.com/category/ebooks/programming.do'>Programming</a></li><li><a href='http://shop.oreilly.com/category/ebooks/science-math.do'>Science & Math</a></li><li><a href='http://shop.oreilly.com/category/ebooks/security.do'>Security</a></li><li><a href='http://shop.oreilly.com/category/ebooks/software-engineering.do'>Software Engineering</a></li><li><a href='http://shop.oreilly.com/category/ebooks/web-development.do'>Web Development</a></li><li class="DHTMLPlate">&nbsp;</li></ul></li><li><div id="tnc_100168"><a class="sf-top-level-link" href="http://shop.oreilly.com/category/videos.do"  ><span>Videos</span></a></div><ul><li class="DHTMLTop">&nbsp;</li><li><a href='http://shop.oreilly.com/category/videos/apple-mac.do'>Apple & Mac</a></li><li><a href='http://shop.oreilly.com/category/videos/business-culture.do'>Business & Culture</a></li><li><a href='http://shop.oreilly.com/category/videos/databases.do'>Databases</a></li><li><a href='http://shop.oreilly.com/category/videos/design-graphics.do'>Design & Graphics</a></li><li><a href='http://shop.oreilly.com/category/videos/digital-audio-video.do'>Digital Audio & Video</a></li><li><a href='http://shop.oreilly.com/category/videos/hardware.do'>Hardware</a></li><li><a href='http://shop.oreilly.com/category/videos/home-office.do'>Home & Office</a></li><li><a href='http://shop.oreilly.com/category/videos/microsoft.do'>Microsoft</a></li><li><a href='http://shop.oreilly.com/category/videos/mobile-devices.do'>Mobile & Smart Devices</a></li><li><a href='http://shop.oreilly.com/category/videos/networking.do'>Networking & Sys Admin</a></li><li><a href='http://shop.oreilly.com/category/videos/operating-systems.do'>Operating Systems</a></li><li><a href='http://shop.oreilly.com/category/videos/programming.do'>Programming</a></li><li><a href='http://shop.oreilly.com/category/videos/science-math.do'>Science & Math</a></li><li><a href='http://shop.oreilly.com/category/videos/security.do'>Security</a></li><li><a href='http://shop.oreilly.com/category/videos/software-engineering.do'>Software Engineering</a></li><li><a href='http://shop.oreilly.com/category/videos/web-development.do'>Web Development</a></li><li class="DHTMLPlate">&nbsp;</li></ul></li><li class="GlobalNavInfo"><div>1-800-998-9938 / 707-827-7000 / accounts@oreilly.com</div><a href="http://www.youtube.com/OreillyMedia"><img src="/images/oreilly/en_us/global/globalgraphics/youtube.gif" alt="YouTube"></a> <a href="http://www.facebook.com/OReilly"><img src="/images/oreilly/en_us/global/globalgraphics/facebook.gif" alt="Facebook"></a> <a href="http://twitter.com/oreillymedia"><img src="/images/oreilly/en_us/global/globalgraphics/twitter.gif" alt="Twitter"></a> <a href="http://feeds2.feedburner.com/oreilly/all"><img src="/images/oreilly/en_us/global/globalgraphics/rss.gif" alt="Subscribe to Feed"></a> </li></ul>
+
+<script type="text/javascript">
+	jQuery(document).ready(function($){
+	
+		jQuery("ul.sf-menu").supersubs({ 
+			minWidth:    12,   // minimum width of sub-menus in em units 
+			maxWidth:    27,   // maximum width of sub-menus in em units 
+			extraWidth:  1     										// extra width can ensure lines don't sometimes turn over 
+							   														// due to slight rounding differences and font-family 
+		}).superfish({ 
+			delay:       450,   // millisecond delay on mouseout 
+			animation:   {opacity:'show'},							// animation style 
+			speed:       1,															// animation speed 
+			autoArrows:  false,                         // arrow mark-up config 
+			dropShadows: true       // drop shadow config 
+		}).find('ul').bgIframe({opacity:false});
+
+		// make top cats stay 'on' when hovering over their subs 
+		jQuery("ul.sf-menu").find("a[onmouseover]").each(function (i){
+			jQuery(this).parent("li").find("ul:first").hover(jQuery(this).attr("onmouseover"), jQuery(this).attr("onmouseout"));
+		});
+	});
+</script>
+<!-- dhtml menu end -->
+
+
+
+		</div>
+
+      
+<!--CatNav End-->
+
+<div id="globalInclude" >
+
+	<!-- csp/2006 -->
+<!-- Link to the core stylesheet -->
+<link rel="stylesheet" type="text/css" href="https://assets.oreilly.com/css/ml.css">
+
+<!-- Links to scripts -->
+<script type="text/javascript" src="https://assets.oreilly.com/js/ml.js"></script>
+
+<a href="http://shop.oreilly.com/category/customer-service/b2g1f.do"><img src="https://assets.oreilly.com/images/global-b2g1f.gif" width="974" height="51" alt="Buy 2, Get the 3rd FREE. Use discount code OPC10 - All orders over $29.95 qualify for FREE SHIPPING within the US"></a>
+
+
+
+
+
+
+
+
+
+
+
+</div></div>
+    </td>
+  </tr>
+
+  <tr valign="top">
+
+    
+
+    <td width="8" class="contentbg"><img src="/images/oreilly/en_us/global/globalgraphics/spacer01.gif" width="8" height=1 border=0></td>
+    <td width="974" class="contentbg">
+      <div>
+<script src="/includes/kits.js"></script>
+<script src="/includes/validateProductSelection.js"></script>
+<script language="javascript">
+	var noQtyMsg = "Quantity must be at least 1.";
+	var noOptionsMsg = "Select Valid Option(s)";
+</script>
+
+	
+
+
+<div class"detailFillslot">
+	
+</div>
+
+
+
+<table cellspacing="0" cellpadding="0" border="0">
+
+
+	<input type="hidden" name="from" value="detail"><input type="hidden" name="pageCategory" value="">
+
+	<tr valign="top">
+
+  		<td style="width:690px;">
+
+				<div id="browse-content" style="float:left;width:190px;">
+					
+
+
+				   <div style="cursor: pointer;" >
+					
+
+
+					 <script type="text/javascript" src="http://books.google.com/books?bibkeys=9780596514983&jscmd=viewapi">
+					var _GBSBookInfo = {"9780596514983":{"bib_key":"9780596514983","info_url":"http://books.google.com/books?id=iWhbFeboD84C\u0026source=gbs_ViewAPI","preview_url":"http://books.google.com/books?id=iWhbFeboD84C\u0026printsec=frontcover\u0026cd=1\u0026source=gbs_ViewAPI","thumbnail_url":"http://bks1.books.google.com/books?id=iWhbFeboD84C\u0026printsec=frontcover\u0026img=1\u0026zoom=5\u0026edge=curl","preview":"partial","embeddable":true}};
+					</script>
+
+
+					<script type="text/javascript">
+					/* <![CDATA[ */
+					for(isbn in _GBSBookInfo) {
+					var book = _GBSBookInfo[isbn];
+					if (book.embeddable) {
+					document.write("<img onclick=\"openCustomQuickView(\'/productPreview.do?printProductISBN=9780596514983\',748,750,false);\" border=\'0\' alt=\'Browse Content\' src=\'/images/oreilly/en_us/local/localgraphics/halo.gif\'>");
+					}
+					}
+					/* ]]> */
+					</script>
+				    </div>
+
+					
+<script src="/includes/optionClasses.js"></script>
+<script src="/includes/detailImageSwatches.js"></script>
+
+
+			<div class="detailimgcontainer">
+				
+			<a href="/product/9780596514983.do?sortby=publicationDate" target="_parent" onClick="goSwatches_103507.openViewLarger(500,680,'/product/9780596514983/ViewLarger.do?sortby=publicationDate','ViewLarger');">
+			<img id="largeImage" src="http://akamaicovers.oreilly.com/images/9780596514983/cat.gif" border="0" alt="Code You Can Believe In"/></a>
+				
+			</div>
+		
+	<script type="text/javascript">
+		var sViewLargerCall = "goSwatches_103507.openViewLarger(500,680,'/product/9780596514983/ViewLarger.do?sortby=publicationDate','ViewLarger', 'NoFocus')"
+	</script>
+
+	
+		<div class="viewLarger">
+		<a href="#" onClick="goSwatches_103507.openViewLarger(500,680,'/product/9780596514983/ViewLarger.do?sortby=publicationDate','ViewLarger');" >
+
+			Larger Cover
+		</a>
+		</div>
+	
+<script type="text/javascript">
+  var goSwatches_103507 = new DetailImageSwatches(103507,null,null,null,null);
+</script>
+
+					<div id="googlePreviewButton">
+					<script type="text/javascript">
+					/* <![CDATA[ */
+					for(isbn in _GBSBookInfo) {
+					var book = _GBSBookInfo[isbn];
+					if (book.embeddable) {
+					document.write("<img onclick=\"openCustomQuickView(\'/productPreview.do?printProductISBN=9780596514983\',748,750,false);\" border=\'0\' alt=\'Browse Content\' src=\'http://books.google.com/intl/en/googlebooks/images/gbs_preview_button1.gif\'>");
+					}
+					}
+					</script>
+					</div>
+
+					
+				</div>
+
+			
+   			<div class="detailheader">
+   				Real World Haskell
+   			</div>
+
+			
+				<div class="detailSubHeader">
+					Code You Can Believe In
+				</div>
+			
+			 <div>
+				 
+	<div class="AuthorName">By&nbsp;<a href="#tab_04" class="byLineLink" onclick="setActiveTab('tab_04', 'About the Author')">Bryan O'Sullivan, John Goerzen, Donald Bruce Stewart</a></div><div>Publisher:&nbsp;O'Reilly Media</div><div>Released:&nbsp;November 2008</div><div class="default">Pages:&nbsp;704</div>
+			 </div>
+
+
+			<div class="SocialIconBox">
+
+							<table cellspacing="0" cellpadding="0" border="0" width="100%">
+					<tr>
+
+						
+							<td>
+								<!--Start:fix for ORLY97  -->
+								<div>
+									 
+<link rel="stylesheet" href="/text/pwr/engine/pr_styles_review.css" id="prBaseStylesheet"/>
+<link rel="stylesheet" href="/includes/reviews_social.css" type="text/css" id="prMerchantOverrideStylesheet">
+
+
+	<script type="text/javascript" src="/text/pwr/engine/js/full.js"></script>
+	<script type="text/javascript">
+		 var pr_locale = 'en_US';
+		 var pr_zip_location='/text';
+		var pr_style_sheet='/includes/reviews_social.css ';
+		var pr_page_id = '9780596514983.IP'; /* SPECIFY THE PRODUCT SEO code here since Product ID not dependable  */
+	</script>
+
+	<script type="text/javascript">
+	function ReviewAnchor() {
+			window.location = String(window.location).replace(/#.*$/, "") + "#PowerReview";
+	}
+	</script>
+
+
+		<div id="hasReviews">
+			<script type="text/javascript">
+				POWERREVIEWS.display.snippet(document, {
+				pr_page_id : '9780596514983.IP',
+				pr_read_review : 'javascript:ReviewAnchor()',
+				pr_write_review : '/product/9780596514983/ReviewSubmit.do?sortby=publicationDate?pageId=9780596514983.IP'
+			});
+			</script>
+		</div>
+		<div id="noReviews" style="display:none">
+			<script type="text/javascript">document.write('Be the first to <a href="/product/9780596514983/ReviewSubmit.do?sortby=publicationDate?pageId=9780596514983.IP">write a review </a>')</script>
+		</div>
+
+<!-- End PowerReviews snippet -->
+
+
+
+<div class="social">
+	<span class="retweet">
+	<iframe allowtransparency="true" frameborder="0" scrolling="no" tabindex="0" class="twitter-share-button twitter-count-horizontal" src="http://platform0.twitter.com/widgets/tweet_button.html?_=1298585519896&amp;count=horizontal&amp;lang=en&amp;related=oreillyanswers%3Aanswers.oreilly.com&amp;text=Check%20out%20Real World Haskell&amp;url=/product/9780596514983.do?sortby=publicationDate&amp;via=oreillymedia" style="width: 110px;height:20px;" title="Twitter For Websites: Tweet Button"></iframe>
+	</span>
+
+	<span class="plus">
+	<div id="___plusone_0" style="height: 20px; width: 90px; display: inline-block; text-indent: 0pt; margin: 0pt; padding: 0pt; background: none repeat scroll 0% 0% transparent; border-style: none; float: none;"><iframe scrolling="no" frameborder="0" width="100%" vspace="0" tabindex="-1" style="position: static; left: 0pt; top: 0pt; width: 90px; height: 20px; visibility: visible;" src="https://plusone.google.com/u/0/_/+1/fastbutton?url=http%3A%2F%2Fshop.oreilly.com%2Fproduct%2F9780596514983.do&size=medium&count=true&annotation=&hl=en-US" name="I1_1310872145093" marginwidth="0" marginheight="0" id="I1_1310872145093" hspace="0" allowtransparency="true"></iframe></div>
+	</span>
+
+	<span class="like">
+	<iframe src="http://www.facebook.com/plugins/like.php?href=http://shop.oreilly.com/product/9780596514983.do&amp;layout=button_count&amp;show_faces=false&amp;width=200&amp;action=like&amp;colorscheme=light&amp;height=20" scrolling="no" frameborder="0" style="border:none;overflow:hidden;width:110px;height: 20px;" allowtransparency="true"></iframe>
+	</span>
+
+
+</div>
+
+
+<style>
+.like iframe {width: 50px !important;}
+.retweet iframe {width: 98px !important;}
+.plus iframe {width: 90px !important;}
+</style>
+							 	</div>
+								<!--End:fix for ORLY97  -->
+								
+							</td>
+
+
+					</tr>
+				</table>
+
+			</div>
+
+			
+			<div>
+				
+			</div>
+
+			
+			 <div>
+				 
+	<div >			
+		
+	</div>
+
+
+			 </div>
+			 <div style="clear: both;"></div>
+
+			
+				<div class="infoTabs">
+					
+  <script src="/includes/InfoTabs.js"></script>
+
+  
+    <div id="tab_01_content" style="display:none;">
+      <table width="100%" cellpadding=0 cellspacing=0><tr><td><div>                                                <div>                                                    <p>This easy-to-use, fast-moving tutorial introduces you to functional programming with Haskell. You'll learn how to use Haskell in a variety of practical ways, from short scripts to large and demanding applications. <em>Real World Haskell</em> takes you through the basics of functional programming at a brisk pace, and then helps you increase your understanding of Haskell in real-world issues like I/O, performance, dealing with data, concurrency, and more as you move through each chapter. <br/>                                                        <br/>With this book, you will:</p>                                                    <ul>                                                        <li>Understand the differences between procedural and functional programming</li>                                                        <li>Learn the features of Haskell, and how to use it to develop useful programs</li>                                                        <li>Interact with filesystems, databases, and network services</li>                                                        <li>Write solid code with automated tests, code coverage, and error handling</li>                                                        <li>Harness the power of multicore systems via concurrent and parallel programming</li>                                                    </ul>                                                    <p>You'll find plenty of hands-on exercises, along with examples of real Haskell programs that you can modify, compile, and run. Whether or not you've used a functional language before, if you want to understand why Haskell is coming into its own as a practical language in so many major organizations, <em>Real World Haskell</em> is the best place to start.</p>                                                </div>                                            </div></td></tr></table>
+    </div>
+  
+    <div id="tab_02_content" style="display:none;">
+      <table width="100%" cellpadding=0 cellspacing=0><tr><td><div id="toc-content">                                                <ol id="chapters">                                                    <li class="chapter" title="1">                                                        <h3>                                                            <span class="chapter-label">Chapter 1 </span>Getting Started         </h3>                                                        <ol>                                                            <li class="sect1" title="1.1">                                                                <h4>Your Haskell Environment</h4>                                                            </li>                                                            <li class="sect1" title="1.2">                                                                <h4>Getting Started with ghci, the Interpreter</h4>                                                            </li>                                                            <li class="sect1" title="1.3">                                                                <h4>Basic Interaction: Using ghci as a Calculator</h4>                                                            </li>                                                            <li class="sect1" title="1.4">                                                                <h4>Command-Line Editing in ghci</h4>                                                            </li>                                                            <li class="sect1" title="1.5">                                                                <h4>Lists</h4>                                                            </li>                                                            <li class="sect1" title="1.6">                                                                <h4>Strings and Characters</h4>                                                            </li>                                                            <li class="sect1" title="1.7">                                                                <h4>First Steps with Types</h4>                                                            </li>                                                            <li class="sect1" title="1.8">                                                                <h4>A Simple Program</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="2">                                                        <h3>                                                            <span class="chapter-label">Chapter 2 </span>Types and Functions         </h3>                                                        <ol>                                                            <li class="sect1" title="2.1">                                                                <h4>Why Care About Types?</h4>                                                            </li>                                                            <li class="sect1" title="2.2">                                                                <h4>Haskell’s Type System</h4>                                                            </li>                                                            <li class="sect1" title="2.3">                                                                <h4>What to Expect from the Type System</h4>                                                            </li>                                                            <li class="sect1" title="2.4">                                                                <h4>Some Common Basic Types</h4>                                                            </li>                                                            <li class="sect1" title="2.5">                                                                <h4>Function Application</h4>                                                            </li>                                                            <li class="sect1" title="2.6">                                                                <h4>Useful Composite Data Types: Lists and Tuples</h4>                                                            </li>                                                            <li class="sect1" title="2.7">                                                                <h4>Functions over Lists and Tuples</h4>                                                            </li>                                                            <li class="sect1" title="2.8">                                                                <h4>Function Types and Purity</h4>                                                            </li>                                                            <li class="sect1" title="2.9">                                                                <h4>Haskell Source Files, and Writing Simple Functions</h4>                                                            </li>                                                            <li class="sect1" title="2.10">                                                                <h4>Understanding Evaluation by Example</h4>                                                            </li>                                                            <li class="sect1" title="2.11">                                                                <h4>Polymorphism in Haskell</h4>                                                            </li>                                                            <li class="sect1" title="2.12">                                                                <h4>The Type of a Function of More Than One Argument</h4>                                                            </li>                                                            <li class="sect1" title="2.13">                                                                <h4>Why the Fuss over Purity?</h4>                                                            </li>                                                            <li class="sect1" title="2.14">                                                                <h4>Conclusion</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="3">                                                        <h3>                                                            <span class="chapter-label">Chapter 3 </span>Defining Types, Streamlining Functions         </h3>                                                        <ol>                                                            <li class="sect1" title="3.1">                                                                <h4>Defining a New Data Type</h4>                                                            </li>                                                            <li class="sect1" title="3.2">                                                                <h4>Type Synonyms</h4>                                                            </li>                                                            <li class="sect1" title="3.3">                                                                <h4>Algebraic Data Types</h4>                                                            </li>                                                            <li class="sect1" title="3.4">                                                                <h4>Pattern Matching</h4>                                                            </li>                                                            <li class="sect1" title="3.5">                                                                <h4>Record Syntax</h4>                                                            </li>                                                            <li class="sect1" title="3.6">                                                                <h4>Parameterized Types</h4>                                                            </li>                                                            <li class="sect1" title="3.7">                                                                <h4>Recursive Types</h4>                                                            </li>                                                            <li class="sect1" title="3.8">                                                                <h4>Reporting Errors</h4>                                                            </li>                                                            <li class="sect1" title="3.9">                                                                <h4>Introducing Local Variables</h4>                                                            </li>                                                            <li class="sect1" title="3.10">                                                                <h4>The Offside Rule and Whitespace in an Expression</h4>                                                            </li>                                                            <li class="sect1" title="3.11">                                                                <h4>The case Expression</h4>                                                            </li>                                                            <li class="sect1" title="3.12">                                                                <h4>Common Beginner Mistakes with Patterns</h4>                                                            </li>                                                            <li class="sect1" title="3.13">                                                                <h4>Conditional Evaluation with Guards</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="4">                                                        <h3>                                                            <span class="chapter-label">Chapter 4 </span>Functional Programming         </h3>                                                        <ol>                                                            <li class="sect1" title="4.1">                                                                <h4>Thinking in Haskell</h4>                                                            </li>                                                            <li class="sect1" title="4.2">                                                                <h4>A Simple Command-Line Framework</h4>                                                            </li>                                                            <li class="sect1" title="4.3">                                                                <h4>Warming Up: Portably Splitting Lines of Text</h4>                                                            </li>                                                            <li class="sect1" title="4.4">                                                                <h4>Infix Functions</h4>                                                            </li>                                                            <li class="sect1" title="4.5">                                                                <h4>Working with Lists</h4>                                                            </li>                                                            <li class="sect1" title="4.6">                                                                <h4>How to Think About Loops</h4>                                                            </li>                                                            <li class="sect1" title="4.7">                                                                <h4>Anonymous (lambda) Functions</h4>                                                            </li>                                                            <li class="sect1" title="4.8">                                                                <h4>Partial Function Application and Currying</h4>                                                            </li>                                                            <li class="sect1" title="4.9">                                                                <h4>As-patterns</h4>                                                            </li>                                                            <li class="sect1" title="4.10">                                                                <h4>Code Reuse Through Composition</h4>                                                            </li>                                                            <li class="sect1" title="4.11">                                                                <h4>Tips for Writing Readable Code</h4>                                                            </li>                                                            <li class="sect1" title="4.12">                                                                <h4>Space Leaks and Strict Evaluation</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="5">                                                        <h3>                                                            <span class="chapter-label">Chapter 5 </span>Writing a Library: Working with JSON            Data         </h3>                                                        <ol>                                                            <li class="sect1" title="5.1">                                                                <h4>A Whirlwind Tour of JSON</h4>                                                            </li>                                                            <li class="sect1" title="5.2">                                                                <h4>Representing JSON Data in Haskell</h4>                                                            </li>                                                            <li class="sect1" title="5.3">                                                                <h4>The Anatomy of a Haskell Module</h4>                                                            </li>                                                            <li class="sect1" title="5.4">                                                                <h4>Compiling Haskell Source</h4>                                                            </li>                                                            <li class="sect1" title="5.5">                                                                <h4>Generating a Haskell Program and Importing Modules</h4>                                                            </li>                                                            <li class="sect1" title="5.6">                                                                <h4>Printing JSON Data</h4>                                                            </li>                                                            <li class="sect1" title="5.7">                                                                <h4>Type Inference Is a Double-Edged Sword</h4>                                                            </li>                                                            <li class="sect1" title="5.8">                                                                <h4>A More General Look at Rendering</h4>                                                            </li>                                                            <li class="sect1" title="5.9">                                                                <h4>Developing Haskell Code Without Going Nuts</h4>                                                            </li>                                                            <li class="sect1" title="5.10">                                                                <h4>Pretty Printing a String</h4>                                                            </li>                                                            <li class="sect1" title="5.11">                                                                <h4>Arrays and Objects, and the Module Header</h4>                                                            </li>                                                            <li class="sect1" title="5.12">                                                                <h4>Writing a Module Header</h4>                                                            </li>                                                            <li class="sect1" title="5.13">                                                                <h4>Fleshing Out the Pretty-Printing Library</h4>                                                            </li>                                                            <li class="sect1" title="5.14">                                                                <h4>Creating a Package</h4>                                                            </li>                                                            <li class="sect1" title="5.15">                                                                <h4>Practical Pointers and Further Reading</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="6">                                                        <h3>                                                            <span class="chapter-label">Chapter 6 </span>Using Typeclasses         </h3>                                                        <ol>                                                            <li class="sect1" title="6.1">                                                                <h4>The Need for Typeclasses</h4>                                                            </li>                                                            <li class="sect1" title="6.2">                                                                <h4>What Are Typeclasses?</h4>                                                            </li>                                                            <li class="sect1" title="6.3">                                                                <h4>Declaring Typeclass Instances</h4>                                                            </li>                                                            <li class="sect1" title="6.4">                                                                <h4>Important Built-in Typeclasses</h4>                                                            </li>                                                            <li class="sect1" title="6.5">                                                                <h4>Automatic Derivation</h4>                                                            </li>                                                            <li class="sect1" title="6.6">                                                                <h4>Typeclasses at Work: Making JSON Easier to Use</h4>                                                            </li>                                                            <li class="sect1" title="6.7">                                                                <h4>Living in an Open World</h4>                                                            </li>                                                            <li class="sect1" title="6.8">                                                                <h4>How to Give a Type a New Identity</h4>                                                            </li>                                                            <li class="sect1" title="6.9">                                                                <h4>JSON Typeclasses Without Overlapping Instances</h4>                                                            </li>                                                            <li class="sect1" title="6.10">                                                                <h4>The Dreaded Monomorphism Restriction</h4>                                                            </li>                                                            <li class="sect1" title="6.11">                                                                <h4>Conclusion</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="7">                                                        <h3>                                                            <span class="chapter-label">Chapter 7 </span>I/O         </h3>                                                        <ol>                                                            <li class="sect1" title="7.1">                                                                <h4>Classic I/O in Haskell</h4>                                                            </li>                                                            <li class="sect1" title="7.2">                                                                <h4>Working with Files and Handles</h4>                                                            </li>                                                            <li class="sect1" title="7.3">                                                                <h4>Extended Example: Functional I/O and Temporary Files</h4>                                                            </li>                                                            <li class="sect1" title="7.4">                                                                <h4>Lazy I/O</h4>                                                            </li>                                                            <li class="sect1" title="7.5">                                                                <h4>The IO Monad</h4>                                                            </li>                                                            <li class="sect1" title="7.6">                                                                <h4>Is Haskell Really Imperative?</h4>                                                            </li>                                                            <li class="sect1" title="7.7">                                                                <h4>Side Effects with Lazy I/O</h4>                                                            </li>                                                            <li class="sect1" title="7.8">                                                                <h4>Buffering</h4>                                                            </li>                                                            <li class="sect1" title="7.9">                                                                <h4>Reading Command-Line Arguments</h4>                                                            </li>                                                            <li class="sect1" title="7.10">                                                                <h4>Environment Variables</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="8">                                                        <h3>                                                            <span class="chapter-label">Chapter 8 </span>Efficient File Processing, Regular Expressions, and Filename            Matching         </h3>                                                        <ol>                                                            <li class="sect1" title="8.1">                                                                <h4>Efficient File Processing</h4>                                                            </li>                                                            <li class="sect1" title="8.2">                                                                <h4>Filename Matching</h4>                                                            </li>                                                            <li class="sect1" title="8.3">                                                                <h4>Regular Expressions in Haskell</h4>                                                            </li>                                                            <li class="sect1" title="8.4">                                                                <h4>More About Regular Expressions</h4>                                                            </li>                                                            <li class="sect1" title="8.5">                                                                <h4>Translating a glob Pattern into a Regular Expression</h4>                                                            </li>                                                            <li class="sect1" title="8.6">                                                                <h4>An important Aside: Writing Lazy Functions</h4>                                                            </li>                                                            <li class="sect1" title="8.7">                                                                <h4>Making Use of Our Pattern Matcher</h4>                                                            </li>                                                            <li class="sect1" title="8.8">                                                                <h4>Handling Errors Through API Design</h4>                                                            </li>                                                            <li class="sect1" title="8.9">                                                                <h4>Putting Our Code to Work</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="9">                                                        <h3>                                                            <span class="chapter-label">Chapter 9 </span>I/O Case Study: A Library for Searching the Filesystem         </h3>                                                        <ol>                                                            <li class="sect1" title="9.1">                                                                <h4>The find Command</h4>                                                            </li>                                                            <li class="sect1" title="9.2">                                                                <h4>Starting Simple: Recursively Listing a Directory</h4>                                                            </li>                                                            <li class="sect1" title="9.3">                                                                <h4>A Naive Finding Function</h4>                                                            </li>                                                            <li class="sect1" title="9.4">                                                                <h4>Predicates: From Poverty to Riches, While Remaining Pure</h4>                                                            </li>                                                            <li class="sect1" title="9.5">                                                                <h4>Sizing a File Safely</h4>                                                            </li>                                                            <li class="sect1" title="9.6">                                                                <h4>A Domain-Specific Language for Predicates</h4>                                                            </li>                                                            <li class="sect1" title="9.7">                                                                <h4>Controlling Traversal</h4>                                                            </li>                                                            <li class="sect1" title="9.8">                                                                <h4>Density, Readability, and the Learning Process</h4>                                                            </li>                                                            <li class="sect1" title="9.9">                                                                <h4>Another Way of Looking at Traversal</h4>                                                            </li>                                                            <li class="sect1" title="9.10">                                                                <h4>Useful Coding Guidelines</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="10">                                                        <h3>                                                            <span class="chapter-label">Chapter 10 </span>Code Case Study: Parsing a Binary Data Format         </h3>                                                        <ol>                                                            <li class="sect1" title="10.1">                                                                <h4>Grayscale Files</h4>                                                            </li>                                                            <li class="sect1" title="10.2">                                                                <h4>Parsing a Raw PGM File</h4>                                                            </li>                                                            <li class="sect1" title="10.3">                                                                <h4>Getting Rid of Boilerplate Code</h4>                                                            </li>                                                            <li class="sect1" title="10.4">                                                                <h4>Implicit State</h4>                                                            </li>                                                            <li class="sect1" title="10.5">                                                                <h4>Introducing Functors</h4>                                                            </li>                                                            <li class="sect1" title="10.6">                                                                <h4>Writing a Functor Instance for Parse</h4>                                                            </li>                                                            <li class="sect1" title="10.7">                                                                <h4>Using Functors for Parsing</h4>                                                            </li>                                                            <li class="sect1" title="10.8">                                                                <h4>Rewriting Our PGM Parser</h4>                                                            </li>                                                            <li class="sect1" title="10.9">                                                                <h4>Future Directions</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="11">                                                        <h3>                                                            <span class="chapter-label">Chapter 11 </span>Testing and Quality Assurance         </h3>                                                        <ol>                                                            <li class="sect1" title="11.1">                                                                <h4>QuickCheck: Type-Based Testing</h4>                                                            </li>                                                            <li class="sect1" title="11.2">                                                                <h4>Testing Case Study: Specifying a Pretty Printer</h4>                                                            </li>                                                            <li class="sect1" title="11.3">                                                                <h4>Measuring Test Coverage with HPC</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="12">                                                        <h3>                                                            <span class="chapter-label">Chapter 12 </span>Barcode Recognition         </h3>                                                        <ol>                                                            <li class="sect1" title="12.1">                                                                <h4>A Little Bit About Barcodes</h4>                                                            </li>                                                            <li class="sect1" title="12.2">                                                                <h4>Introducing Arrays</h4>                                                            </li>                                                            <li class="sect1" title="12.3">                                                                <h4>Encoding an EAN-13 Barcode</h4>                                                            </li>                                                            <li class="sect1" title="12.4">                                                                <h4>Constraints on Our Decoder</h4>                                                            </li>                                                            <li class="sect1" title="12.5">                                                                <h4>Divide and Conquer</h4>                                                            </li>                                                            <li class="sect1" title="12.6">                                                                <h4>Turning a Color Image into Something Tractable</h4>                                                            </li>                                                            <li class="sect1" title="12.7">                                                                <h4>What Have We Done to Our Image?</h4>                                                            </li>                                                            <li class="sect1" title="12.8">                                                                <h4>Finding Matching Digits</h4>                                                            </li>                                                            <li class="sect1" title="12.9">                                                                <h4>Life Without Arrays or Hash Tables</h4>                                                            </li>                                                            <li class="sect1" title="12.10">                                                                <h4>Turning Digit Soup into an Answer</h4>                                                            </li>                                                            <li class="sect1" title="12.11">                                                                <h4>Working with Row Data</h4>                                                            </li>                                                            <li class="sect1" title="12.12">                                                                <h4>Pulling It All Together</h4>                                                            </li>                                                            <li class="sect1" title="12.13">                                                                <h4>A Few Comments on Development Style</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="13">                                                        <h3>                                                            <span class="chapter-label">Chapter 13 </span>Data Structures         </h3>                                                        <ol>                                                            <li class="sect1" title="13.1">                                                                <h4>Association Lists</h4>                                                            </li>                                                            <li class="sect1" title="13.2">                                                                <h4>Maps</h4>                                                            </li>                                                            <li class="sect1" title="13.3">                                                                <h4>Functions Are Data, Too</h4>                                                            </li>                                                            <li class="sect1" title="13.4">                                                                <h4>Extended Example: /etc/passwd</h4>                                                            </li>                                                            <li class="sect1" title="13.5">                                                                <h4>Extended Example: Numeric Types</h4>                                                            </li>                                                            <li class="sect1" title="13.6">                                                                <h4>Taking Advantage of Functions as Data</h4>                                                            </li>                                                            <li class="sect1" title="13.7">                                                                <h4>General-Purpose Sequences</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="14">                                                        <h3>                                                            <span class="chapter-label">Chapter 14 </span>Monads         </h3>                                                        <ol>                                                            <li class="sect1" title="14.1">                                                                <h4/>                                                            </li>                                                            <li class="sect1" title="14.2">                                                                <h4>Revisiting Earlier Code Examples</h4>                                                            </li>                                                            <li class="sect1" title="14.3">                                                                <h4>Looking for Shared Patterns</h4>                                                            </li>                                                            <li class="sect1" title="14.4">                                                                <h4>The Monad Typeclass</h4>                                                            </li>                                                            <li class="sect1" title="14.5">                                                                <h4>And Now, a Jargon Moment</h4>                                                            </li>                                                            <li class="sect1" title="14.6">                                                                <h4>Using a New Monad: Show Your Work!</h4>                                                            </li>                                                            <li class="sect1" title="14.7">                                                                <h4>Mixing Pure and Monadic Code</h4>                                                            </li>                                                            <li class="sect1" title="14.8">                                                                <h4>Putting a Few Misconceptions to Rest</h4>                                                            </li>                                                            <li class="sect1" title="14.9">                                                                <h4>Building the Logger Monad</h4>                                                            </li>                                                            <li class="sect1" title="14.10">                                                                <h4>The Maybe Monad</h4>                                                            </li>                                                            <li class="sect1" title="14.11">                                                                <h4>The List Monad</h4>                                                            </li>                                                            <li class="sect1" title="14.12">                                                                <h4>Desugaring of do Blocks</h4>                                                            </li>                                                            <li class="sect1" title="14.13">                                                                <h4>The State Monad</h4>                                                            </li>                                                            <li class="sect1" title="14.14">                                                                <h4>Monads and Functors</h4>                                                            </li>                                                            <li class="sect1" title="14.15">                                                                <h4>The Monad Laws and Good Coding Style</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="15">                                                        <h3>                                                            <span class="chapter-label">Chapter 15 </span>Programming with Monads         </h3>                                                        <ol>                                                            <li class="sect1" title="15.1">                                                                <h4>Golfing Practice: Association Lists</h4>                                                            </li>                                                            <li class="sect1" title="15.2">                                                                <h4>Generalized Lifting</h4>                                                            </li>                                                            <li class="sect1" title="15.3">                                                                <h4>Looking for Alternatives</h4>                                                            </li>                                                            <li class="sect1" title="15.4">                                                                <h4>Adventures in Hiding the Plumbing</h4>                                                            </li>                                                            <li class="sect1" title="15.5">                                                                <h4>Separating Interface from Implementation</h4>                                                            </li>                                                            <li class="sect1" title="15.6">                                                                <h4>The Reader Monad</h4>                                                            </li>                                                            <li class="sect1" title="15.7">                                                                <h4>A Return to Automated Deriving</h4>                                                            </li>                                                            <li class="sect1" title="15.8">                                                                <h4>Hiding the IO Monad</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="16">                                                        <h3>                                                            <span class="chapter-label">Chapter 16 </span>Using Parsec         </h3>                                                        <ol>                                                            <li class="sect1" title="16.1">                                                                <h4>First Steps with Parsec: Simple CSV Parsing</h4>                                                            </li>                                                            <li class="sect1" title="16.2">                                                                <h4>The sepBy and endBy Combinators</h4>                                                            </li>                                                            <li class="sect1" title="16.3">                                                                <h4>Choices and Errors</h4>                                                            </li>                                                            <li class="sect1" title="16.4">                                                                <h4>Extended Example: Full CSV Parser</h4>                                                            </li>                                                            <li class="sect1" title="16.5">                                                                <h4>Parsec and MonadPlus</h4>                                                            </li>                                                            <li class="sect1" title="16.6">                                                                <h4>Parsing a URL-Encoded Query String</h4>                                                            </li>                                                            <li class="sect1" title="16.7">                                                                <h4>Supplanting Regular Expressions for Casual Parsing</h4>                                                            </li>                                                            <li class="sect1" title="16.8">                                                                <h4>Parsing Without Variables</h4>                                                            </li>                                                            <li class="sect1" title="16.9">                                                                <h4>Applicative Functors for Parsing</h4>                                                            </li>                                                            <li class="sect1" title="16.10">                                                                <h4>Applicative Parsing by Example</h4>                                                            </li>                                                            <li class="sect1" title="16.11">                                                                <h4>Parsing JSON Data</h4>                                                            </li>                                                            <li class="sect1" title="16.12">                                                                <h4>Parsing a HTTP Request</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="17">                                                        <h3>                                                            <span class="chapter-label">Chapter 17 </span>Interfacing with C: The FFI         </h3>                                                        <ol>                                                            <li class="sect1" title="17.1">                                                                <h4>Foreign Language Bindings: The Basics</h4>                                                            </li>                                                            <li class="sect1" title="17.2">                                                                <h4>Regular Expressions for Haskell: A Binding for PCRE</h4>                                                            </li>                                                            <li class="sect1" title="17.3">                                                                <h4>Passing String Data Between Haskell and C</h4>                                                            </li>                                                            <li class="sect1" title="17.4">                                                                <h4>Matching on Strings</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="18">                                                        <h3>                                                            <span class="chapter-label">Chapter 18 </span>Monad Transformers         </h3>                                                        <ol>                                                            <li class="sect1" title="18.1">                                                                <h4>Motivation: Boilerplate Avoidance</h4>                                                            </li>                                                            <li class="sect1" title="18.2">                                                                <h4>A Simple Monad Transformer Example</h4>                                                            </li>                                                            <li class="sect1" title="18.3">                                                                <h4>Common Patterns in Monads and Monad Transformers</h4>                                                            </li>                                                            <li class="sect1" title="18.4">                                                                <h4>Stacking Multiple Monad Transformers</h4>                                                            </li>                                                            <li class="sect1" title="18.5">                                                                <h4>Moving Down the Stack</h4>                                                            </li>                                                            <li class="sect1" title="18.6">                                                                <h4>Understanding Monad Transformers by Building One</h4>                                                            </li>                                                            <li class="sect1" title="18.7">                                                                <h4>Transformer Stacking Order Is Important</h4>                                                            </li>                                                            <li class="sect1" title="18.8">                                                                <h4>Putting Monads and Monad Transformers into Perspective</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="19">                                                        <h3>                                                            <span class="chapter-label">Chapter 19 </span>Error Handling         </h3>                                                        <ol>                                                            <li class="sect1" title="19.1">                                                                <h4>Error Handling with Data Types</h4>                                                            </li>                                                            <li class="sect1" title="19.2">                                                                <h4>Exceptions</h4>                                                            </li>                                                            <li class="sect1" title="19.3">                                                                <h4>Error Handling in Monads</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="20">                                                        <h3>                                                            <span class="chapter-label">Chapter 20 </span>Systems Programming in Haskell         </h3>                                                        <ol>                                                            <li class="sect1" title="20.1">                                                                <h4>Running External Programs</h4>                                                            </li>                                                            <li class="sect1" title="20.2">                                                                <h4>Directory and File Information</h4>                                                            </li>                                                            <li class="sect1" title="20.3">                                                                <h4>Program Termination</h4>                                                            </li>                                                            <li class="sect1" title="20.4">                                                                <h4>Dates and Times</h4>                                                            </li>                                                            <li class="sect1" title="20.5">                                                                <h4>Extended Example: Piping</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="21">                                                        <h3>                                                            <span class="chapter-label">Chapter 21 </span>Using Databases         </h3>                                                        <ol>                                                            <li class="sect1" title="21.1">                                                                <h4>Overview of HDBC</h4>                                                            </li>                                                            <li class="sect1" title="21.2">                                                                <h4>Installing HDBC and Drivers</h4>                                                            </li>                                                            <li class="sect1" title="21.3">                                                                <h4>Connecting to Databases</h4>                                                            </li>                                                            <li class="sect1" title="21.4">                                                                <h4>Transactions</h4>                                                            </li>                                                            <li class="sect1" title="21.5">                                                                <h4>Simple Queries</h4>                                                            </li>                                                            <li class="sect1" title="21.6">                                                                <h4>SqlValue</h4>                                                            </li>                                                            <li class="sect1" title="21.7">                                                                <h4>Query Parameters</h4>                                                            </li>                                                            <li class="sect1" title="21.8">                                                                <h4>Prepared Statements</h4>                                                            </li>                                                            <li class="sect1" title="21.9">                                                                <h4>Reading Results</h4>                                                            </li>                                                            <li class="sect1" title="21.10">                                                                <h4>Database Metadata</h4>                                                            </li>                                                            <li class="sect1" title="21.11">                                                                <h4>Error Handling</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="22">                                                        <h3>                                                            <span class="chapter-label">Chapter 22 </span>Extended Example: Web Client Programming         </h3>                                                        <ol>                                                            <li class="sect1" title="22.1">                                                                <h4>Basic Types</h4>                                                            </li>                                                            <li class="sect1" title="22.2">                                                                <h4>The Database</h4>                                                            </li>                                                            <li class="sect1" title="22.3">                                                                <h4>The Parser</h4>                                                            </li>                                                            <li class="sect1" title="22.4">                                                                <h4>Downloading</h4>                                                            </li>                                                            <li class="sect1" title="22.5">                                                                <h4>Main Program</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="23">                                                        <h3>                                                            <span class="chapter-label">Chapter 23 </span>GUI Programming with gtk2hs         </h3>                                                        <ol>                                                            <li class="sect1" title="23.1">                                                                <h4>Installing gtk2hs</h4>                                                            </li>                                                            <li class="sect1" title="23.2">                                                                <h4>Overview of the GTK+ Stack</h4>                                                            </li>                                                            <li class="sect1" title="23.3">                                                                <h4>User Interface Design with Glade</h4>                                                            </li>                                                            <li class="sect1" title="23.4">                                                                <h4>Event-Driven Programming</h4>                                                            </li>                                                            <li class="sect1" title="23.5">                                                                <h4>Initializing the GUI</h4>                                                            </li>                                                            <li class="sect1" title="23.6">                                                                <h4>The Add Podcast Window</h4>                                                            </li>                                                            <li class="sect1" title="23.7">                                                                <h4>Long-Running Tasks</h4>                                                            </li>                                                            <li class="sect1" title="23.8">                                                                <h4>Using Cabal</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="24">                                                        <h3>                                                            <span class="chapter-label">Chapter 24 </span>Concurrent and Multicore Programming         </h3>                                                        <ol>                                                            <li class="sect1" title="24.1">                                                                <h4>Defining Concurrency and Parallelism</h4>                                                            </li>                                                            <li class="sect1" title="24.2">                                                                <h4>Concurrent Programming with Threads</h4>                                                            </li>                                                            <li class="sect1" title="24.3">                                                                <h4>Simple Communication Between Threads</h4>                                                            </li>                                                            <li class="sect1" title="24.4">                                                                <h4>The Main Thread and Waiting for Other Threads</h4>                                                            </li>                                                            <li class="sect1" title="24.5">                                                                <h4>Communicating over Channels</h4>                                                            </li>                                                            <li class="sect1" title="24.6">                                                                <h4>Useful Things to Know About</h4>                                                            </li>                                                            <li class="sect1" title="24.7">                                                                <h4>Shared-State Concurrency Is Still Hard</h4>                                                            </li>                                                            <li class="sect1" title="24.8">                                                                <h4>Using Multiple Cores with GHC</h4>                                                            </li>                                                            <li class="sect1" title="24.9">                                                                <h4>Parallel Programming in Haskell</h4>                                                            </li>                                                            <li class="sect1" title="24.10">                                                                <h4>Parallel Strategies and MapReduce</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="25">                                                        <h3>                                                            <span class="chapter-label">Chapter 25 </span>Profiling and Optimization         </h3>                                                        <ol>                                                            <li class="sect1" title="25.1">                                                                <h4>Profiling Haskell Programs</h4>                                                            </li>                                                            <li class="sect1" title="25.2">                                                                <h4>Controlling Evaluation</h4>                                                            </li>                                                            <li class="sect1" title="25.3">                                                                <h4>Understanding Core</h4>                                                            </li>                                                            <li class="sect1" title="25.4">                                                                <h4>Advanced Techniques: Fusion</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="26">                                                        <h3>                                                            <span class="chapter-label">Chapter 26 </span>Advanced Library Design: Building a            Bloom Filter         </h3>                                                        <ol>                                                            <li class="sect1" title="26.1">                                                                <h4>Introducing the Bloom Filter</h4>                                                            </li>                                                            <li class="sect1" title="26.2">                                                                <h4>Use Cases and Package Layout</h4>                                                            </li>                                                            <li class="sect1" title="26.3">                                                                <h4>Basic Design</h4>                                                            </li>                                                            <li class="sect1" title="26.4">                                                                <h4>The ST Monad</h4>                                                            </li>                                                            <li class="sect1" title="26.5">                                                                <h4>Designing an API for Qualified Import</h4>                                                            </li>                                                            <li class="sect1" title="26.6">                                                                <h4>Creating a Mutable Bloom Filter</h4>                                                            </li>                                                            <li class="sect1" title="26.7">                                                                <h4>The Immutable API</h4>                                                            </li>                                                            <li class="sect1" title="26.8">                                                                <h4>Creating a Friendly Interface</h4>                                                            </li>                                                            <li class="sect1" title="26.9">                                                                <h4>Creating a Cabal Package</h4>                                                            </li>                                                            <li class="sect1" title="26.10">                                                                <h4>Testing with QuickCheck</h4>                                                            </li>                                                            <li class="sect1" title="26.11">                                                                <h4>Performance Analysis and Tuning</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="27">                                                        <h3>                                                            <span class="chapter-label">Chapter 27 </span>Sockets and Syslog         </h3>                                                        <ol>                                                            <li class="sect1" title="27.1">                                                                <h4>Basic Networking</h4>                                                            </li>                                                            <li class="sect1" title="27.2">                                                                <h4>Communicating with UDP</h4>                                                            </li>                                                            <li class="sect1" title="27.3">                                                                <h4>Communicating with TCP</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="chapter" title="28">                                                        <h3>                                                            <span class="chapter-label">Chapter 28 </span>Software Transactional Memory         </h3>                                                        <ol>                                                            <li class="sect1" title="28.1">                                                                <h4>The Basics</h4>                                                            </li>                                                            <li class="sect1" title="28.2">                                                                <h4>Some Simple Examples</h4>                                                            </li>                                                            <li class="sect1" title="28.3">                                                                <h4>STM and Safety</h4>                                                            </li>                                                            <li class="sect1" title="28.4">                                                                <h4>Retrying a Transaction</h4>                                                            </li>                                                            <li class="sect1" title="28.5">                                                                <h4>Choosing Between Alternatives</h4>                                                            </li>                                                            <li class="sect1" title="28.6">                                                                <h4>I/O and STM</h4>                                                            </li>                                                            <li class="sect1" title="28.7">                                                                <h4>Communication Between Threads</h4>                                                            </li>                                                            <li class="sect1" title="28.8">                                                                <h4>A Concurrent Web Link Checker</h4>                                                            </li>                                                            <li class="sect1" title="28.9">                                                                <h4>Practical Aspects of STM</h4>                                                            </li>                                                        </ol>                                                    </li>                                                </ol>                                                <ol id="appendixes">                                                    <li class="appendix" title="">                                                        <h3>                                                            <span class="chapter-label">Appendix  </span>Installing GHC and Haskell Libraries         </h3>                                                        <ol>                                                            <li class="sect1" title="">                                                                <h4>Installing GHC</h4>                                                            </li>                                                            <li class="sect1" title="">                                                                <h4>Installing Haskell Software</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="appendix" title="">                                                        <h3>                                                            <span class="chapter-label">Appendix  </span>Characters, Strings, and Escaping Rules         </h3>                                                        <ol>                                                            <li class="sect1" title="">                                                                <h4>Writing Character and String Literals</h4>                                                            </li>                                                            <li class="sect1" title="">                                                                <h4>International Language Support</h4>                                                            </li>                                                            <li class="sect1" title="">                                                                <h4>Escaping Text</h4>                                                            </li>                                                        </ol>                                                    </li>                                                    <li class="colophon" title="">                                                        <h3>Colophon</h3>                                                    </li>                                                </ol>                                            </div></td></tr></table>
+    </div>
+  
+    <div id="tab_03_content" style="display:none;">
+      <table width="100%" cellpadding=0 cellspacing=0><tr><td><dl>                                                <dt>Title:</dt>                                                <dd>                                                    <cite property="dc:title">Real World Haskell</cite>                                                </dd>                                                <dt>By:</dt>                                                <dd>                                                    <span rel="dc:creator">                                                        <span>                                                            <a about="urn:x-domain:oreilly.com:agent:pdb:2977" href="http://www.oreillynet.com/pub/au/3346" typeof="foaf:Person" rel="foaf:homepage" property="foaf:name" class="authorname">Bryan O'Sullivan</a>, <a about="urn:x-domain:oreilly.com:agent:pdb:3009" href="http://www.oreillynet.com/pub/au/3347" typeof="foaf:Person" rel="foaf:homepage" property="foaf:name" class="authorname">John Goerzen</a>, <a about="urn:x-domain:oreilly.com:agent:pdb:2978" href="http://www.oreillynet.com/pub/au/3348" typeof="foaf:Person" rel="foaf:homepage" property="foaf:name" class="authorname">Donald Bruce Stewart</a>                                                        </span>                                                    </span>                                                </dd>                                                <dt>Publisher:</dt>                                                <dd>                                                    <span property="dc:publisher">O'Reilly Media</span>                                                </dd>                                                <dt>Formats:</dt>                                                <dd>                                                    <ul rel="frbr:embodiment">                                                        <li about="urn:x-domain:oreilly.com:product:9780596514983.BOOK" typeof="frbr:Manifestation">                                                            <span resource="http://purl.oreilly.com/product-types/BOOK" rel="dc:type">Print</span>                                                        </li>                                                        <li about="urn:x-domain:oreilly.com:product:9780596156923.EBOOK" typeof="frbr:Manifestation">                                                            <span resource="http://purl.oreilly.com/product-types/EBOOK" rel="dc:type">Ebook</span>                                                        </li>                                                        <li about="urn:x-domain:oreilly.com:product:9780596155339.SAF" class="last" typeof="frbr:Manifestation">                                                            <span resource="http://purl.oreilly.com/product-types/SAF" rel="dc:type">Safari Books Online</span>                                                        </li>                                                    </ul>                                                </dd>                                                <dt>Print:</dt>                                                <dd about="urn:x-domain:oreilly.com:product:9780596514983.BOOK">                                                    <span datatype="xsd:dateTime" content="2008-11-25" property="dc:issued" class="date">    November 2008    </span>                                                </dd>                                                <dt>Ebook:</dt>                                                <dd about="urn:x-domain:oreilly.com:product:9780596156923.EBOOK">                                                    <span datatype="xsd:dateTime" content="2008-11-15" property="dc:issued" class="date">    November 2008    </span>                                                </dd>                                                <dt>Pages:</dt>                                                <dd about="urn:x-domain:oreilly.com:product:9780596514983.BOOK" property="dc:extent">                    720                </dd>                                                <dt>Print ISBN:</dt>                                                <dd about="urn:x-domain:oreilly.com:product:9780596514983.BOOK" resource="urn:isbn:9780596514983" class="isbn" rel="dc:identifier">978-0-596-51498-3</dd>                                                <dt class="isbn-10"> | ISBN 10:</dt>                                                <dd>0-596-51498-0</dd>                                                <dt>Ebook ISBN:</dt>                                                <dd about="urn:x-domain:oreilly.com:product:9780596156923.EBOOK" resource="urn:isbn:9780596156923" class="isbn" rel="dc:identifier">978-0-596-15692-3</dd>                                                <dt class="isbn-10"> | ISBN 10:</dt>                                                <dd>0-596-15692-8</dd>                                            </dl></td></tr></table>
+    </div>
+  
+    <div id="tab_04_content" style="display:none;">
+      <table width="100%" cellpadding=0 cellspacing=0><tr><td><ol>                                                <li class="author-bio">                                                    <h3>Bryan O'Sullivan</h3>                                                    <div>                                                        <p>Bryan O'Sullivan is an Irish hacker and writer who likes distributed systems, open source software, and programming languages.  He was a member of the initial design team for the Jini network service architecture (subsequently open sourced as Apache River).  He has made significant contributions to, and written a book about, the popular Mercurial revision control system.  He lives in San Francisco with his wife and sons.  Whenever he can, he runs off to climb rocks.</p>                                                    </div>                                                    <p>                                                        <a href="http://www.oreillynet.com/pub/au/3346">View Bryan O'Sullivan's full profile page.</a>                                                    </p>                                                </li>                                                <li class="author-bio">                                                    <h3>John Goerzen</h3>                                                    <div>                                                        <p>John Goerzen is an American hacker and author. He has written a number of real-world Haskell libraries and applications, including the HDBC database interface, the ConfigFile configuration file interface, a podcast downloader, and various other libraries relating to networks, parsing, logging, and POSIX code. John has been a developer for the Debian GNU/Linux operating system project for over 10 years and maintains numerous Haskell libraries and code for Debian. He also served as President of Software in the Public Interest, Inc., the legal parent organization of Debian. John lives in rural Kansas with his wife and son, where he enjoys photography and geocaching.</p>                                                    </div>                                                    <p>                                                        <a href="http://www.oreillynet.com/pub/au/3347">View John Goerzen's full profile page.</a>                                                    </p>                                                </li>                                                <li class="author-bio">                                                    <h3>Donald Bruce Stewart</h3>                                                    <div>                                                        <p>Don Stewart is an Australian hacker based in Portland, Oregon. Don has been involved in a diverse range of Haskell projects, including practical libraries, such as Data.ByteString and Data.Binary, as well as applying the Haskell philosophy to real-world applications including compilers, linkers, text editors, network servers, and systems software. His recent work has focused on optimizing Haskell for high-performance scenarios, using techniques from term rewriting.</p>                                                    </div>                                                    <p>                                                        <a href="http://www.oreillynet.com/pub/au/3348">View Donald Bruce Stewart's full profile page.</a>                                                    </p>                                                </li>                                            </ol></td></tr></table>
+    </div>
+  
+    <div id="tab_05_content" style="display:none;">
+      <table width="100%" cellpadding=0 cellspacing=0><tr><td><div id="colophon" class="page_toc_entry">                                                <div class="content-subtitle">Colophon</div>                                                <div>                                                    <div>                                                        <para>The animal on the cover of <emphasis>Real World Haskell</emphasis> is a rhinoceros beetle, a species of scarab beetle. Relative to their size, rhinoceros beetles are among the strongest animals on the planet. They can lift up to 850 times their own weight. The average rhino beetle found in the U.S. is about an inch long, but they can grow as long as seven inches.</para>                                                        <br/>                                                        <br/>                                                        <para>Rhino beetles have horns on their heads, resembling that of the rhinoceros, hence the name. The size of their horns is related to how much nutrition they had in larva. In some species, the horns are longer than the bodies, and they can grow as many as four or five horns. They use the horns for digging, as well as for fighting for territory and mates.</para>                                                        <br/>                                                        <br/>                                                        <para>Rhino beetles thrive on sap and rotting fruit, specifically bananas, apples, and oranges. Their larvae, which takes between 3-5 years to mature, eat decaying wood, compost, and dead leaves-a kind of recycling for the environment.</para>                                                    </div>                                                </div>                                            </div></td></tr></table>
+    </div>
+  
+  <div style="width:690px;overflow:hidden">
+
+  <table border="0" cellpadding="0" cellspacing="0" class="infoTabs" style="">
+    
+    <tr>
+      <td>
+
+        <table border="0" cellpadding="0" cellspacing="0"  style="border-left: 1px solid #dddddd;">
+          <tr>
+          
+                <td id="tab_01" class="infoTabOff" onclick="setActiveTab('tab_01', 'Description')" valign="top" nowrap>
+                  <div>Description</div>
+                </td>
+              
+                <td id="tab_02" class="infoTabOff" onclick="setActiveTab('tab_02', 'Table of Contents')" valign="top" nowrap>
+                  <div>Table of Contents</div>
+                </td>
+              
+                <td id="tab_03" class="infoTabOff" onclick="setActiveTab('tab_03', 'Product Details')" valign="top" nowrap>
+                  <div>Product Details</div>
+                </td>
+              
+                <td id="tab_04" class="infoTabOff" onclick="setActiveTab('tab_04', 'About the Author')" valign="top" nowrap>
+                  <div>About the Author</div>
+                </td>
+              
+                <td id="tab_05" class="infoTabOff" onclick="setActiveTab('tab_05', 'Colophon')" valign="top" nowrap>
+                  <div>Colophon</div>
+                </td>
+              
+            <td class="infoTabSpacer" style="WIDTH:100%"><img src="/images/oreilly/en_us/global/globalgraphics/spacer01.gif" width="1" height="1" border="0"></td>
+          </tr>
+        </table>
+      </td>
+      <td class="infoTabSpacer" style="WIDTH:100%"><img src="/images/oreilly/en_us/global/globalgraphics/spacer01.gif" width="0" height="1" border="0"></td>
+    </tr>
+
+    
+    <tr>
+      
+          <td colspan=2 class="infoTabContent" valign="top">
+            <div id="tabContentFixer">
+            	<div
+            		id="tabContent"
+            		style="height:255px;"></div>
+            </div>
+          </td>
+        
+    </tr>
+  </table>
+	</div>
+  
+  <script>
+    // Preloading tab images here.
+    
+
+    // Activate the first tab.
+    
+        setActiveTab('tab_01');
+      
+
+  </script>
+
+				</div>
+
+				
+
+				<script type="text/javascript">
+				<!--
+
+				function setActiveTabB(theTab){
+
+					document.getElementById("tab_01_b").className = "infoTabOff";
+
+					if(document.getElementById("tab_02_b") != null){
+						document.getElementById("tab_02_b").className = "infoTabOff";
+					}
+
+					if(document.getElementById("tab_03_b") != null){
+						document.getElementById("tab_03_b").className = "infoTabOff";
+					}
+
+
+					document.getElementById("tab_01_b_content").style.display = "none";
+
+					if(document.getElementById("tab_02_b") != null){
+						document.getElementById("tab_02_b_content").style.display = "none";
+					}
+
+					if(document.getElementById("tab_03_b") != null){
+						document.getElementById("tab_03_b_content").style.display = "none";
+					}
+
+
+					document.getElementById(theTab).className = "infoTabOn";
+					document.getElementById(theTab + "_content").style.display = "block";
+
+				}
+
+				// -->
+				</script>
+				<div class="infoTabs" style="marign-bottom:15px;">
+
+					<table width="100%" cellspacing="0" cellpadding="0" border="0" class="infoTabs">
+
+						<tr>
+							<td>
+
+								<table cellspacing="0" cellpadding="0" border="0" style="border-left: 1px solid #dddddd;">
+									<tr>
+
+										<td valign="top" onclick="setActiveTabB('tab_01_b')" class="infoTabOn" id="tab_01_b" nowrap="" >
+											<div>Recommended for You</div>
+										</td>
+
+											
+
+										<td style="width: 100%;" class="infoTabSpacer"><img height="1" width="1" border="0" src="/images/oreilly/en_us/global/globalgraphics/spacer01.gif"/></td>
+									</tr>
+								</table>
+
+							</td>
+						</tr>
+
+						<tr>
+							<td valign="top" class="infoTabContent" colspan="2">
+
+								<div class="tab_b_content first" id="tab_01_b_content">
+									
+<!-- MyBuys Web Recommendation Zone - Place in body element -->
+
+  <div mybuyszone="2"></div>
+
+<!-- End MyBuys Web Recommendation Zone -->
+<!-- MyBuys Page Parameters Place in body element -->
+
+			<script type="text/javascript">
+				mybuys.setPageType("PRODUCT_DETAILS");
+			</script>
+		
+
+<!-- End MyBuys Page Parameters -->
+<!-- MyBuys Page Parameters Place in body element -->
+<script type="text/javascript">
+  mybuys.set("productid","9780596514983.IP");
+</script>
+<!-- End MyBuys Page Parameters -->
+								</div>
+								
+							</td>
+						</tr>
+					</table>
+				</div>
+
+			
+			 <a name="PowerReview"></a>
+			 
+				<div><img src="/images/oreilly/en_us/global/globalgraphics/spacer01.gif" width="1" height="25" border=0></div>
+				<div class="content-subtitle">Customer Reviews</div>
+				<div><img src="/images/oreilly/en_us/global/globalgraphics/spacer01.gif" width="1" height="10" border=0></div>
+				
+					<!-- pr inline seofile2: /text/pwr/y545tb3s/inline/06/49/9780596514983__IP-en_US-1-reviews.html -->
+					<div class="ReviewSnippet"><div id="pr-review-engine-9780596514983__IP" class="pr-review-engine"><div id="pr-header-9780596514983__IP" class="pr-header"><div class="pr-snapshot"><a name="ReviewHeader"></a><div class="pr-snapshot-head"><div class="pr-snapshot-head-wrapper"><p class="pr-snapshot-title">REVIEW SNAPSHOT&reg;</p><a href="#" class="pr-snapshot-cobrand" onclick="POWERREVIEWS.common.showSmallPopup('http://www.powerreviews.com/legal/index_en_US.html', 410, 420); return false;">by PowerReviews</a></div></div><div class="pr-clear"></div><div class="pr-snapshot-body"><div class="pr-snapshot-body-wrapper"><div class="pr-snapshot-rating-wrapper hreview-aggregate">                                            <div class="pr-snapshot-product-name item"><span class="fn">oreilly Real World Haskell</span></div><div class="pr-snapshot-rating rating"><div class="pr-stars pr-stars-4_5" style="background-position: 0px -207px;">&nbsp;</div><span class="pr-rating pr-rounded average">4.5</span>                         <p class="pr-snapshot-average-based-on-text">(based on <span class="count">2</span> reviews)</p><div id="pr-snapshot-histogram"><a href="#" id="pr-snapshot-histogram-lnk" onclick="return false" onmouseover="POWERREVIEWS.common.togglePopOut({'target':'pr-snapshot-histogram-container'},'show', this, event)" onmouseout="POWERREVIEWS.common.togglePopOut({'link':'pr-snapshot-histogram-lnk','target':'pr-snapshot-histogram-container'},'hide', this, event)"><img id="pr-snapshot-histogram-lnk-img" src="/text/pwr/engine/images/icon_popout.gif" onclick="return false" onmouseover="POWERREVIEWS.common.togglePopOut({'target':'pr-snapshot-histogram-container'},'show', this, event)" onmouseout="POWERREVIEWS.common.togglePopOut({'link':'pr-snapshot-histogram-lnk-img','target':'pr-snapshot-histogram-container'},'hide', this, event)"/></a><div id="pr-snapshot-histogram-container" class="pr-closed" onmouseover="POWERREVIEWS.common.togglePopOut({'target':'pr-snapshot-histogram-container'},'show', this, event)" onmouseout="POWERREVIEWS.common.togglePopOut({'link':'pr-snapshot-histogram-lnk','target':'pr-snapshot-histogram-container'},'hide', this, event)"><p id="pr-snapshot-histogram-header"><span>Ratings Distribution</span></p><div class="pr-ratings-histogram-wrapper"><ul class="pr-ratings-histogram-content"><li class="pr-histogram-5Stars"><p class="pr-histogram-label"><span>5 Stars</span></p><div class="pr-ratings-histogram-bar"><div class="pr-ratings-histogram-barValue" style="width:50%">&nbsp;</div></div><p class="pr-histogram-count"><span>(1)</span></p></li><li class="pr-histogram-4Stars"><p class="pr-histogram-label"><span>4 Stars</span></p><div class="pr-ratings-histogram-bar"><div class="pr-ratings-histogram-barValue" style="width:50%">&nbsp;</div></div><p class="pr-histogram-count"><span>(1)</span></p></li><li class="pr-histogram-3Stars"><p class="pr-histogram-label"><span>3 Stars</span></p><div class="pr-ratings-histogram-bar">&nbsp;</div><p class="pr-histogram-count"><span>(0)</span></p></li><li class="pr-histogram-2Stars"><p class="pr-histogram-label"><span>2 Stars</span></p><div class="pr-ratings-histogram-bar">&nbsp;</div><p class="pr-histogram-count"><span>(0)</span></p></li><li class="pr-histogram-1Stars"><p class="pr-histogram-label"><span>1 Stars</span></p><div class="pr-ratings-histogram-bar">&nbsp;</div><p class="pr-histogram-count"><span>(0)</span></p></li></ul></div> </div></div></div><div class="pr-clear"></div></div>                <div id="pr-snapshot-footer-9780596514983__IP" class="pr-snapshot-footer" style="display:none"><a href="#" id="write-review-9780596514983__IP" class="pr-write-review-link"><div class="pr-snapshot-write-review"><span>Write a Review</span></div></a></div></div></div></div><div id="pr-modal-container-9780596514983__IP" class="pr-modal-container pr-hidden"><div class="pr-modal-toolbar"><a class="pr-modal-container-close" href="#" onclick="POWERREVIEWS.display.hideModal('9780596514983__IP'); return false;"><span>close</span></a><div class="pr-clear"></div></div><div class="pr-modal-wrapper"><div id="pr-modal-9780596514983__IP" class="pr-modal-content"></div></div></div><div class="pr-review-content-header"><p class="pr-review-content-header-label">Reviews</p></div><div class="pr-review-sort"><div class="pr-review-sort-wrapper"><p class="pr-review-count">Reviewed by 2 customers</p><div class="pr-review-sort-box"><p class="pr-review-sort-by">Sort by</p><select onchange="POWERREVIEWS.display.startSort(this, '9780596514983__IP', 'en_US', 'engine-9780596514983__IP-en_US', POWERREVIEWS.common.getOptions('engine-9780596514983__IP-en_US'));"><option value="date_new" selected="true">Newest</option><option value="date_old">Oldest</option><option value="rating_high">Highest rating</option><option value="rating_low">Lowest rating</option><option value="helpful_high">Most helpful</option><option value="helpful_low">Least helpful</option></select></div><div class="pr-clear"></div></div></div><!-- ilkj --></div><div id="pr-contents-9780596514983__IP" class="pr-contents"><div class="pr-contents-wrapper"><div class="pr-pagination-top"><div class="pr-page-count-wrapper"><p class="pr-page-count">Displaying reviews <strong>1-2</strong></p><p class="pr-nav-back-to-top"><a href="#">Back to top</a></p></div><div class="pr-clear"></div></div><div class="pr-review-wrap"><div class="pr-review-rating-wrapper"><div class="pr-review-author-date pr-rounded">11/6/2010</div><div class="pr-review-rating"><div class="pr-stars pr-stars-small pr-stars-4-sm" style="background-position: 0px -144px;" title="That's good stuff">&nbsp;</div><span class="pr-rating pr-rounded">4.0</span><p class="pr-review-rating-headline">Next edition will probably be great</p></div></div>                  <div class="pr-review-author"><div class="pr-review-author-info-wrapper"><p class="pr-review-author-name">By&nbsp;<span>JimmyRcom</span></p><p class="pr-review-author-location">from <span>Texas</span></p></div></div><div class="pr-review-main-wrapper"><div class="pr-review-text"><p class="pr-comments-header">Comments about <em>oreilly Real World Haskell</em>:</p><p class="pr-comments">I consider myself pretty decent in erlang after over a year now playing with it and I've been programming other languages for years. I had glanced at haskell every now and then, initially reading the first few chapters of this book online. I ordered the book later on but now I'm finding myself constantly going back to the online comments for elaboration, making me read the book online anyway. I don't think a lot of the examples are that great. The &quot;learn you a haskell&quot; tutorial by BONUS seems to have much better examples and was much more accessible for me. This is still a worthwhile read but mostly in combination with the online comments others have made on the site. I only give it 4 because I consider BONUS's online guide much better.</p></div><div class="pr-review-footer"><div class="pr-review-bottom-line-wrapper"><p><span class="pr-review-bottom-line">Bottom Line</span> <span></span>Yes, I would recommend this to a friend</p></div><div class="pr-review-tools"><p class="pr-review-helpful-text">Was this review helpful?&nbsp;<a class="pr-review-helpful-text-link" href="#" onclick="POWERREVIEWS.display.submitHelpfulVote('15150224', 'helpful', 'en_US', POWERREVIEWS.common.getOptions('engine-9780596514983__IP-en_US')); return false;">Yes</a>&nbsp;/&nbsp;<a class="pr-review-helpful-text-link" href="#" onclick="POWERREVIEWS.display.submitHelpfulVote('15150224', 'unhelpful', 'en_US', POWERREVIEWS.common.getOptions('engine-9780596514983__IP-en_US')); return false;">No</a></p><p class="pr-review-report-issue"><span class="pr-review-report-issue-hyphen">&nbsp;-&nbsp;</span>You may also <a href="#" class="pr-review-helpful-text-link" onclick="POWERREVIEWS.display.launchErrorDiv('15150224', 'en_US', 'engine-9780596514983__IP-en_US', POWERREVIEWS.common.getOptions('engine-9780596514983__IP-en_US')); return false;">flag this review</a></p><div class="pr-error" id="error_div15150224" style=""></div><p class="pr-review-helpful-response" id="review_feedback15150224"></p></div></div></div><div class="pr-clear"></div></div><div class="pr-review-wrap"><div class="pr-review-rating-wrapper"><div class="pr-review-author-date pr-rounded">6/2/2009</div><div class="pr-review-most-helpful"><p>(<span>9 of 9</span> customers found this review helpful)</p></div><div class="pr-review-rating"><div class="pr-stars pr-stars-small pr-stars-5-sm" style="background-position: 0px -180px;" title="Perfect. It doesn't get any better">&nbsp;</div><span class="pr-rating pr-rounded">5.0</span><p class="pr-review-rating-headline">Good Book for those stepping into the Haskell world</p></div></div>                  <div class="pr-review-author"><div class="pr-review-author-info-wrapper"><p class="pr-review-author-name">By&nbsp;<span>Jeff Bergman</span></p><p class="pr-review-author-location">from <span>Undisclosed</span></p></div></div><div class="pr-review-main-wrapper"><div class="pr-review-text"><p class="pr-comments-header">Comments about <em>oreilly Real World Haskell</em>:</p><p class="pr-comments">Real World Haskell is very ambitious in its scope. It tries to gradually introduce the Haskell way of doing things such that even someone coming from an imperative programming background can follow.<br /><br />As a consequence some concepts are not formally explained until later in the book, like Monads. Instead the book shows you how to use Haskell's I/O facilities, without an understanding of Monads, first.<br /><br />For some this approach is probably very practical but I found myself at times wanting the material to be presented in a different order.<br /><br />However, I am still giving this book 5 stars because of the sheer breadth and quality of the content and examples. And the later chapters really do tie all the concepts together with some non-trivial examples.<br /><br />The first four chapters and chapter six lay the foundation for the rest of the book. I found that a good understanding of this material was crucial for later chapters, where they combine different features of the language in more complicated ways.<br /><br />After that I was particularly fond of chapters 10, 13,14, 15, 16, 18, and 26, as these chapters explained some of the more advanced concepts I was interested in like Monads, Parsing, and Functional Data Structures.<br /><br />Overall, I learned a ton of new things from reading this book<br /><br />even thought the material is quite challenging in places, and found myself wondering why more people don't use Haskell.</p></div><div class="pr-review-footer"><div class="pr-review-most-helpful-bottom"><p>(<span>9 of 9</span> customers found this review helpful)</p></div><div class="pr-review-tools"><p class="pr-review-helpful-text">Was this review helpful?&nbsp;<a class="pr-review-helpful-text-link" href="#" onclick="POWERREVIEWS.display.submitHelpfulVote('9480035', 'helpful', 'en_US', POWERREVIEWS.common.getOptions('engine-9780596514983__IP-en_US')); return false;">Yes</a>&nbsp;/&nbsp;<a class="pr-review-helpful-text-link" href="#" onclick="POWERREVIEWS.display.submitHelpfulVote('9480035', 'unhelpful', 'en_US', POWERREVIEWS.common.getOptions('engine-9780596514983__IP-en_US')); return false;">No</a></p><p class="pr-review-report-issue"><span class="pr-review-report-issue-hyphen">&nbsp;-&nbsp;</span>You may also <a href="#" class="pr-review-helpful-text-link" onclick="POWERREVIEWS.display.launchErrorDiv('9480035', 'en_US', 'engine-9780596514983__IP-en_US', POWERREVIEWS.common.getOptions('engine-9780596514983__IP-en_US')); return false;">flag this review</a></p><div class="pr-error" id="error_div9480035" style=""></div><p class="pr-review-helpful-response" id="review_feedback9480035"></p></div></div></div><div class="pr-clear"></div></div><div class="pr-pagination-bottom"><div class="pr-page-count-wrapper"><p class="pr-page-count">Displaying reviews <strong>1-2</strong></p><p class="pr-nav-back-to-top"><a href="#">Back to top</a></p></div><div class="pr-clear"></div></div></div></div></div></div>
+				
+					<script type="text/javascript">
+						POWERREVIEWS.display.engine(document, {
+							pr_page_id : '9780596514983.IP',
+							pr_write_review : '/product/9780596514983/ReviewSubmit.do?sortby=publicationDate?pageId=9780596514983.IP'
+						});
+					</script>
+			
+
+		</td>
+
+		<td style="width:10px;">&nbsp;</td>
+
+		<td>
+
+			
+			<div>
+				
+
+<script language="javascript">
+	function setTarget(ismobile) {
+		
+		if(ismobile != '' && ismobile=='yes'){
+			document.getElementById('mainForm').action="/mobile/addToBasket.do?method=view";
+		}else{
+			document.getElementById('mainForm').action="/stockAvailability.do?method=view";
+		}
+		
+		 return true;
+}
+
+function flyopenLocal(width, height){
+    width = (width && !isNaN(width))? width:null;
+    height = (height && !isNaN(height))? height:null;
+    var winURL = (arguments[2])? arguments[2]:null;
+    var winName = (arguments[3])? arguments[3]:"generic";
+
+	//only launch the window if we've got a width, height and url
+	if (width && height && winURL){
+        var ieIncrement = ((navigator.appName+"").indexOf("Netscape") == -1)? 15:0;
+        winName = eval("window.open('"+ winURL +"','"+ winName +"','resizable=yes,scrollbars=yes,width="+ (width + ieIncrement) +",height="+ (height + ieIncrement) +",top=5,left=75')");
+		if(winName != null && winName != 'undefined') {
+			winName.focus();
+		}
+	}
+}
+
+</script>
+<!--Back Order Message if any now using the product in the kit.element ORLY-124-->
+<!%--Date now = new Date(); %>
+
+	<div>
+		
+
+<div style="width:272px;height:49px;">
+	
+				<a href="/category/customer-service/b2g1f.do"><img
+					src="/images/oreilly/en_us/local/localgraphics/buytwogetone_off.gif"
+					border="0"
+					name="buyTwoGetOne"
+					alt="Buy 2 Get 1 Free"
+					style="float:left"
+					onmouseover="this.src='/images/oreilly/en_us/local/localgraphics/buytwogetone_on.gif'"
+					onmouseout="this.src='/images/oreilly/en_us/local/localgraphics/buytwogetone_off.gif'"
+					/></a>
+
+				<a href="/category/customer-service/free-shipping.do"><img
+					src="/images/oreilly/en_us/local/localgraphics/freeshipping_off.gif"
+					border="0"
+					name="freeShipping"
+					alt="Free Shipping"
+					style="float:left;margin:0 3px"
+					onmouseover="this.src='/images/oreilly/en_us/local/localgraphics/freeshipping_on.gif'"
+					onmouseout="this.src='/images/oreilly/en_us/local/localgraphics/freeshipping_off.gif'"
+					/></a>
+
+				<a href="/category/customer-service/oreilly-guarantee.do"><img
+					src="/images/oreilly/en_us/local/localgraphics/guarantee_off.gif"
+					border="0"
+					name="guarantee"
+					alt="Guarantee"
+					style="float:left"
+					onmouseover="this.src='/images/oreilly/en_us/local/localgraphics/guarantee_on.gif'"
+					onmouseout="this.src='/images/oreilly/en_us/local/localgraphics/guarantee_off.gif'"
+					/></a>
+
+		
+ </div>
+	</div>
+
+<div id="buyingOptionTable">
+<table cellspacing="0" cellpadding="0" border="0">
+<tr>
+<td style="border-bottom:1px solid #dddddd; "><img src="/images/oreilly/en_us//local/headers/main/buyingoptions_mhd.gif" alt="Buying Options" /></td>
+</tr>
+<tr>
+<td>
+			
+								<div class="goGreen">
+									Save a Tree - Go Digital&nbsp;&nbsp;<a id="goGreen" href="#" onClick="return flyopenLocal(360,600,'http://oreilly.com/store/gogreen.html','goGreen');">what is this?</a>
+								</div>
+							<form name="addToBasketForm" method="post" action="/addToBasket.do" onsubmit="document.getElementById('mainForm').pageCategory.value=getVariableValue('eVar4');return validateProductSelection(noQtyMsg, noOptionsMsg, this, 1);" id="mainForm"><input type="hidden" name="from" value="detail"><div style="position: relative;">
+																	<input type="hidden" name="pageCategory" value="">
+																	<table cellspacing="0" cellpadding="0" border="0" id="optionsTable">
+																	<tr>
+																		<td width="64%" class="optionsTd">
+																			<input type='hidden' name='productPk' value='103507' />
+																			
+																			<input type='hidden' name='optionTypes' value='1' />
+																			<input type='hidden' name='option' value='100002=100011'/>
+																			<input type="hidden" name="selectedKitItems" id="selectedKitItems_main_103507" value='1993,103506,104170,1'>
+																			<div style="float:left;">
+																				
+																				<div float="right" style="font-size: 12px; width: 130px;">Ebook:<span class="price">&nbsp;$39.99</span></div><span style="font-size:11px;">Formats:</span><a id="availableFormats" href="#" onClick="javascript:flyopenLocal(480,480,'http://oreilly.com/store/ebooks.html','AvailableFormats');  return false;">APK, DAISY, ePub, Mobi, PDF </a>
+																			<div class="accQtyBox">
+																				
+																						<div class="tableitem">
+																							<input type="hidden" name="qty" id="qty_100011" value="1" size="2" class="quantity"/>
+																						</div>
+																					
+																			</div>
+
+																			 <div style="width: 130px;">
+																				
+																			</div>
+																			<div>
+																			
+																		   </div>
+																		</td>
+																		<td width="36%" class="optionsTd" style="padding-bottom: 0px;">
+
+																		<!--ORLY-124-->
+																		
+																			<!-- ORLY-397 -->
+																			
+																							<span style="padding-left:8px;"><input type="image" name="addToBasket" alt="Add To Cart"src="/images/oreilly/en_us/local/localbuttons/addtobasket_btn.gif" border="0" /></span><div><img src="/images/oreilly/en_us/global/globalgraphics/spacer01.gif" width="1" height="5" border=0></div>
+																							
+																			<!-- ORLY-397 -->
+																			
+
+
+																		</td>
+																	</tr>
+																	</table>
+																	
+																	</div>
+																</form><form name="addToBasketForm" method="post" action="/addToBasket.do" onsubmit="document.getElementById('mainForm').pageCategory.value=getVariableValue('eVar4');return validateProductSelection(noQtyMsg, noOptionsMsg, this, 1);" id="mainForm"><input type="hidden" name="from" value="detail"><div style="position: relative;">
+																	<input type="hidden" name="pageCategory" value="">
+																	<table cellspacing="0" cellpadding="0" border="0" id="optionsTable">
+																	<tr>
+																		<td width="64%" class="optionsTd">
+																			<input type='hidden' name='productPk' value='103507' />
+																			
+																			<input type='hidden' name='optionTypes' value='1' />
+																			<input type='hidden' name='option' value='100002=100013'/>
+																			<input type="hidden" name="selectedKitItems" id="selectedKitItems_main_103507" value='1995,103506,104170,1||1994,103505,104169,1'>
+																			<div style="float:left;">
+																				
+																				<div float="right" style="font-size: 12px; width: 130px;">Print &amp; Ebook:<span class="price">&nbsp;$54.99</span></div>
+																			<div class="accQtyBox">
+																				
+																						<div class="tableitem">
+																							<input type="hidden" name="qty" id="qty_100013" value="1" size="2" class="quantity"/>
+																						</div>
+																					
+																			</div>
+
+																			 <div style="width: 130px;">
+																				
+																			</div>
+																			<div>
+																			
+																		   </div>
+																		</td>
+																		<td width="36%" class="optionsTd" style="padding-bottom: 0px;">
+
+																		<!--ORLY-124-->
+																		
+																			<!-- ORLY-397 -->
+																			
+																							<span style="padding-left:8px;"><input type="image" name="addToBasket" alt="Add To Cart"src="/images/oreilly/en_us/local/localbuttons/addtobasket_btn.gif" border="0" /></span><div><img src="/images/oreilly/en_us/global/globalgraphics/spacer01.gif" width="1" height="5" border=0></div>
+																							
+																			<!-- ORLY-397 -->
+																			
+
+
+																		</td>
+																	</tr>
+																	</table>
+																	
+																	</div>
+																</form><form name="addToBasketForm" method="post" action="/addToBasket.do" onsubmit="document.getElementById('mainForm').pageCategory.value=getVariableValue('eVar4');return validateProductSelection(noQtyMsg, noOptionsMsg, this, 1);" id="mainForm"><input type="hidden" name="from" value="detail"><div style="position: relative;">
+																	<input type="hidden" name="pageCategory" value="">
+																	<table cellspacing="0" cellpadding="0" border="0" id="optionsTable">
+																	<tr>
+																		<td width="64%" class="optionsTd">
+																			<input type='hidden' name='productPk' value='103507' />
+																			
+																			<input type='hidden' name='optionTypes' value='1' />
+																			<input type='hidden' name='option' value='100002=100012'/>
+																			<input type="hidden" name="selectedKitItems" id="selectedKitItems_main_103507" value='1992,103505,104169,1'>
+																			<div style="float:left;">
+																				
+																				<div float="right" style="font-size: 12px; width: 130px;">Print:<span class="price">&nbsp;$49.99</span></div>
+																			<div class="accQtyBox">
+																				
+																						<div class="tableitem">
+																							<input type="text" name="qty" id="qty_100012" value="1" size="2" maxlength="2" class="quantity"/>
+																						</div>
+																					
+																			</div>
+
+																			 <div style="width: 130px;">
+																				
+																			</div>
+																			<div>
+																			
+																		   </div>
+																		</td>
+																		<td width="36%" class="optionsTd" style="padding-bottom: 0px;">
+
+																		<!--ORLY-124-->
+																		
+																			<!-- ORLY-397 -->
+																			
+																							<span style="padding-left:8px;"><input type="image" name="addToBasket" alt="Add To Cart"src="/images/oreilly/en_us/local/localbuttons/addtobasket_btn.gif" border="0" /></span><div><img src="/images/oreilly/en_us/global/globalgraphics/spacer01.gif" width="1" height="5" border=0></div>
+																							
+																			<!-- ORLY-397 -->
+																			
+
+
+																		</td>
+																	</tr>
+																	</table>
+																	
+																	</div>
+																</form>
+											<tr>
+												<td class="links" colspan="2" style="border-bottom: 1px solid #ddd;">
+										Safari Books Online - <a target="_blank" href="http://my.safaribooksonline.com/9780596155339?portal=oreilly&amp;cid=orm-cat-readnow-9780596155339">Read now ></a>
+												</td>
+											</tr>
+										
+</td>
+</tr>
+</table>
+</div>
+			</div>
+			
+			<div>
+			
+				<div class="relatedLink"><div id="related-links">                                            <div class="box-heading">Essential Links</div>                                            <ul>                                                <li class="strong">                                                    <a href="http://examples.oreilly.com/9780596514983/">Download Example Code</a>                                                </li>                                                <li class="strong">                                                    <a href="http://oreilly.com/register/">Register Your Book</a>                                                </li>                                                <li>                                                    <a href="http://oreilly.com/catalog/errata.csp?isbn=9780596514983" class="errata-link" rel="nofollow">View/Submit Errata</a>                                                </li>                                                <li>                                                    <a href="http://oreilly.com/catalog/praise.csp?isbn=9780596514983" class="errata-link" rel="nofollow">Media Praise</a>                                                </li>                                                <li>                                                    <a href="http://getsatisfaction.com/oreilly/">Ask a Question</a>                                                </li>                                            </ul>                                        </div></div>
+			
+			</div>
+		</td>
+</tr>
+</table>
+
+
+
+
+<style>
+.mbzone2 .mbzonetitle {display: none; !important;}
+</style>
+</div>
+    </td>
+    <td width="8" class="contentbg"><img src="/images/oreilly/en_us/global/globalgraphics/spacer01.gif" width="8" height=1 border=0></td>
+  </tr>
+
+	
+	<tr>
+		<td colspan="3" class="eightPixel">&nbsp;</td>
+	</tr>
+
+
+
+  <tr valign="bottom">
+    <td align="center" colspan="3" class="navfooterbg"><!--BottomNav Start-->
+
+	<!-- autocomplete scripts --> 
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/yui/2.6.0/build/utilities/utilities.js"></script> 
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/yui/2.6.0/build/datasource/datasource-min.js"></script> 
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/yui/2.6.0/build/autocomplete/autocomplete-min.js"></script> 
+<script type="text/javascript" src="https://content.atomz.com/sp1003bcf0/publish/autocomplete_data.js?sp_js_cache_ver=3"></script> 
+
+
+
+
+<table border="0" cellspacing="0" cellpadding="0" class="emailSignUpTable">
+	<tr>
+		<td style="width:516px;">
+
+		
+        <form method="POST" id="emailSignUp" action="http://post.oreilly.com/client/o/oreilly/forms/quicksignup.cgi"> 
+          <table border="0" cellspacing="0" cellpadding="0" width="500"> 
+            <tbody> 
+              <tr> 
+				<td width="275"><div style="padding-left: 12px;">Sign up today to receive special discounts,<br /> product alerts, and news from O'Reilly.</div></td>
+                <td width="172">
+				<input type="hidden" name="client_token" value="oreilly"><input type="hidden" name="subscribe" value="optin">
+                        	<input type="hidden" name="success_url" value="http://oreilly.com/store/newsletter-thankyou.html"> 
+                        	<input type="hidden" name="error_url" value="http://oreilly.com/store/newsletter-signup-error.html"> 
+                        	<input type="hidden" name="news_oreilly" value="1">
+				<input type="text" name="email_addr" value='Enter Email' maxlength="100" size="12" class="NavSearchBottom"></td>
+				<td width="53"><input border="0" type="image" alt="Submit" src="/images/oreilly/en_us/global/globalnav/emailsignup_btn.gif" type="submit" name="submit" value="submit" /></td></tr></tbody></table></form> 
+
+
+		</td>
+		<td>
+
+			<a href="http://oreilly.com/oreilly/privacy.html">Privacy Policy &gt;</a>
+
+			<br />
+
+			<a href="http://oreilly.com/pdf/sample-newsletter.pdf">View Sample Newsletter &gt;</a>
+
+		</td>
+		<td style="text-align:right">
+
+			<ul class="utility">
+				<li><a href="http://www.youtube.com/OreillyMedia" title="YouTube"><img src="/images/oreilly/en_us/global/globalgraphics/youtube_footer.gif" alt="YouTube" align="absMiddle" /></a></li>
+				<li><a href="http://www.facebook.com/OReilly" title="Facebook"><img src="/images/oreilly/en_us/global/globalgraphics/facebook_footer.gif" alt="Facebook" align="absMiddle" /></a></li>
+				<li><a href="http://twitter.com/oreillymedia" title="Twitter"><img src="/images/oreilly/en_us/global/globalgraphics/twitter_footer.gif" alt="Twitter" align="absMiddle" /></a></li>
+				<li><a href="http://feeds2.feedburner.com/oreilly/all" title="Subscribe"><img src="/images/oreilly/en_us/global/globalgraphics/rss_footer.gif" alt="Subscribe to Feed" align="absMiddle" /></a></li>
+				<li style="padding-right:10px;"><a href="http://oreilly.com/feeds/" title="View All RSS Feeds &gt;">View All RSS Feeds &gt;</a></li>
+			</ul>
+
+		</td>
+	</tr>
+</table>
+
+
+<div id="multiColumnFooter">
+
+	<div id="footer-branding">
+		<img src="/images/oreilly/en_us/global/globalnav/logo02.gif" alt="O'Reilly"/>
+<p class="copyright">&copy; 2011, O'Reilly Media, Inc.</p>
+<p><span class="phone-number">(707) 827-7019</span><span class="phone-number">(800) 889-8969</span></p>
+<p class="trademarks">All trademarks and registered trademarks appearing on oreilly.com are the property of their respective owners.</p>
+	</div>
+
+	
+	<div class="contentSectionBlock">
+		
+
+				<!-- style="width:25%;" -->
+
+				<div class="contentSectionContainer" >
+					<span id="footerColumn-1" class="contentSection">
+						<h3>About O'Reilly</h3>
+						<ul>
+						
+								<li><a class="footer" href="http://oreilly.com/academic/">Academic Solutions</a></li>
+									
+								<li><a class="footer" href="http://oreilly.com/jobs/">Jobs</a></li>
+									
+								<li><a class="footer" href="http://oreilly.com/contact.html">Contacts</a></li>
+									
+								<li><a class="footer" href="http://oreilly.com/about/">Corporate Information</a></li>
+									
+								<li><a class="footer" href="http://press.oreilly.com/index.html">Press Room</a></li>
+									
+								<li><a class="footer" href="http://oreilly.com/oreilly/privacy.csp">Privacy Policy</a></li>
+									
+								<li><a class="footer" href="http://oreilly.com/terms/">Terms of Service</a></li>
+									
+								<li><a class="footer" href="http://oreilly.com/oreilly/author/intro.csp">Writing for O'Reilly</a></li>
+									
+						</ul>
+					</span>
+				</div>
+			
+
+				<!-- style="width:25%;" -->
+
+				<div class="contentSectionContainer" >
+					<span id="footerColumn-2" class="contentSection">
+						<h3>Community</h3>
+						<ul>
+						
+								<li><a class="footer" href="http://oreilly.com/authors/">Authors</a></li>
+									
+								<li><a class="footer" href="http://oreilly.com/community/">Community & Featured Users</a></li>
+									
+								<li><a class="footer" href="http://forums.oreilly.com/">Forums</a></li>
+									
+								<li><a class="footer" href="https://members.oreilly.com/">Membership</a></li>
+									
+								<li><a class="footer" href="http://elists.oreilly.com/">Newsletters</a></li>
+									
+								<li><a class="footer" href="http://answers.oreilly.com/">O'Reilly Answers</a></li>
+									
+								<li><a class="footer" href="http://oreilly.com/feeds/">RSS Feeds</a></li>
+									
+								<li><a class="footer" href="http://ug.oreilly.com/">User Groups</a></li>
+									
+						</ul>
+					</span>
+				</div>
+			
+
+				<!-- style="width:25%;" -->
+
+				<div class="contentSectionContainer" >
+					<span id="footerColumn-3" class="contentSection">
+						<h3>More O'Reilly Sites</h3>
+						<ul>
+						
+								<li><a class="footer" href="http://igniteshow.com/">igniteshow.com</a></li>
+									
+								<li><a class="footer" href="http://makerfaire.com/">makerfaire.com</a></li>
+									
+								<li><a class="footer" href="http://makezine.com/">makezine.com</a></li>
+									
+								<li><a class="footer" href="http://craftzine.com/">craftzine.com</a></li>
+									
+								<li><a class="footer" href="http://labs.oreilly.com/">labs.oreilly.com</a></li>
+									
+									<li><h2>Partner Sites</h2></li>
+									
+								<li><a class="footer" href="https://www.x.com/community/ppx/devzone">PayPal Developer Zone</a></li>
+									
+								<li><a class="footer" href="http://blogs.forbes.com/oreillymedia/">O'Reilly Insights on Forbes.com</a></li>
+									
+						</ul>
+					</span>
+				</div>
+			
+
+				<!-- style="width:24%;" -->
+
+				<div class="contentSectionContainer" >
+					<span id="footerColumn-4" class="contentSection">
+						<h3>Shop O'Reilly</h3>
+						<ul>
+						
+								<li><a class="footer" href="/category/customer-service.do">Customer Service</a></li>
+									
+								<li><a class="footer" href="/category/customer-service.do">Contact Us</a></li>
+									
+								<li><a class="footer" href="/category/customer-service/shipping-information.do">Shipping Information</a></li>
+									
+								<li><a class="footer" href="/category/customer-service/ordering-payment.do">Ordering & Payment</a></li>
+									
+								<li><a class="footer" href="/category/customer-service/oreilly-guarantee.do">The O'Reilly Guarantee</a></li>
+									
+						</ul>
+					</span>
+				</div>
+			
+		<div style="clear:both;"></div>
+	</div>
+
+	
+</div>
+<!--BottomNav End-->
+
+</td>
+  </tr>
+</table>
+<script type="text/javascript" src="https://apis.google.com/js/plusone.js"></script> 
+
+<!-- Omniture Reporting Support -->
+<!-- SiteCatalyst code version: H.20.3.
+Copyright 1997-2009 Omniture, Inc. More info available at
+http://www.omniture.com -->
+
+<script language="JavaScript">
+function getId() {
+  return "ororeilly,orglobal"
+}
+function getSerializationID() {
+  return "8803275"
+}
+</script>
+<script language="JavaScript" type="text/javascript" src="/omniture/js/s_code.js"></script>
+<script language="JavaScript" type="text/javascript" src="/omniture/parseOmnitureJSON.js"></script>
+<script language="JavaScript" type="text/javascript"><!--
+
+
+    var oOmnitureJSON = {"eVar4":"Product Detail","eVar5":"Product Detail","pageName":"oreilly:store:real world haskell","eVar3":"Product Detail","prop2":"oreilly:store:product detail","prop1":"oreilly:store","eVar6":"Product Detail","events":{"prodView":null,"event18":null},"prop5":"real world haskell","prop6":"9780596514983","prop3":"oreilly:store:product detail:product detail","prop4":"product detail","products":[{"eVars":{},"pricePerUnit":null,"subTotal":null,"events":{},"name":"Real World Haskell","quantity":null,"code":"9780596514983.IP"}],"channel":"oreilly"};
+
+    parseOmnitureJSON(oOmnitureJSON);
+
+/************* DO NOT ALTER ANYTHING BELOW THIS LINE ! **************/
+var s_code=s.t();if(s_code)document.write(s_code)//--></script>
+<script language="JavaScript" type="text/javascript"><!--
+if(navigator.appVersion.indexOf('MSIE')>=0)document.write(unescape('%3C')+'\!-'+'-')
+//--></script><noscript><a href="http://www.omniture.com" title="Web Analytics"><img
+src="http://ororeilly,orglobal.122.2O7.net/b/ss/ororeilly,orglobal/1/H.20.3--NS/0"
+height="1" width="1" border="0" alt="" /></a></noscript><!--/DO NOT REMOVE/-->
+<!-- End SiteCatalyst code version: H.20.3. -->
+<!-- End, Omniture Reporting Support -->
+
+<script type="text/javascript"> 
+var _gaq = _gaq || []; 
+_gaq.push(['_setAccount', 'UA-4591498-1']); 
+_gaq.push(['_setDomainName', 'oreilly.com']); 
+_gaq.push(['_addIgnoredRef', 'oreilly.com']); 
+_gaq.push(['_trackPageview']); 
+  (function() { 
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; 
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js'; 
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); 
+  })(); 
+
+  
+</script> 
+
+
+<script type="text/javascript">
+var _sf_async_config={uid:1632,domain:"shop.oreilly.com"};
+(function(){
+  function loadChartbeat() {
+    window._sf_endpt=(new Date()).getTime();
+    var e = document.createElement('script');
+    e.setAttribute('language', 'javascript');
+    e.setAttribute('type', 'text/javascript');
+    e.setAttribute('src',
+       (("https:" == document.location.protocol) ? "https://a248.e.akamai.net/chartbeat.download.akamai.com/102508/" : "http://static.chartbeat.com/") +
+       "js/chartbeat.js");
+    document.body.appendChild(e);
+  }
+  var oldonload = window.onload;
+  window.onload = (typeof window.onload != 'function') ?
+     loadChartbeat : function() { oldonload(); loadChartbeat(); };
+})();
+
+</script> 
+
+<script type="text/javascript"> 
+setTimeout(function(){var a=document.createElement("script"); 
+var b=document.getElementsByTagName('script')[0]; 
+a.src=document.location.protocol+"//dnn506yrbagrg.cloudfront.net/pages/scripts/0011/6381.js"; 
+a.async=true;a.type="text/javascript";b.parentNode.insertBefore(a,b)}, 1); 
+</script> 
+</body>
+<script type="text/javascript" src="/includes/footerScripts.js"></script>
+<!-- MyBuys Page Initialization Place after </body> tag -->
+<script type="text/javascript">
+  mybuys.initPage();
+</script>
+<!-- End MyBuys Page Initialization -->
+</html>

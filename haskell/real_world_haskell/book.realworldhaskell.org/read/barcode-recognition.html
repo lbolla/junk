@@ -1,0 +1,1089 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 12. Barcode recognition</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="testing-and-quality-assurance.html" title="Chapter 11. Testing and quality assurance"><link rel="next" href="data-structures.html" title="Chapter 13. Data Structures"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 12. Barcode recognition</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="testing-and-quality-assurance.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="data-structures.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="barcode"><div class="titlepage"><div><div><h2 class="title">Chapter 12. Barcode recognition</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="barcode-recognition.html#id629839">A little bit about barcodes</a></span></dt><dd><dl><dt><span class="sect2"><a href="barcode-recognition.html#barcode.encode">EAN-13 encoding</a></span></dt></dl></dd><dt><span class="sect1"><a href="barcode-recognition.html#barcode.array">Introducing arrays</a></span></dt><dd><dl><dt><span class="sect2"><a href="barcode-recognition.html#id630493">Arrays and laziness</a></span></dt><dt><span class="sect2"><a href="barcode-recognition.html#barcode.fold">Folding over arrays</a></span></dt><dt><span class="sect2"><a href="barcode-recognition.html#barcode.array.mutable">Modifying array elements</a></span></dt><dt><span class="sect2"><a href="barcode-recognition.html#id630742">Exercises</a></span></dt></dl></dd><dt><span class="sect1"><a href="barcode-recognition.html#id630808">Encoding an EAN-13 barcode</a></span></dt><dt><span class="sect1"><a href="barcode-recognition.html#id630886">Constraints on our decoder</a></span></dt><dt><span class="sect1"><a href="barcode-recognition.html#id631008">Divide and conquer</a></span></dt><dt><span class="sect1"><a href="barcode-recognition.html#id631101">Turning a colour image into something tractable</a></span></dt><dd><dl><dt><span class="sect2"><a href="barcode-recognition.html#id631116">Parsing a colour image</a></span></dt><dt><span class="sect2"><a href="barcode-recognition.html#id631231">Greyscale conversion</a></span></dt><dt><span class="sect2"><a href="barcode-recognition.html#id631316">Greyscale to binary, and type safety</a></span></dt></dl></dd><dt><span class="sect1"><a href="barcode-recognition.html#id631472">What have we done to our image?</a></span></dt><dt><span class="sect1"><a href="barcode-recognition.html#id631606">Finding matching digits</a></span></dt><dd><dl><dt><span class="sect2"><a href="barcode-recognition.html#id631625">Run length encoding</a></span></dt><dt><span class="sect2"><a href="barcode-recognition.html#id631784">Scaling run lengths, and finding approximate
+	matches</a></span></dt><dt><span class="sect2"><a href="barcode-recognition.html#id631976">List comprehensions</a></span></dt><dt><span class="sect2"><a href="barcode-recognition.html#id632165">Remembering a match's parity</a></span></dt><dd><dl><dt><span class="sect3"><a href="barcode-recognition.html#id632319">Another kind of laziness, of the keyboarding
+	  variety</a></span></dt></dl></dd><dt><span class="sect2"><a href="barcode-recognition.html#id632473">Chunking a list</a></span></dt><dt><span class="sect2"><a href="barcode-recognition.html#id632516">Generating a list of candidate digits</a></span></dt></dl></dd><dt><span class="sect1"><a href="barcode-recognition.html#id632644">Life without arrays or hash tables</a></span></dt><dd><dl><dt><span class="sect2"><a href="barcode-recognition.html#id632722">A forest of solutions</a></span></dt><dt><span class="sect2"><a href="barcode-recognition.html#id632817">A brief introduction to maps</a></span></dt><dd><dl><dt><span class="sect3"><a href="barcode-recognition.html#id632892">Type constraints</a></span></dt><dt><span class="sect3"><a href="barcode-recognition.html#barcode.map.partial">Partial application awkwardness</a></span></dt><dt><span class="sect3"><a href="barcode-recognition.html#id632952">Getting started with the API</a></span></dt></dl></dd><dt><span class="sect2"><a href="barcode-recognition.html#id633434">Further reading</a></span></dt></dl></dd><dt><span class="sect1"><a href="barcode-recognition.html#id633476">Turning digit soup into an answer</a></span></dt><dd><dl><dt><span class="sect2"><a href="barcode-recognition.html#id633535">Solving for check digits in parallel</a></span></dt><dt><span class="sect2"><a href="barcode-recognition.html#id633876">Completing the solution map with the first digit</a></span></dt><dt><span class="sect2"><a href="barcode-recognition.html#id633953">Finding the correct sequence</a></span></dt></dl></dd><dt><span class="sect1"><a href="barcode-recognition.html#id634020">Working with row data</a></span></dt><dt><span class="sect1"><a href="barcode-recognition.html#id634156">Pulling it all together</a></span></dt><dt><span class="sect1"><a href="barcode-recognition.html#id634269">A few comments on development style</a></span></dt></dl></div><p id="x_ET"><a name="x_ET"></a>In this chapter, we'll make use of the image parsing library
+    we developed in <a class="xref" href="code-case-study-parsing-a-binary-data-format.html" title="Chapter 10. Code case study: parsing a binary data format">Chapter 10, <i>Code case study: parsing a binary data format</i></a> to build a barcode
+    recognition application.  Given a picture of the back
+    of a book taken with a camera phone, we could use this to extract its ISBN
+    number.</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id629839">A little bit about barcodes</h2></div></div></div><p id="x_GT"><a name="x_GT"></a>The vast majority of packaged and mass-produced
+      consumer goods sold have a barcode somewhere on them.  Although
+      there are dozens of barcode systems used across a variety
+      specialised domains, consumer products typically use either
+      UPC-A or EAN-13.  UPC-A was developed in the United States,
+      while EAN-13 is European in origin.</p><p id="x_HT"><a name="x_HT"></a>EAN-13 was developed after UPC-A, and is a
+      superset of UPC-A.  (In fact, UPC-A has been officially declared
+      obsolete since 2005, though it's still widely used within the
+      United States.)  Any software or hardware that can understand
+      EAN-13 barcodes will automatically handle UPC-A barcodes.  This
+      neatly reduces our descriptive problem to one standard.</p><p id="x_IT"><a name="x_IT"></a>As the name suggests, EAN-13 describes a 13-digit
+      sequence, which is broken into four groups.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_XF1"><a name="x_XF1"></a>The first two digits describe the <span class="emphasis"><em>number
+	    system</em></span>.  This can either indicate the
+	  nationality of the manufacturer, or describe one of a few
+	  other categories, such as ISBN (book identifier)
+	  numbers.</p></li><li><p id="x_YF1"><a name="x_YF1"></a>The next five digits are a manufacturer ID, assigned by
+	  a country's numbering authority.</p></li><li><p id="x_ZF1"><a name="x_ZF1"></a>The five digits that follow are a product ID, assigned
+	  by the manufacturer.  (Smaller manufacturers may have a
+	  longer manufacturer ID and shorter product ID, but they
+	  still add up to ten digits.)</p></li><li><p id="x_aF1"><a name="x_aF1"></a>The last digit is a <span class="emphasis"><em>check digit</em></span>,
+	  allowing a scanner to validate the digit string it
+	  scans.</p></li></ul></div><p id="x_JT"><a name="x_JT"></a>The only way in which an EAN-13 barcode differs
+      from a UPC-A barcode is that the latter uses a single digit to
+      represent its number system.  EAN-13 barcodes retain UPC-A
+      compatibility by setting the first number system digit to
+      zero.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="barcode.encode">EAN-13 encoding</h3></div></div></div><p id="x_KT"><a name="x_KT"></a>Before we worry about decoding an EAN-13
+	barcode, we need to understand how they are encoded.  The
+	system used by EAN-13 is a little involved.  We start by
+	computing the check digit, which is the last digit of a
+	string.</p><a name="Barcode.hs:checkDigit"></a><pre id="Barcode.hs:checkDigit" class="programlisting">-- file: ch12/Barcode.hs
+checkDigit :: (Integral a) =&gt; [a] -&gt; a
+checkDigit ds = 10 - (sum products `mod` 10)
+    where products = mapEveryOther (*3) (reverse ds)
+
+mapEveryOther :: (a -&gt; a) -&gt; [a] -&gt; [a]
+mapEveryOther f = zipWith ($) (cycle [f,id])</pre><p id="x_LT"><a name="x_LT"></a>This is one of those algorithms that is more
+	easily understood via the code than a verbal description.  The
+	computation proceeds from the right of the string. Each
+	successive digit is either multiplied by three or left alone
+	(the <code class="function">cycle</code> function repeats its input
+	list infinitely). The check digit is the difference between
+	their sum, modulo ten, and the number ten.</p><p id="x_MT"><a name="x_MT"></a>A barcode is a series of fixed-width bars, where
+	black represents a binary “<span class="quote">one</span>” bit, and white
+	a “<span class="quote">zero</span>”.  A run of the same digits thus looks
+	like a thicker bar.</p><p id="x_NT"><a name="x_NT"></a>The sequence of bits in a barcode is as
+	follows.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_OT"><a name="x_OT"></a>The leading guard sequence, encoded as
+	    101.</p></li><li><p id="x_PT"><a name="x_PT"></a>A group of six digits, each seven bits
+	    wide.</p></li><li><p id="x_QT"><a name="x_QT"></a>Another guard sequence, encoded as
+	    01010.</p></li><li><p id="x_RT"><a name="x_RT"></a>A group of six more digits.</p></li><li><p id="x_ST"><a name="x_ST"></a>The trailing guard sequence, encoded as
+	    101.</p></li></ul></div><p id="x_TT"><a name="x_TT"></a>The digits in the left and right groups have
+	separate encodings. On the left, digits are encoded with
+	parity bits. The parity bits encode the 13th digit of the
+	barcode.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="barcode.array">Introducing arrays</h2></div></div></div><p id="x_bF1"><a name="x_bF1"></a>Before we continue, here are all of the imports that we will
+      be using in the remainder of this chapter.</p><a name="Barcode.hs:imports"></a><pre id="Barcode.hs:imports" class="programlisting">-- file: ch12/Barcode.hs
+import Data.Array (Array(..), (!), bounds, elems, indices,
+                   ixmap, listArray)
+
+import Control.Applicative ((&lt;$&gt;))
+import Control.Monad (forM_)
+import Data.Char (digitToInt)
+import Data.Ix (Ix(..))
+import Data.List (foldl', group, sort, sortBy, tails)
+import Data.Maybe (catMaybes, listToMaybe)
+import Data.Ratio (Ratio)
+import Data.Word (Word8)
+import System.Environment (getArgs)
+import qualified Data.ByteString.Lazy.Char8 as L
+import qualified Data.Map as M
+
+import Parse                    -- from chapter 11</pre><p id="x_UT"><a name="x_UT"></a>The barcode encoding process can largely be
+      table-driven, in which we use small tables of bit patterns to
+      decide how to encode each digit.  Haskell's bread-and-butter
+      data types, lists and tuples, are not well suited to use for
+      tables whose elements may be accessed randomly.  A list has to
+      be traversed linearly to reach the <span class="emphasis"><em>k</em></span>th
+      element.  A tuple doesn't have this problem, but Haskell's type
+      system makes it difficult to write a function that takes a tuple
+      and an element offset and returns the element at that offset
+      within the tuple.  (We'll explore why in the exercises
+      below.)</p><p id="x_VT"><a name="x_VT"></a>The usual data type for constant-time random
+      access is of course the array. Haskell provides several array
+      data types. We'll thus represent our encoding tables as arrays
+      of strings.</p><p id="x_WT"><a name="x_WT"></a>The simplest array type is in the <code class="code">Data.Array</code>
+      module, which we're using here.  This presents arrays that can
+      contain values of any Haskell type.  Like other common Haskell
+      types, these arrays are immutable.  An immutable array is
+      populated with values just once, when it is created.  Its
+      contents cannot subsequently be modified.  (The standard
+      libraries also provide other array types, some of which are
+      mutable, but we won't cover those for a while.)</p><a name="Barcode.hs:encodingTables"></a><pre id="Barcode.hs:encodingTables" class="programlisting">-- file: ch12/Barcode.hs
+leftOddList = ["0001101", "0011001", "0010011", "0111101", "0100011",
+               "0110001", "0101111", "0111011", "0110111", "0001011"]
+
+rightList = map complement &lt;$&gt; leftOddList
+    where complement '0' = '1'
+          complement '1' = '0'
+
+leftEvenList = map reverse rightList
+
+parityList = ["111111", "110100", "110010", "110001", "101100",
+              "100110", "100011", "101010", "101001", "100101"]
+
+listToArray :: [a] -&gt; Array Int a
+listToArray xs = listArray (0,l-1) xs
+    where l = length xs
+
+leftOddCodes, leftEvenCodes, rightCodes, parityCodes :: Array Int String
+
+leftOddCodes = listToArray leftOddList
+leftEvenCodes = listToArray leftEvenList
+rightCodes = listToArray rightList
+parityCodes = listToArray parityList</pre><p id="x_XT"><a name="x_XT"></a>The <code class="code">Data.Array</code> module's
+      <code class="function">listArray</code> function populates an array from
+      a list.  It takes as its first parameter the bounds of the array
+      to create; the second is the values with which to populate
+      it.</p><p id="x_YT"><a name="x_YT"></a>An unusual feature of the <span class="type">Array</span> type is that its
+      type is parameterised over both the data it contains and the
+      index type. For example, the type of a one-dimensional array of
+      <span class="type">String</span> is <span class="type">Array Int String</span>, but a
+      two-dimensional array would have the type <span class="type">Array (Int,Int)
+	String</span>.</p><a name="array.ghci:type"></a><pre id="array.ghci:type" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m +Data.Array</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type listArray</code></strong>
+listArray :: (Ix i) =&gt; (i, i) -&gt; [e] -&gt; Array i e
+</pre><p id="x_ZT"><a name="x_ZT"></a>We can construct an array easily.</p><a name="array.ghci:chars"></a><pre id="array.ghci:chars" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>listArray (0,2) "foo"</code></strong>
+array (0,2) [(0,'f'),(1,'o'),(2,'o')]
+</pre><p id="x_aT"><a name="x_aT"></a>Notice that we have to specify the lower and upper bounds
+      of the array.  These bounds are inclusive, so an array from 0 to
+      2 has elements 0, 1, and 2.</p><a name="array.ghci:listArray"></a><pre id="array.ghci:listArray" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>listArray (0,3) [True,False,False,True,False]</code></strong>
+array (0,3) [(0,True),(1,False),(2,False),(3,True)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>listArray (0,10) "too short"</code></strong>
+array (0,10) [(0,'t'),(1,'o'),(2,'o'),(3,' '),(4,'s'),(5,'h'),(6,'o'),(7,'r'),(8,'t'),(9,*** Exception: (Array.!): undefined array element
+</pre><p id="x_bT"><a name="x_bT"></a>Once an array is constructed, we can use the
+      <code class="function">(!)</code> operator to access its elements by
+      index.</p><a name="array.ghci:index"></a><pre id="array.ghci:index" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let a = listArray (0,14) ['a'..]</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>a ! 2</code></strong>
+'c'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>a ! 100</code></strong>
+*** Exception: Error in array index
+</pre><p id="x_cT"><a name="x_cT"></a>Since the array construction function lets us specify the
+      bounds of an array, we don't have to use the zero-based array
+      indexing familiar to C programmers.  We can choose whatever
+      bounds are convenient for our purposes.</p><a name="array.ghci:bounds"></a><pre id="array.ghci:bounds" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let a = listArray (-9,5) ['a'..]</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>a ! (-2)</code></strong>
+'h'
+</pre><p id="x_dT"><a name="x_dT"></a>The index type can be any member of the <span class="type">Ix</span>
+      type.  This lets us use, for example, <span class="type">Char</span> as the
+      index type.</p><a name="array.ghci:char"></a><pre id="array.ghci:char" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let a = listArray ('a', 'h') [97..]</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>a ! 'e'</code></strong>
+101
+</pre><p id="x_eT"><a name="x_eT"></a>To create a higher-dimensioned array, we use a tuple of
+      <span class="type">Ix</span> instances as the index type.  The Prelude makes
+      tuples of up to five elements members of the <span class="type">Ix</span>
+      class.  To illustrate, here's a small three-dimensional array.</p><a name="array.ghci:3d"></a><pre id="array.ghci:3d" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let a = listArray ((0,0,0), (9,9,9)) [0..]</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>a ! (4,3,7)</code></strong>
+437
+</pre><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id630493">Arrays and laziness</h3></div></div></div><p id="x_cF1"><a name="x_cF1"></a>The list that we use to populate the array must contain at
+	least as many elements as are in the array.  If we do not
+	provide enough elements, we'll get an error at runtime.  When
+	the error will occur depends on the nature of the
+	array.</p><p id="x_dF1"><a name="x_dF1"></a>Here, we are using an array type that is non-strict in its
+	elements.  If we provide a list of three values to an array
+	that we specify as containing more than three elements, the
+	remaining elements will undefined.  We will not get
+	an error unless we access an element beyond the third.</p><a name="array.ghci:lazy"></a><pre id="array.ghci:lazy" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let a = listArray (0,5) "bar"</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>a ! 2</code></strong>
+'r'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>a ! 4</code></strong>
+*** Exception: (Array.!): undefined array element
+</pre><p id="x_eF1"><a name="x_eF1"></a>Haskell also provides strict arrays, which behave
+	differently.  We will discuss the tradeoffs between the two
+	kinds of array much later, in <a class="xref" href="advanced-library-design-building-a-bloom-filter.html#bloomfilter.uarray" title="Unboxing, lifting, and bottom">the section called “Unboxing, lifting, and bottom”</a>.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="barcode.fold">Folding over arrays</h3></div></div></div><p id="x_fT"><a name="x_fT"></a>The <code class="function">bounds</code> function returns a tuple
+	describing the bounds that we used to create the array.  The
+	<code class="function">indices</code> function returns a list of every
+	index.  We can use these to define some useful folds, since
+	the <code class="code">Data.Array</code> module doesn't define any fold
+	functions itself.</p><a name="Barcode.hs:fold"></a><pre id="Barcode.hs:fold" class="programlisting">-- file: ch12/Barcode.hs
+-- | Strict left fold, similar to foldl' on lists.
+foldA :: Ix k =&gt; (a -&gt; b -&gt; a) -&gt; a -&gt; Array k b -&gt; a
+foldA f s a = go s (indices a)
+    where go s (j:js) = let s' = f s (a ! j)
+                        in s' `seq` go s' js
+          go s _ = s
+
+-- | Strict left fold using the first element of the array as its
+-- starting value, similar to foldl1 on lists.
+foldA1 :: Ix k =&gt; (a -&gt; a -&gt; a) -&gt; Array k a -&gt; a
+foldA1 f a = foldA f (a ! fst (bounds a)) a</pre><p id="x_gT"><a name="x_gT"></a>You might wonder why the array modules don't
+	already provide such useful things as folding functions. There
+	are some obvious correspondences between a one-dimensional
+	array and a list.  For instance, there are only two natural
+	ways in which we can fold sequentially: left-to-right and
+	right-to-left. Additionally, we can only fold over one element
+	at a time.</p><p id="x_hT"><a name="x_hT"></a>This does not translate even to
+	two-dimensional arrays.  First of all, there are several
+	kinds of fold that make sense.  We might still want to fold
+	over single elements, but we now have the possibility of
+	folding over rows or columns, too.  On top of this, for
+	element-at-a-time folding, there are no longer just two
+	sequences for traversal.</p><p id="x_iT"><a name="x_iT"></a>In other words, for two-dimensional arrays, there are
+	enough permutations of possibly useful behaviour that there
+	aren't many compelling reasons to choose a handful for a
+	standard library.  This problem is only compounded for higher
+	dimensions, so it's best to let developers write folds that
+	suit the needs of their applications.  As we can see from our
+	examples above, this is not hard to do.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="barcode.array.mutable">Modifying array elements</h3></div></div></div><p id="x_jT"><a name="x_jT"></a>While there exist “<span class="quote">modification</span>” functions
+	for immutable arrays, they are not very practical.  For
+	example, the <code class="function">accum</code> function takes an
+	array and a list of <code class="code">(index, value)</code> pairs, and
+	returns a new array with the values at the given indices
+	replaced.</p><p id="x_kT"><a name="x_kT"></a>Since arrays are immutable, modifying even one
+	element requires copying the entire array.  This quickly
+	becomes prohibitively expensive on arrays of even modest
+	size.</p><p id="x_lT"><a name="x_lT"></a>Another array type, <span class="type">DiffArray</span> in
+	the <code class="code">Data.Array.Diff</code> module, attempts to offset
+	the cost of small modifications by storing deltas between
+	successive versions of an array.  Unfortunately, it is not
+	implemented efficiently at the time we are writing this book,
+	and is currently too slow to be of practical use.</p><div class="note"><table border="0" summary="Note: Don't lose hope"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Don't lose hope</th></tr><tr><td align="left" valign="top"><p id="x_mT"><a name="x_mT"></a>It <span class="emphasis"><em>is</em></span> in fact possible to
+	  modify an array efficiently in Haskell, using the
+	  <span class="type">ST</span> monad.  This is a subject that we will
+	  return to later, in <a class="xref" href="advanced-library-design-building-a-bloom-filter.html" title="Chapter 26. Advanced library design: building a Bloom filter">Chapter 26, <i>Advanced library design: building a Bloom filter</i></a>.</p></td></tr></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id630742">Exercises</h3></div></div></div><p id="x_nT"><a name="x_nT"></a>Let's briefly explore the suitability of tuples as
+	stand-ins for arrays.</p><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id630759"></a><a name="id630762"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_oT"><a name="x_oT"></a>Write a function that takes two arguments: a
+	    four-element tuple, and an integer.  With an integer
+	    argument of zero, it should return the leftmost element of
+	    the tuple.  With an argument of one, it should return the
+	    next element.  And so on.  What restrictions do you have
+	    to put on the types of the arguments in order to write a
+	    function that typechecks correctly?</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id630777"></a><a name="id630779"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_pT"><a name="x_pT"></a>Write a similar function that takes a six-tuple as
+	    its first argument.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id630790"></a><a name="id630792"></a><p><b>3.</b></p></td><td align="left" valign="top"><p id="x_qT"><a name="x_qT"></a>Try refactoring the two functions to share any
+	      common code you can identify.  How much shared code are
+	      you able to you find?</p></td></tr></tbody></table></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id630808">Encoding an EAN-13 barcode</h2></div></div></div><p id="x_rT"><a name="x_rT"></a>Even though our goal is to
+      <span class="emphasis"><em>decode</em></span> a barcode, it's useful to have an
+      encoder for reference. This will allow us to, for example,
+      ensure that our code is correct by checking that the output of
+      <code class="code">decode . encode</code> the same as its input.</p><a name="Barcode.hs:encode"></a><pre id="Barcode.hs:encode" class="programlisting">-- file: ch12/Barcode.hs
+encodeEAN13 :: String -&gt; String
+encodeEAN13 = concat . encodeDigits . map digitToInt
+
+-- | This function computes the check digit; don't pass one in.
+encodeDigits :: [Int] -&gt; [String]
+encodeDigits s@(first:rest) =
+    outerGuard : lefties ++ centerGuard : righties ++ [outerGuard]
+  where (left, right) = splitAt 5 rest
+        lefties = zipWith leftEncode (parityCodes ! first) left
+        righties = map rightEncode (right ++ [checkDigit s])
+
+leftEncode :: Char -&gt; Int -&gt; String
+leftEncode '1' = (leftOddCodes !)
+leftEncode '0' = (leftEvenCodes !)
+
+rightEncode :: Int -&gt; String
+rightEncode = (rightCodes !)
+
+outerGuard = "101"
+centerGuard = "01010"</pre><p id="x_sT"><a name="x_sT"></a>The string to encode is twelve digits long, with
+      <code class="function">encodeDigits</code> adding a thirteenth check
+      digit.</p><p id="x_tT"><a name="x_tT"></a>The barcode is encoded as two groups of six digits, with
+      a guard sequence in the middle and “<span class="quote">outside</span>”
+      sequences on either side.  But if we have two groups of six
+      digits, what happened to the missing digit?</p><p id="x_uT"><a name="x_uT"></a>Each digit in the left group is encoded using either odd or
+      even parity, with the parity chosen based on the bits of the
+      first digit in the string.  If a bit of the first digit is zero,
+      the corresponding digit in the left group is encoded with even
+      parity.  A one bit causes the digit to be encoded with odd
+      parity.  This encoding is an elegant hack, chosen to make EAN-13
+      barcodes backwards compatible with the older UPC-A
+      standard.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id630886">Constraints on our decoder</h2></div></div></div><p id="x_vT"><a name="x_vT"></a>Before we talk about decoding, let's set a few practical
+      limits on what kinds of barcode image we can work with.</p><p id="x_wT"><a name="x_wT"></a>Phone cameras and webcams generally output JPEG
+      images, but writing a JPEG decoder would take us several
+      chapters. We'll simplify our parsing problem by handling the
+      netpbm file format.  We will use the parsing combinators we
+      developed earlier, in <a class="xref" href="code-case-study-parsing-a-binary-data-format.html" title="Chapter 10. Code case study: parsing a binary data format">Chapter 10, <i>Code case study: parsing a binary data format</i></a>.</p><p id="x_xT"><a name="x_xT"></a>We'd like to deal with real images from the kinds
+      of cheap, fixed-focus cameras that come with low-end cell
+      phones.  These images tend to be out of focus, noisy, low in
+      contrast, and of poor resolution.  Fortunately, it's not hard to
+      write code that can handle noisy, defocused VGA-resolution
+      (640x480) images with terrible contrast ratios.  We've verified
+      that the code in this chapter captures barcodes from real books,
+      using pictures taken by authentically mediocre cameras.</p><p id="x_yT"><a name="x_yT"></a>We will avoid any image processing heroics, because that's
+      another chapter-consuming subject.  We won't correct
+      perspective.  Neither will we sharpen images taken from too near
+      to the subject, which causes narrow bars to fade out; or from
+      too far, which causes adjacent bars to blur together.</p><div class="informalfigure"><div class="mediaobject"><img src="figs/ch12-bad-angled.jpg" alt="Barcode image distorted by perspective, due to photo being taken from an angle."></div></div><div class="informalfigure"><div class="mediaobject"><img src="figs/ch12-bad-too-near.jpg" alt="Barcode image blurred by being taken from inside the focal length of the camera lens, causing bars to run together."></div></div><div class="informalfigure"><div class="mediaobject"><img src="figs/ch12-bad-too-far.jpg" alt="Barcode image contains insufficient detail, due to poor resolution of camera lens and CCD."></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id631008">Divide and conquer</h2></div></div></div><p id="x_zT"><a name="x_zT"></a>Our task is to take a camera image and extract a valid
+      barcode from it.  Given such a nonspecific description, it can
+      be hard to see how to make progress.  However, we can break the
+      big problem into a series of subproblems, each of which is
+      self-contained and more tractable.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_AU"><a name="x_AU"></a>Convert colour data into a form we can easily work
+	  with.</p></li><li><p id="x_BU"><a name="x_BU"></a>Sample a single scan line from the image, and extract a
+	  set of guesses as to what the encoded digits in this line
+	  could be.</p></li><li><p id="x_CU"><a name="x_CU"></a>From the guesses, create a list of valid
+	  decodings.</p></li></ul></div><p id="x_DU"><a name="x_DU"></a>Many of these subproblems can be further divided, as we'll
+      see.</p><p id="x_EU"><a name="x_EU"></a>You might wonder how closely this approach of subdivision
+      mirrors the actual work we did when writing the code that we
+      present in this chapter.  The answer is that we're far from
+      image processing gurus, and when we started on this chapter we
+      didn't know exactly what our solution was going to look like.</p><p id="x_FU"><a name="x_FU"></a>We made some early educated guesses as to what a reasonable
+      solution might look like, and came up with the list of subtasks
+      above.  We were then able to start tackling those parts that we
+      knew how to solve, using our spare time to think about the
+      bits that we had no prior experience with.  We certainly didn't
+      have a pre-existing algorithm or master plan in mind.</p><p id="x_GU"><a name="x_GU"></a>Dividing the problem up like this helped us in two
+      ways.  By making progress on familiar ground, we had the
+      psychological advantage of starting to solve the problem, even
+      when we didn't really know where we were going.  And as we
+      started to work on a particular subproblem, we found ourselves
+      able to further subdivide it into tasks of varying familiarity.
+      We continued to focus on easier components, deferring ones we
+      hadn't thought about in enough detail yet, and jumping from one
+      element of the master list above to another. Eventually, we ran
+      out of problems that were both unfamiliar and unsolved, and we
+      had a complete idea of our eventual solution.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id631101">Turning a colour image into something tractable</h2></div></div></div><p id="x_HU"><a name="x_HU"></a>Since we want to work with barcodes, which are
+      sequences of black and white stripes, and we want to write a
+      simple decoder, an easy representation to work with will be a
+      monochrome image, in which each pixel is either black or
+      white.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id631116">Parsing a colour image</h3></div></div></div><p id="x_IU"><a name="x_IU"></a>As we mentioned earlier, we'll work with netpbm images.
+	The netpbm colour image format is only slightly more
+	complicated than the greyscale image format that we parsed in
+	<a class="xref" href="code-case-study-parsing-a-binary-data-format.html" title="Chapter 10. Code case study: parsing a binary data format">Chapter 10, <i>Code case study: parsing a binary data format</i></a>.  The identifying string in a header is
+	“<span class="quote">P6</span>”, with the rest of the header layout
+	identical to the greyscale format.  In the body of an image,
+	each pixel is represented as three bytes, one each for red,
+	green and blue.</p><p id="x_JU"><a name="x_JU"></a>We'll represent the image data as a two-dimensional array
+	of pixels.  We're using arrays here purely to gain experience
+	with them.  For this application, we could just as well use a
+	list of lists.  The only advantage of an array here is slight:
+	we can efficiently extract a row.</p><a name="Barcode.hs:Pixmap"></a><pre id="Barcode.hs:Pixmap" class="programlisting">-- file: ch12/Barcode.hs
+type Pixel = Word8
+type RGB = (Pixel, Pixel, Pixel)
+
+type Pixmap = Array (Int,Int) RGB</pre><p id="x_KU"><a name="x_KU"></a>We provide a few type synonyms to make our type signatures
+	more readable.</p><p id="x_LU"><a name="x_LU"></a>Since Haskell gives us considerable freedom in how we lay
+	out an array, we must choose a representation.  We'll play
+	safe and follow a popular convention: indices begin at zero.
+	We don't need to store the dimensions of the image explicitly,
+	since we can extract them using the
+	<code class="function">bounds</code> function.</p><p id="x_MU"><a name="x_MU"></a>The actual parser is mercifully short, thanks to the
+	combinators we developed in <a class="xref" href="code-case-study-parsing-a-binary-data-format.html" title="Chapter 10. Code case study: parsing a binary data format">Chapter 10, <i>Code case study: parsing a binary data format</i></a>.</p><a name="Barcode.hs:parseRawPPM"></a><pre id="Barcode.hs:parseRawPPM" class="programlisting">-- file: ch12/Barcode.hs
+parseRawPPM :: Parse Pixmap
+parseRawPPM =
+    parseWhileWith w2c (/= '\n') ==&gt; \header -&gt; skipSpaces ==&gt;&amp;
+    assert (header == "P6") "invalid raw header" ==&gt;&amp;
+    parseNat ==&gt; \width -&gt; skipSpaces ==&gt;&amp;
+    parseNat ==&gt; \height -&gt; skipSpaces ==&gt;&amp;
+    parseNat ==&gt; \maxValue -&gt;
+    assert (maxValue == 255) "max value out of spec" ==&gt;&amp;
+    parseByte ==&gt;&amp;
+    parseTimes (width * height) parseRGB ==&gt; \pxs -&gt;
+    identity (listArray ((0,0),(width-1,height-1)) pxs)
+
+parseRGB :: Parse RGB
+parseRGB = parseByte ==&gt; \r -&gt;
+           parseByte ==&gt; \g -&gt;
+           parseByte ==&gt; \b -&gt;
+           identity (r,g,b)
+
+parseTimes :: Int -&gt; Parse a -&gt; Parse [a]
+parseTimes 0 _ = identity []
+parseTimes n p = p ==&gt; \x -&gt; (x:) &lt;$&gt; parseTimes (n-1) p</pre><p id="x_NU"><a name="x_NU"></a>The only function of note above is
+	<code class="function">parseTimes</code>, which calls another parser a
+	given number of times, building up a list of results.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id631231">Greyscale conversion</h3></div></div></div><p id="x_OU"><a name="x_OU"></a>Now that we have a colour image in hand, we need
+	to convert the colour data into monochrome.  An intermediate
+	step is to convert the data to greyscale.  There's a simple,
+	widely used formula<sup>[<a name="id631244" href="#ftn.id631244" class="footnote">29</a>]</sup> for converting an RGB image into a greyscale
+	image, based on the perceived brightness of each colour
+	channel.</p><a name="Barcode.hs:luminance"></a><pre id="Barcode.hs:luminance" class="programlisting">-- file: ch12/Barcode.hs
+luminance :: (Pixel, Pixel, Pixel) -&gt; Pixel
+luminance (r,g,b) = round (r' * 0.30 + g' * 0.59 + b' * 0.11)
+    where r' = fromIntegral r
+          g' = fromIntegral g
+          b' = fromIntegral b</pre><p id="x_PU"><a name="x_PU"></a>Haskell arrays are members of the <code class="code">Functor</code>
+	typeclass, so we can simply use <code class="function">fmap</code> to
+	turn an entire image, or a single scanline, from colour into
+	greyscale.</p><a name="Barcode.hs:pixmapToGreymap"></a><pre id="Barcode.hs:pixmapToGreymap" class="programlisting">-- file: ch12/Barcode.hs
+type Greymap = Array (Int,Int) Pixel
+
+pixmapToGreymap :: Pixmap -&gt; Greymap
+pixmapToGreymap = fmap luminance</pre><p id="x_QU"><a name="x_QU"></a>This <code class="function">pixmapToGreymap</code> function is just
+	for illustration.  Since we'll only be checking a few rows of
+	an image for possible barcodes, there's no reason to do the
+	extra work of converting data we'll never subsequently
+	use.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id631316">Greyscale to binary, and type safety</h3></div></div></div><p id="x_RU"><a name="x_RU"></a>Our next subproblem is to convert the greyscale image into
+	a two-valued image, where each pixel is either on or
+	off.</p><p id="x_SU"><a name="x_SU"></a>In an image processing application, where we're juggling
+	lots of numbers, it would be easy to reuse the same numeric
+	type for several different purposes.  For example, we could
+	use the <span class="type">Pixel</span> type to represent on/off states,
+	using the convention that the digit one represents a bit
+	that's “<span class="quote">on</span>”, and zero “<span class="quote">off</span>”.</p><p id="x_TU"><a name="x_TU"></a>However, reusing types for multiple purposes in this way
+	quickly leads to potential confusion.  To see whether a
+	particular “<span class="quote">Pixel</span>” is a number or an on/off
+	value, we can no longer simply glance at a type signature.  We
+	could easily use a value containing “<span class="quote">the wrong kind of
+	  number</span>” in some context, and the compiler won't catch
+	it because the types work out.</p><p id="x_UU"><a name="x_UU"></a>We could try to work around this by introducing a type
+	alias.  In the same way that we declared <span class="type">Pixel</span> to
+	be a synonym of <span class="type">Word8</span>, we could declare a
+	<span class="type">Bit</span> type as a synonym of <span class="type">Pixel</span>.
+	While this might help readability, type synonyms still don't make
+	the compiler do any useful work on our behalf.</p><p id="x_VU"><a name="x_VU"></a>The compiler would treat <span class="type">Pixel</span> and
+	<span class="type">Bit</span> as exactly the same type, so it could not
+	catch a mistake such as using a <span class="type">Pixel</span> value of
+	253 in a function that expects <span class="type">Bit</span> values of zero
+	or one.</p><p id="x_WU"><a name="x_WU"></a>If we define the monochrome type ourselves, the compiler
+	will prevent us from accidentally mixing our types up like
+	this.</p><a name="Barcode.hs:threshold"></a><pre id="Barcode.hs:threshold" class="programlisting">-- file: ch12/Barcode.hs
+data Bit = Zero | One
+           deriving (Eq, Show)
+
+threshold :: (Ix k, Integral a) =&gt; Double -&gt; Array k a -&gt; Array k Bit
+threshold n a = binary &lt;$&gt; a
+    where binary i | i &lt; pivot  = Zero
+                   | otherwise  = One
+          pivot    = round $ least + (greatest - least) * n
+          least    = fromIntegral $ choose (&lt;) a
+          greatest = fromIntegral $ choose (&gt;) a
+          choose f = foldA1 $ \x y -&gt; if f x y then x else y</pre><p id="x_XU"><a name="x_XU"></a>Our <code class="function">threshold</code> function computes the
+	minimum and maximum values in its input array.  It takes these
+	and a threshold valued between zero and one, and computes a
+	“<span class="quote">pivot</span>” value.  Then for each value in the array,
+	if that value is less than the pivot, the result is
+	<code class="code">Zero</code>, otherwise <code class="code">One</code>. Notice that we
+	use one of the folding functions that we wrote in <a class="xref" href="barcode-recognition.html#barcode.fold" title="Folding over arrays">the section called “Folding over arrays”</a>.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id631472">What have we done to our image?</h2></div></div></div><p id="x_YU"><a name="x_YU"></a>Let's step back for a moment and consider what we've done to
+      our image when we converted it from colour to monochrome. Here's
+      an image captured from a VGA-resolution camera.  All we've done
+      is crop it down to the barcode.</p><div class="informalfigure"><div class="mediaobject"><img src="figs/ch12-barcode-photo.jpg" alt="Barcode photo, somewhat blurry and dim."></div></div><p id="x_ZU"><a name="x_ZU"></a>The encoded digit string, 9780132114677, is printed below
+      the barcode.  The left group encodes the digits 780132, with 9
+      encoded in their parity.  The right group encodes the digits
+      114677, where the final 7 is the check digit.  Here's a clean
+      encoding of this barcode, from one of the many web sites that
+      offer barcode image generation for free.</p><div class="informalfigure"><div class="mediaobject"><img src="figs/ch12-barcode-generated.png" alt="Automatically generated image of the same barcode."></div></div><p id="x_aU"><a name="x_aU"></a>We've chosen a row from the captured image, and stretched it
+      out vertically to make it easier to see.  We've superimposed
+      this on top of the perfect image, and stretched it out so that
+      the two are aligned.</p><div class="informalfigure"><div class="mediaobject"><img src="figs/ch12-barcode-example.png" alt="Photographic and generated images of barcode juxtaposed to illustrate the variation in bar brightness and resolution."></div></div><p id="x_bU"><a name="x_bU"></a>The luminance-converted row from the photo is in the dark
+      grey band. It is low in contrast and poor in quality, with
+      plenty of blurring and noise.  The paler band is the same row
+      with the contrast adjusted.</p><p id="x_cU"><a name="x_cU"></a>Somewhat below these two bands is another: this shows the
+      effect of thresholding the luminance-converted row.  Notice that
+      some bars have gotten thicker, others thinner, and many bars
+      have moved a little to the left or right.</p><p id="x_dU"><a name="x_dU"></a>Clearly, any attempt to find exact matches in an image with
+      problems like these is not going to succeed very often.  We must
+      write code that's robust in the face of bars that are too thick,
+      too thin, or not exactly where they're supposed to be.  The
+      widths of our bars will depend on how far our book was from the
+      camera, so we can't make any assumptions about widths,
+      either.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id631606">Finding matching digits</h2></div></div></div><p id="x_eU"><a name="x_eU"></a>Our first problem is to find the digits that
+      <span class="emphasis"><em>might</em></span> be encoded at a given position.  For
+      the next while, we'll make a few simplifying assumptions.  The
+      first is that we're working with a single row.  The second is
+      that we know exactly where in a row the left edge of a barcode
+      begins.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id631625">Run length encoding</h3></div></div></div><p id="x_fU"><a name="x_fU"></a>How can we overcome the problem of not even knowing how
+	thick our bars are?  The answer is to run length encode our
+	image data.</p><a name="Barcode.hs:runLength"></a><pre id="Barcode.hs:runLength" class="programlisting">-- file: ch12/Barcode.hs
+type Run = Int
+type RunLength a = [(Run, a)]
+
+runLength :: Eq a =&gt; [a] -&gt; RunLength a
+runLength = map rle . group
+    where rle xs = (length xs, head xs)</pre><p id="x_gF1"><a name="x_gF1"></a>The <code class="function">group</code> function takes sequences of
+	identical elements in a list, and groups them into
+	sublists.</p><a name="barcode.ghci:group"></a><pre id="barcode.ghci:group" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>group [1,1,2,3,3,3,3]</code></strong>
+[[1,1],[2],[3,3,3,3]]
+</pre><p id="x_hF1"><a name="x_hF1"></a>Our <code class="function">runLength</code> function represents
+	each group as a pair of its length and first element.</p><a name="barcode.ghci:runLength"></a><pre id="barcode.ghci:runLength" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let bits = [0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0]</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runLength bits</code></strong>
+Loading package array-0.1.0.0 ... linking ... done.
+Loading package containers-0.1.0.1 ... linking ... done.
+Loading package bytestring-0.9.0.1 ... linking ... done.
+[(2,0),(2,1),(2,0),(2,1),(6,0),(4,1),(4,0)]
+</pre><p id="x_gU"><a name="x_gU"></a>Since the data we're run length encoding are just ones and
+	zeros, the encoded numbers will simply alternate between one
+	and zero.  We can throw the encoded values away without losing
+	any useful information, keeping only the length of each run.</p><a name="Barcode.hs:runLengths"></a><pre id="Barcode.hs:runLengths" class="programlisting">-- file: ch12/Barcode.hs
+runLengths :: Eq a =&gt; [a] -&gt; [Run]
+runLengths = map fst . runLength</pre><a name="barcode.ghci:runLengths"></a><pre id="barcode.ghci:runLengths" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>runLengths bits</code></strong>
+[2,2,2,2,6,4,4]
+</pre><p id="x_hU"><a name="x_hU"></a>The bit patterns above aren't random; they're the left
+	outer guard and first encoded digit of a row from our captured
+	image. If we drop the guard bars, we're left with the run
+	lengths <code class="code">[2,6,4,4]</code>.  How do we find matches
+	for these in the encoding tables we wrote in <a class="xref" href="barcode-recognition.html#barcode.array" title="Introducing arrays">the section called “Introducing arrays”</a>?</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id631784">Scaling run lengths, and finding approximate
+	matches</h3></div></div></div><p id="x_iU"><a name="x_iU"></a>One possible approach is to scale the run lengths so that
+	they sum to one.  We'll use the <span class="type">Ratio Int</span> type
+	instead of the usual <span class="type">Double</span> to manage these
+	scaled values, as <span class="type">Ratio</span>s print out more readably
+	in <span class="command"><strong>ghci</strong></span>.  This makes interactive debugging and development
+	much easier.</p><a name="Barcode.hs:scaleToOne"></a><pre id="Barcode.hs:scaleToOne" class="programlisting">-- file: ch12/Barcode.hs
+type Score = Ratio Int
+
+scaleToOne :: [Run] -&gt; [Score]
+scaleToOne xs = map divide xs
+    where divide d = fromIntegral d / divisor
+          divisor = fromIntegral (sum xs)
+-- A more compact alternative that "knows" we're using Ratio Int:
+-- scaleToOne xs = map (% sum xs) xs
+
+type ScoreTable = [[Score]]
+
+-- "SRL" means "scaled run length".
+asSRL :: [String] -&gt; ScoreTable
+asSRL = map (scaleToOne . runLengths)
+
+leftOddSRL = asSRL leftOddList
+leftEvenSRL = asSRL leftEvenList
+rightSRL = asSRL rightList
+paritySRL = asSRL parityList</pre><p id="x_jU"><a name="x_jU"></a>We use the <span class="type">Score</span> type synonym so that most of
+	our code won't have to care what the underlying type is.  Once
+	we're done developing our code and poking around with <span class="command"><strong>ghci</strong></span>,
+	we could, if we wish, go back and turn the
+	“<span class="quote">Score</span>” type synonym into <span class="type">Double</span>s,
+	without changing any code.</p><p id="x_kU"><a name="x_kU"></a>We can use <code class="function">scaleToOne</code> to scale a
+	sequence of digits that we're searching for.  We've now
+	corrected for variations in bar widths due to distance, as
+	there should be a pretty close match between an entry in a
+	scaled run length encoding table and a run length sequence
+	pulled from an image.</p><p id="x_lU"><a name="x_lU"></a>The next question is how we turn the intuitive idea of
+	“<span class="quote">pretty close</span>” into a measure of “<span class="quote">close
+	  enough</span>”. Given two scaled run length sequences, we
+	can calculate an approximate “<span class="quote">distance</span>” between
+	them as follows.</p><a name="Barcode.hs:distance"></a><pre id="Barcode.hs:distance" class="programlisting">-- file: ch12/Barcode.hs
+distance :: [Score] -&gt; [Score] -&gt; Score
+distance a b = sum . map abs $ zipWith (-) a b</pre><p id="x_mU"><a name="x_mU"></a>An exact match will give a distance of zero, with weaker
+	matches resulting in larger distances.</p><a name="barcode.ghci:distance"></a><pre id="barcode.ghci:distance" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let group = scaleToOne [2,6,4,4]</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>distance group (head leftEvenSRL)</code></strong>
+13%28
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>distance group (head leftOddSRL)</code></strong>
+17%28
+</pre><p id="x_nU"><a name="x_nU"></a>Given a scaled run length table, we choose the best few
+	matches in that table for a given input sequence.</p><a name="Barcode.hs:bestScores"></a><pre id="Barcode.hs:bestScores" class="programlisting">-- file: ch12/Barcode.hs
+bestScores :: ScoreTable -&gt; [Run] -&gt; [(Score, Digit)]
+bestScores srl ps = take 3 . sort $ scores
+    where scores = zip [distance d (scaleToOne ps) | d &lt;- srl] digits
+          digits = [0..9]</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id631976">List comprehensions</h3></div></div></div><p id="x_iF1"><a name="x_iF1"></a>The new notation that we introduced in the previous
+	example is an example of a <span class="emphasis"><em>list
+	comprehension</em></span>, which creates a list from one or
+	more other lists.</p><a name="listcomp.ghci:listcomp"></a><pre id="listcomp.ghci:listcomp" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>[ (a,b) | a &lt;- [1,2], b &lt;- "abc" ]</code></strong>
+[(1,'a'),(1,'b'),(1,'c'),(2,'a'),(2,'b'),(2,'c')]
+</pre><p id="x_jF1"><a name="x_jF1"></a>The expression on the left of the vertical bar is
+	evaluated for each combination of <span class="emphasis"><em>generator
+	  expressions</em></span> on the right. A generator expression
+	binds a variable on the left of a <code class="literal">&lt;-</code> to an element of
+	the list on the right.  As the example above shows, the
+	combinations of generators are evaluated in depth first order:
+	for the first element of the first list, we evaluate every
+	element of the second, and so on.</p><p id="x_kF1"><a name="x_kF1"></a>In addition to generators, we can also specify guards on
+	the right of a list comprehension.  A guard is a
+	<span class="type">Bool</span> expression.  If it evaluates to
+	<code class="code">False</code>, that element is skipped over.</p><a name="listcomp.ghci:evens"></a><pre id="listcomp.ghci:evens" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>[ (a,b) | a &lt;- [1..6], b &lt;- [5..7], even (a + b ^ 2) ]</code></strong>
+[(1,5),(1,7),(2,6),(3,5),(3,7),(4,6),(5,5),(5,7),(6,6)]
+</pre><p id="x_lF1"><a name="x_lF1"></a>We can also bind local variables using a <code class="literal">let</code>
+	expression.</p><a name="listcomp.ghci:vowels"></a><pre id="listcomp.ghci:vowels" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let vowel = (`elem` "aeiou")</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>[ x | a &lt;- "etaoin", b &lt;- "shrdlu", let x = [a,b], all vowel x ]</code></strong>
+["eu","au","ou","iu"]
+</pre><p id="x_mF1"><a name="x_mF1"></a>If a pattern match fails in a generator expression, no
+	error occurs.  Instead, that list element is skipped.</p><a name="listcomp.ghci:pattern"></a><pre id="listcomp.ghci:pattern" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>[ a | (3,a) &lt;- [(1,'y'),(3,'e'),(5,'p')] ]</code></strong>
+"e"
+</pre><p id="x_nF1"><a name="x_nF1"></a>List comprehensions are powerful and concise.  As a
+	result, they can be difficult to read.  When used with care,
+	they can make our code easier to follow.</p><a name="Barcode.hs:listcomp"></a><pre id="Barcode.hs:listcomp" class="programlisting">-- file: ch12/Barcode.hs
+-- our original
+zip [distance d (scaleToOne ps) | d &lt;- srl] digits
+
+-- the same expression, expressed without a list comprehension
+zip (map (flip distance (scaleToOne ps)) srl) digits
+
+-- the same expression, written entirely as a list comprehension
+[(distance d (scaleToOne ps), n) | d &lt;- srl, n &lt;- digits]</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id632165">Remembering a match's parity</h3></div></div></div><p id="x_oU"><a name="x_oU"></a>For each match in the left group, we have to remember
+	whether we found it in the even parity table or the odd
+	table.</p><a name="Barcode.hs:Parity"></a><pre id="Barcode.hs:Parity" class="programlisting">-- file: ch12/Barcode.hs
+data Parity a = Even a | Odd a | None a
+                deriving (Show)
+
+fromParity :: Parity a -&gt; a
+fromParity (Even a) = a
+fromParity (Odd a) = a
+fromParity (None a) = a
+
+parityMap :: (a -&gt; b) -&gt; Parity a -&gt; Parity b
+parityMap f (Even a) = Even (f a)
+parityMap f (Odd a) = Odd (f a)
+parityMap f (None a) = None (f a)
+
+instance Functor Parity where
+    fmap = parityMap</pre><p id="x_pU"><a name="x_pU"></a>We wrap a value in the parity with which it was
+	encoded, and making it a <code class="code">Functor</code> instance so that
+	we can easily manipulate parity-encoded values.</p><p id="x_qU"><a name="x_qU"></a>We would like to be able to sort parity-encoded
+	values based on the values they contain.  The
+	<code class="code">Data.Function</code> module provides a lovely combinator
+	that we can use for this, named
+	<code class="function">on</code>.</p><a name="Barcode.hs:compareWithoutParity"></a><pre id="Barcode.hs:compareWithoutParity" class="programlisting">-- file: ch12/Barcode.hs
+on :: (a -&gt; a -&gt; b) -&gt; (c -&gt; a) -&gt; c -&gt; c -&gt; b
+on f g x y = g x `f` g y
+
+compareWithoutParity = compare `on` fromParity</pre><p id="x_rU"><a name="x_rU"></a>In case it's unclear, try thinking of
+	<code class="function">on</code> as a function of two arguments,
+	<code class="varname">f</code> and <code class="varname">g</code>, which returns a
+	function of two arguments, <code class="varname">x</code> and
+	<code class="varname">y</code>.  It applies <code class="function">g</code> to
+	<code class="varname">x</code> and to <code class="varname">y</code>, then
+	<code class="function">f</code> on the two results (hence the name
+	<code class="function">on</code>).</p><p id="x_tU"><a name="x_tU"></a>Wrapping a match in a parity value is
+	straightforward.</p><a name="Barcode.hs:bestLeftRight"></a><pre id="Barcode.hs:bestLeftRight" class="programlisting">-- file: ch12/Barcode.hs
+type Digit = Word8
+
+bestLeft :: [Run] -&gt; [Parity (Score, Digit)]
+bestLeft ps = sortBy compareWithoutParity
+              ((map Odd (bestScores leftOddSRL ps)) ++
+               (map Even (bestScores leftEvenSRL ps)))
+
+bestRight :: [Run] -&gt; [Parity (Score, Digit)]
+bestRight = map None . bestScores rightSRL</pre><p id="x_uU"><a name="x_uU"></a>Once we have the best left-hand matches from the even and
+	odd tables, we sort them based only on the quality of each
+	match.</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="id632319">Another kind of laziness, of the keyboarding
+	  variety</h4></div></div></div><p id="x_vU"><a name="x_vU"></a>In our definition of the <span class="type">Parity</span> type, we
+	  could have used Haskell's record syntax to avoid the need to
+	  write a <span class="type">fromParity</span> function.  In other words,
+	  we could have written it as follows.</p><a name="Barcode.hs:AltParity"></a><pre id="Barcode.hs:AltParity" class="programlisting">-- file: ch12/Barcode.hs
+data AltParity a = AltEven {fromAltParity :: a}
+                 | AltOdd  {fromAltParity :: a}
+                 | AltNone {fromAltParity :: a}
+                   deriving (Show)</pre><p id="x_wU"><a name="x_wU"></a>Why did we not do this?  The answer is slightly
+	  shameful, and has to do with interactive debugging in
+	  <span class="command"><strong>ghci</strong></span>.  When we tell <span class="application">GHC</span> to automatically derive a
+	  <span class="type">Show</span> instance for a type, it produces different
+	  code depending on whether or not we declare the type with
+	  record syntax.</p><a name="barcode.ghci:verbosity"></a><pre id="barcode.ghci:verbosity" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>show $ Even 1</code></strong>
+"Even 1"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>show $ AltEven 1</code></strong>
+"AltEven {fromAltParity = 1}"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>length . show $ Even 1</code></strong>
+6
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>length . show $ AltEven 1</code></strong>
+27
+</pre><p id="x_xU"><a name="x_xU"></a>The <span class="type">Show</span> instance for the variant that uses
+	  record syntax is considerably more verbose.  This creates
+	  much more noise that we must scan through when we're trying
+	  to read, say, a list of parity-encoded values output by
+	  <span class="command"><strong>ghci</strong></span>.</p><p id="x_yU"><a name="x_yU"></a>Of course we could write our own, less noisy,
+	  <span class="type">Show</span> instance.  It's simply less effort to
+	  avoid record syntax and write our own
+	  <span class="type">fromParity</span> function instead, letting <span class="application">GHC</span>
+	  derive a more terse <span class="type">Show</span> instance for us.  This
+	  isn't an especially satisfying rationale, but programmer
+	  laziness can lead in odd directions at times.</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id632473">Chunking a list</h3></div></div></div><p id="x_zU"><a name="x_zU"></a>A common aspect of working with lists is needing
+	to “<span class="quote">chunk</span>” them.  For example, each digit in a
+	barcode is encoded using a run of four digits.  We can turn
+	the flat list that represents a row into a list of
+	four-element lists as follows.</p><a name="Barcode.hs:chunksOf"></a><pre id="Barcode.hs:chunksOf" class="programlisting">-- file: ch12/Barcode.hs
+chunkWith :: ([a] -&gt; ([a], [a])) -&gt; [a] -&gt; [[a]]
+chunkWith _ [] = []
+chunkWith f xs = let (h, t) = f xs
+                 in h : chunkWith f t
+
+chunksOf :: Int -&gt; [a] -&gt; [[a]]
+chunksOf n = chunkWith (splitAt n)</pre><p id="x_AV"><a name="x_AV"></a>It's somewhat rare that we need to write generic
+	list manipulation functions like this.  Often, a
+	glance through the <code class="code">Data.List</code> module will find us
+	a function that does exactly, or close enough to, what we
+	need.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id632516">Generating a list of candidate digits</h3></div></div></div><p id="x_BV"><a name="x_BV"></a>With our small army of helper functions deployed, the
+	function that generates lists of candidate matches for each
+	digit group is easy to write.  First of all, we take care of a
+	few early checks to determine whether matching even makes
+	sense.  A list of runs must start on a black
+	(<code class="code">Zero</code>) bar, and contain enough bars.  Here are
+	the first few equations of our function.</p><a name="Barcode.hs:candidateDigits.head"></a><pre id="Barcode.hs:candidateDigits.head" class="programlisting">-- file: ch12/Barcode.hs
+candidateDigits :: RunLength Bit -&gt; [[Parity Digit]]
+candidateDigits ((_, One):_) = []
+candidateDigits rle | length rle &lt; 59 = []</pre><p id="x_CV"><a name="x_CV"></a>If any application of
+	<code class="function">bestLeft</code> or
+	<code class="function">bestRight</code> results in an empty list, we
+	can't possibly have a match.  Otherwise, we throw away the
+	scores, and return a list of lists of parity-encoded candidate
+	digits.  The outer list is twelve elements long, one per digit
+	in the barcode.  The digits in each sublist are ordered by
+	match quality.</p><p id="x_oF1"><a name="x_oF1"></a>Here is the remainder of the definition of our
+	function.</p><a name="Barcode.hs:candidateDigits"></a><pre id="Barcode.hs:candidateDigits" class="programlisting">-- file: ch12/Barcode.hs
+candidateDigits rle
+    | any null match = []
+    | otherwise      = map (map (fmap snd)) match
+  where match = map bestLeft left ++ map bestRight right
+        left = chunksOf 4 . take 24 . drop 3 $ runLengths
+        right = chunksOf 4 . take 24 . drop 32 $ runLengths
+        runLengths = map fst rle</pre><p id="x_DV"><a name="x_DV"></a>Let's take a glance at the candidate digits chosen for each
+	group of bars, from a row taken from the image above.</p><a name="barcode.ghci:candidateDigits"></a><pre id="barcode.ghci:candidateDigits" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type input</code></strong>
+input :: [(Run, Bit)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>take 7 input</code></strong>
+[(2,Zero),(2,One),(2,Zero),(2,One),(6,Zero),(4,One),(4,Zero)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>mapM_ print $ candidateDigits input</code></strong>
+[Even 1,Even 5,Odd 7,Odd 1,Even 2,Odd 5]
+[Even 8,Even 7,Odd 1,Odd 2,Odd 0,Even 6]
+[Even 0,Even 1,Odd 8,Odd 2,Odd 4,Even 9]
+[Odd 1,Odd 0,Even 8,Odd 2,Even 2,Even 4]
+[Even 3,Odd 4,Odd 5,Even 7,Even 0,Odd 2]
+[Odd 2,Odd 4,Even 7,Even 0,Odd 1,Even 1]
+[None 1,None 5,None 0]
+[None 1,None 5,None 2]
+[None 4,None 5,None 2]
+[None 6,None 8,None 2]
+[None 7,None 8,None 3]
+[None 7,None 3,None 8]
+</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id632644">Life without arrays or hash tables</h2></div></div></div><p id="x_EV"><a name="x_EV"></a>In an imperative language, the array is as much a
+      “<span class="quote">bread and butter</span>” type as a list or tuple in
+      Haskell.  We take it for granted that an array in an imperative
+      language is usually mutable; we can change an element of an
+      array whenever it suits us.</p><p id="x_FV"><a name="x_FV"></a>As we mentioned in <a class="xref" href="barcode-recognition.html#barcode.array.mutable" title="Modifying array elements">the section called “Modifying array elements”</a>, Haskell arrays are
+      <span class="emphasis"><em>not</em></span> mutable.  This means that to
+      “<span class="quote">modify</span>” a single array element, a copy of the
+      entire array is made, with that single element set to its new
+      value.  Clearly, this approach is not a winner for
+      performance.</p><p id="x_GV"><a name="x_GV"></a>The mutable array is a building block for another ubiquitous
+      imperative data structure, the hash table.  In the typical
+      implementation, an array acts as the “<span class="quote">spine</span>” of the
+      table, with each element containing a list of elements.  To add
+      an element to a hash table, we hash the element to find the
+      array offset, and modify the list at that offset to add the
+      element to it.</p><p id="x_HV"><a name="x_HV"></a>If arrays aren't mutable, to updating a hash table, we must
+      create a new one.  We copy the array, putting a new list at the
+      offset indicated by the element's hash.  We don't need to copy
+      the lists at other offsets, but we've already dealt performance
+      a fatal blow simply by having to copy the spine.</p><p id="x_IV"><a name="x_IV"></a>At a single stroke, then, immutable arrays have
+      eliminated <span class="emphasis"><em>two</em></span> canonical imperative data
+      structures from our toolbox.  Arrays are somewhat less useful in
+      pure Haskell code than in many other languages.  Still, many
+      array codes only update an array during a build phase, and
+      subsequently use it in a read-only manner.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id632722">A forest of solutions</h3></div></div></div><p id="x_JV"><a name="x_JV"></a>This is not the calamitous situation that it might seem,
+	though.  Arrays and hash tables are often used as collections
+	indexed by a key, and in Haskell we use
+	<span class="emphasis"><em>trees</em></span> for this purpose.</p><p id="x_KV"><a name="x_KV"></a>Implementing a naive tree type is particularly easy in
+	Haskell.  Beyond that, more useful tree types are also
+	unusually easy to implement.  Self-balancing structures, such
+	as red-black trees, have struck fear into generations of
+	undergraduate computer science students, because the balancing
+	algorithms are notoriously hard to get right.</p><p id="x_LV"><a name="x_LV"></a>Haskell's combination of algebraic data types, pattern
+	matching, and guards reduce even the hairiest of balancing
+	operations to a few lines of code.  We'll bite back our
+	enthusiasm for building trees, however, and focus on why
+	they're particularly useful in a pure functional
+	language.</p><p id="x_MV"><a name="x_MV"></a>The attraction of a tree to a functional programmer is
+	<span class="emphasis"><em>cheap modification</em></span>.  We don't break the
+	immutability rule: trees are immutable just like everything
+	else.  However, when we modify a tree, creating a new tree, we
+	can share most of the structure of the tree between the old
+	and new versions.  For example, in a tree containing 10,000
+	nodes, we might expect that the old and new versions will
+	share about 9,985 elements when we add or remove one.  In
+	other words, the number of elements modified per update
+	depends on the height of the tree, or the logarithm of the
+	size of the tree.</p><p id="x_NV"><a name="x_NV"></a>Haskell's standard libraries provide two collection types
+	that are implemented using balanced trees behind the scenes:
+	<code class="code">Data.Map</code> for key/value pairs, and
+	<code class="code">Data.Set</code> for sets of values.  As we'll be using
+	<code class="code">Data.Map</code> in the sections that follow, we'll give
+	a quick introduction to it below. <code class="code">Data.Set</code> is
+	sufficiently similar that you should be able to pick it up
+	quickly.</p><div class="note"><table border="0" summary="Note: A word about performance"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">A word about performance</th></tr><tr><td align="left" valign="top"><p id="x_OV"><a name="x_OV"></a>Compared to a hash table, a well-implemented purely
+	  functional tree data structure will perform competitively.
+	  You should not approach trees with the assumption that your
+	  code will pay a performance penalty.</p></td></tr></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id632817">A brief introduction to maps</h3></div></div></div><p id="x_PV"><a name="x_PV"></a>The <code class="code">Data.Map</code> module provides a
+	parameterised type, <span class="type">Map k a</span>, that maps from a key
+	type <code class="varname">k</code> to a value type <code class="varname">a</code>.  Although it is internally a
+	size-balanced binary tree, the implementation is not visible
+	to us.</p><p id="x_QV"><a name="x_QV"></a><span class="type">Map</span> is strict in its keys, but
+	non-strict in its values.  In other words, the
+	<span class="emphasis"><em>spine</em></span>, or structure, of the map is always
+	kept up to date, but values in the map aren't evaluated unless
+	we force them to be.</p><p id="x_RV"><a name="x_RV"></a>It is very important to remember this, as
+	<span class="type">Map</span>'s laziness over values is a frequent source
+	of space leaks among coders who are not expecting it.</p><p id="x_SV"><a name="x_SV"></a>Because the <code class="code">Data.Map</code> module
+	contains a number of names that clash with Prelude names, it's
+	usually imported in qualified form.  Earlier in this chapter,
+	we imported it using the prefix <code class="code">M</code>.</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="id632892">Type constraints</h4></div></div></div><p id="x_TV"><a name="x_TV"></a>The <span class="type">Map</span> type doesn't place any explicit
+	  constraints on its key type, but most of the module's useful
+	  functions require that keys be instances of
+	  <code class="code">Ord</code>. This is noteworthy, as it's an example of
+	  a common design pattern in Haskell code: type constraints
+	  are pushed out to where they're actually needed, not
+	  necessarily applied at the point where they'd result in the
+	  least fingertyping for a library's author.</p><p id="x_UV"><a name="x_UV"></a>Neither the <span class="type">Map</span> type nor any functions in
+	  the module constrain the types that can be used as
+	  values.</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="barcode.map.partial">Partial application awkwardness</h4></div></div></div><p id="x_VV"><a name="x_VV"></a>For some reason, the type signatures of the functions in
+	  <code class="code">Data.Map</code> are not generally friendly to partial
+	  application. The map parameter always comes last, whereas it
+	  would be easier to partially apply if it were first.  As a
+	  result, code that uses partially applied map functions
+	  almost always contains adapter functions to fiddle with
+	  argument ordering.</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="id632952">Getting started with the API</h4></div></div></div><p id="x_WV"><a name="x_WV"></a>The <code class="code">Data.Map</code> module has a large
+	  “<span class="quote">surface area</span>”: it exports dozens of functions.
+	  Just a handful of these comprise the most frequently used
+	  core of the module.</p><p id="x_XV"><a name="x_XV"></a>To create an empty map, we use
+	  <code class="function">empty</code>.  For a map containing one
+	  key/value pair, we use
+	  <code class="function">singleton</code>.</p><a name="ch12-map.ghci:create"></a><pre id="ch12-map.ghci:create" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>M.empty</code></strong>
+Loading package array-0.1.0.0 ... linking ... done.
+Loading package containers-0.1.0.1 ... linking ... done.
+fromList []
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>M.singleton "foo" True</code></strong>
+fromList [("foo",True)]
+</pre><p id="x_YV"><a name="x_YV"></a>Since the implementation is abstract, we can't
+	  pattern match on <span class="type">Map</span> values.  Instead, it
+	  provides a number of lookup functions, of which two are
+	  particularly widely used.  The <code class="function">lookup</code>
+	  function has a slightly tricky type signature, but don't
+	  worry; all will become clear shortly, in <a class="xref" href="monads.html" title="Chapter 14. Monads">Chapter 14, <i>Monads</i></a>.</p><a name="ch12-map.ghci:lookup.type"></a><pre id="ch12-map.ghci:lookup.type" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type M.lookup</code></strong>
+M.lookup :: (Ord k, Monad m) =&gt; k -&gt; M.Map k a -&gt; m a
+</pre><p id="x_ZV"><a name="x_ZV"></a>Most often, the type parameter <code class="varname">m</code> in the result is
+	  <span class="type">Maybe</span>.  In other words, if the map contains a
+	  value for the given key, <code class="function">lookup</code> will
+	  return the value wrapped in <code class="code">Just</code>.  Otherwise,
+	  it will return <code class="code">Nothing</code>.</p><a name="ch12-map.ghci:lookup"></a><pre id="ch12-map.ghci:lookup" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let m = M.singleton "foo" 1 :: M.Map String Int</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>case M.lookup "bar" m of { Just v -&gt; "yay"; Nothing -&gt; "boo" }</code></strong>
+"boo"
+</pre><p id="x_aV"><a name="x_aV"></a>The <code class="function">findWithDefault</code> function takes
+	  a value to return if the key isn't in the map.</p><div class="warning"><table border="0" summary="Warning: Beware the partial functions!"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="/support/figs/warning.png"></td><th align="left">Beware the partial functions!</th></tr><tr><td align="left" valign="top"><p id="x_bV"><a name="x_bV"></a>There exists a <code class="function">(!)</code> operator that
+	    performs a lookup and returns the unadorned value
+	    associated with a key (i.e. not wrapped in
+	    <code class="code">Maybe</code> or whatever).  Unfortunately, it is not
+	    a total function: it calls <code class="function">error</code> if
+	    the key is not present in the map.</p></td></tr></table></div><p id="x_dV"><a name="x_dV"></a>To add a key/value pair to the map, the most useful
+	  functions are <code class="function">insert</code> and
+	  <code class="function">insertWith'</code>.  The <code class="code">insert</code>
+	  function simply inserts a value into the map, overwriting
+	  any matching value that may already have been
+	  present.</p><a name="ch12-map.ghci:insert"></a><pre id="ch12-map.ghci:insert" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type M.insert</code></strong>
+M.insert :: (Ord k) =&gt; k -&gt; a -&gt; M.Map k a -&gt; M.Map k a
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>M.insert "quux" 10 m</code></strong>
+fromList [("foo",1),("quux",10)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>M.insert "foo" 9999 m</code></strong>
+fromList [("foo",9999)]
+</pre><p id="x_eV"><a name="x_eV"></a>The <code class="function">insertWith'</code> function takes a
+	  further <span class="emphasis"><em>combining function</em></span> as its
+	  argument.  If no matching key was present in the map, the new value
+	  is inserted verbatim.  Otherwise, the combining function is
+	  called on the new and old values, and its result is inserted
+	  into the map.</p><a name="ch12-map.ghci:insertWith"></a><pre id="ch12-map.ghci:insertWith" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type M.insertWith'</code></strong>
+M.insertWith' :: (Ord k) =&gt; (a -&gt; a -&gt; a) -&gt; k -&gt; a -&gt; M.Map k a -&gt; M.Map k a
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>M.insertWith' (+) "zippity" 10 m</code></strong>
+fromList [("foo",1),("zippity",10)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>M.insertWith' (+) "foo" 9999 m</code></strong>
+fromList [("foo",10000)]
+</pre><p id="x_fV"><a name="x_fV"></a>As the tick at the end of its name suggests,
+	  <code class="function">insertWith'</code> evaluates the combining
+	  function strictly.  This allows you to avoid space leaks.
+	  While there exists a lazy variant
+	  (<code class="function">insertWith</code> without the trailing tick
+	  in the name), it's rarely what you actually want.</p><p id="x_gV"><a name="x_gV"></a>The <code class="function">delete</code> function deletes the
+	  given key from the map.  It returns the map unmodified if
+	  the key was not present.</p><a name="ch12-map.ghci:delete"></a><pre id="ch12-map.ghci:delete" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type M.delete</code></strong>
+M.delete :: (Ord k) =&gt; k -&gt; M.Map k a -&gt; M.Map k a
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>M.delete "foo" m</code></strong>
+fromList []
+</pre><p id="x_hV"><a name="x_hV"></a>Finally, there are several efficient functions for
+	  performing set-like operations on maps.  Of these, we'll be
+	  using <code class="function">union</code> below.  This function is
+	  “<span class="quote">left biased</span>”: if two maps contain the same
+	  key, the result will contain the value from the left
+	  map.</p><a name="ch12-map.ghci:union"></a><pre id="ch12-map.ghci:union" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>m `M.union` M.singleton "quux" 1</code></strong>
+fromList [("foo",1),("quux",1)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>m `M.union` M.singleton "foo" 0</code></strong>
+fromList [("foo",1)]
+</pre><p id="x_iV"><a name="x_iV"></a>We have barely covered ten percent of the
+	  <code class="code">Data.Map</code> API.  We will cover maps and similar
+	  data structures in greater detail in <a class="xref" href="data-structures.html" title="Chapter 13. Data Structures">Chapter 13, <i>Data Structures</i></a>.  For further inspiration, we
+	  encourage you to browse the module documentation.  The
+	  module is impressively thorough.</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id633434">Further reading</h3></div></div></div><p id="x_jV"><a name="x_jV"></a>The book [<span class="citation"><a href="bibliography.html#bib.okasaki99" class="biblioref" title="[Okasaki99]"><abbr class="abbrev">Okasaki99</abbr></a></span>] gives a wonderful and
+	thorough implementor's tour of many pure functional data
+	structures, including several kinds of balanced tree.  It also
+	provides valuable insight into reasoning about the performance
+	of purely functional data structures and lazy
+	evaluation.</p><p id="x_kV"><a name="x_kV"></a>We recommend Okasaki's book as essential reading for
+	functional programmers.  If you're not convinced, Okasaki's
+	PhD thesis, [<span class="citation"><a href="bibliography.html#bib.okasaki96" class="biblioref" title="[Okasaki96]"><abbr class="abbrev">Okasaki96</abbr></a></span>], is a less complete
+	and polished version of the book, and it is available for free
+	online.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id633476">Turning digit soup into an answer</h2></div></div></div><p id="x_lV"><a name="x_lV"></a>We've got yet another problem to solve now.  We have many
+      candidates for the last twelve digits of the barcode.  In
+      addition, we need to use the parities of the first six digits to
+      figure out what the first digit is.  Finally, we need to ensure
+      that our answer's check digit makes sense.</p><p id="x_mV"><a name="x_mV"></a>This seems quite challenging!  We have a lot of uncertain
+      data; what should we do?  It's reasonable to ask if we could
+      perform a brute force search.  Given the candidates we saw in
+      the <span class="command"><strong>ghci</strong></span> session above, how many combinations would we have to
+      examine?</p><a name="barcode.ghci:combinations"></a><pre id="barcode.ghci:combinations" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>product . map length . candidateDigits $ input</code></strong>
+34012224
+</pre><p id="x_nV"><a name="x_nV"></a>So much for that idea.  Once again, we'll initially focus on
+      a subproblem that we know how to solve, and postpone worrying
+      about the rest.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id633535">Solving for check digits in parallel</h3></div></div></div><p id="x_oV"><a name="x_oV"></a>Let's abandon the idea of searching for now, and focus on
+	computing a check digit.  The check digit for a barcode can
+	assume one of ten possible values.  For a given parity digit,
+	which input sequences can cause that digit to be
+	computed?</p><a name="Barcode.hs:Map"></a><pre id="Barcode.hs:Map" class="programlisting">-- file: ch12/Barcode.hs
+type Map a = M.Map Digit [a]</pre><p id="x_pV"><a name="x_pV"></a>In this map, the key is a check digit, and the value is a
+	sequence that evaluates to this check digit.  We have two
+	further map types based on this definition.</p><a name="Barcode.hs:MapTypes"></a><pre id="Barcode.hs:MapTypes" class="programlisting">-- file: ch12/Barcode.hs
+type DigitMap = Map Digit
+type ParityMap = Map (Parity Digit)</pre><p id="x_qV"><a name="x_qV"></a>We'll generically refer to these as “<span class="quote">solution
+	  maps</span>”, because they show us the digit sequence that
+	“<span class="quote">solves for</span>” each check digit.</p><p id="x_rV"><a name="x_rV"></a>Given a single digit, here's how we can update an existing
+	solution map.</p><a name="Barcode.hs:updateMap"></a><pre id="Barcode.hs:updateMap" class="programlisting">-- file: ch12/Barcode.hs
+updateMap :: Parity Digit       -- ^ new digit
+          -&gt; Digit              -- ^ existing key
+          -&gt; [Parity Digit]     -- ^ existing digit sequence
+          -&gt; ParityMap          -- ^ map to update
+          -&gt; ParityMap
+updateMap digit key seq = insertMap key (fromParity digit) (digit:seq)
+
+insertMap :: Digit -&gt; Digit -&gt; [a] -&gt; Map a -&gt; Map a
+insertMap key digit val m = val `seq` M.insert key' val m
+    where key' = (key + digit) `mod` 10</pre><p id="x_sV"><a name="x_sV"></a>With an existing check digit drawn from the map, the
+	sequence that solves for it, and a new input digit, this
+	function updates the map with the new sequence that leads to
+	the new check digit.</p><p id="x_tV"><a name="x_tV"></a>This might seem a bit much to digest, but an example will
+	make it clear.  Let's say the check digit we're looking at is
+	<code class="code">4</code>, the sequence leading to it is
+	<code class="code">[1,3]</code>, and the digit we want to add to the map is
+	<code class="code">8</code>.  The sum of <code class="code">4</code> and <code class="code">8</code>,
+	modulo 10, is <code class="code">2</code>, so this is the key we'll be
+	inserting into the map.  The sequence that leads to the new
+	check digit <code class="code">2</code> is thus <code class="code">[8,1,3]</code>, so
+	this is what we'll insert as the value.</p><p id="x_uV"><a name="x_uV"></a>For each digit in a sequence, we'll generate a new
+	solution map, using that digit and an older solution
+	map.</p><a name="Barcode.hs:useDigit"></a><pre id="Barcode.hs:useDigit" class="programlisting">-- file: ch12/Barcode.hs
+useDigit :: ParityMap -&gt; ParityMap -&gt; Parity Digit -&gt; ParityMap
+useDigit old new digit =
+    new `M.union` M.foldWithKey (updateMap digit) M.empty old</pre><p id="x_vV"><a name="x_vV"></a>Once again, let's illustrate what this code is doing using
+	some examples.  This time, we'll use <span class="command"><strong>ghci</strong></span>.</p><a name="barcode.ghci:useDigit"></a><pre id="barcode.ghci:useDigit" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let single n = M.singleton n [Even n] :: ParityMap</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>useDigit (single 1) M.empty (Even 1)</code></strong>
+fromList [(2,[Even 1,Even 1])]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>useDigit (single 1) (single 2) (Even 2)</code></strong>
+fromList [(2,[Even 2]),(3,[Even 2,Even 1])]
+</pre><p id="x_wV"><a name="x_wV"></a>The new solution map that we feed to
+	<code class="function">useDigits</code> starts out empty.  We populate
+	it completely by folding <code class="function">useDigits</code> over a
+	sequence of input digits.</p><a name="Barcode.hs:incorporateDigits"></a><pre id="Barcode.hs:incorporateDigits" class="programlisting">-- file: ch12/Barcode.hs
+incorporateDigits :: ParityMap -&gt; [Parity Digit] -&gt; ParityMap
+incorporateDigits old digits = foldl' (useDigit old) M.empty digits</pre><p id="x_xV"><a name="x_xV"></a>This generates a complete new solution map from an old
+	one.</p><a name="barcode.ghci:incorporateDigits"></a><pre id="barcode.ghci:incorporateDigits" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>incorporateDigits (M.singleton 0 []) [Even 1, Even 5]</code></strong>
+fromList [(1,[Even 1]),(5,[Even 5])]
+</pre><p id="x_yV"><a name="x_yV"></a>Finally, we must build the complete solution map.  We
+	start out with an empty map, then fold over each digit
+	position from the barcode in turn.  For each position, we
+	create a new map from our guesses at the digits in that
+	position.  This becomes the old map for the next round of the
+	fold.</p><a name="Barcode.hs:finalDigits"></a><pre id="Barcode.hs:finalDigits" class="programlisting">-- file: ch12/Barcode.hs
+finalDigits :: [[Parity Digit]] -&gt; ParityMap
+finalDigits = foldl' incorporateDigits (M.singleton 0 [])
+            . mapEveryOther (map (fmap (*3)))</pre><p id="x_zV"><a name="x_zV"></a>(From the <code class="function">checkDigit</code> function that we
+	defined in <a class="xref" href="barcode-recognition.html#barcode.encode" title="EAN-13 encoding">the section called “EAN-13 encoding”</a>, we remember that
+	the check digit computation requires that we multiply every
+	other digit by <code class="code">3</code>.)</p><p id="x_AW"><a name="x_AW"></a>How long is the list with which we call
+	<code class="function">finalDigits</code>?  We don't yet know what the
+	first digit of our sequence is, so obviously we can't provide
+	that.  And we don't want to include our guess at the check
+	digit.  So the list must be eleven elements long.</p><p id="x_BW"><a name="x_BW"></a>Once we've returned from <code class="function">finalDigits</code>,
+	our solution map is necessarily incomplete, because we haven't
+	yet figured out what the first digit is.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id633876">Completing the solution map with the first digit</h3></div></div></div><p id="x_CW"><a name="x_CW"></a>We haven't yet discussed how we should extract the value
+	of the first digit from the parities of the left group of
+	digits.  This is a straightforward matter of reusing code that
+	we've already written.</p><a name="Barcode.hs:firstDigit"></a><pre id="Barcode.hs:firstDigit" class="programlisting">-- file: ch12/Barcode.hs
+firstDigit :: [Parity a] -&gt; Digit
+firstDigit = snd
+           . head
+           . bestScores paritySRL
+           . runLengths
+           . map parityBit
+           . take 6
+  where parityBit (Even _) = Zero
+        parityBit (Odd _) = One</pre><p id="x_DW"><a name="x_DW"></a>Each element of our partial solution map now contains a
+	reversed list of digits and parity data.  Our next task is to
+	create a completed solution map, by computing the first digit
+	in each sequence, and using it to create that last solution
+	map.</p><a name="Barcode.hs:addFirstDigit"></a><pre id="Barcode.hs:addFirstDigit" class="programlisting">-- file: ch12/Barcode.hs
+addFirstDigit :: ParityMap -&gt; DigitMap
+addFirstDigit = M.foldWithKey updateFirst M.empty
+
+updateFirst :: Digit -&gt; [Parity Digit] -&gt; DigitMap -&gt; DigitMap
+updateFirst key seq = insertMap key digit (digit:renormalize qes)
+  where renormalize = mapEveryOther (`div` 3) . map fromParity
+        digit = firstDigit qes
+        qes = reverse seq</pre><p id="x_EW"><a name="x_EW"></a>Along the way, we get rid of the <span class="type">Parity</span> type,
+	and reverse our earlier multiplications by three.  Our last
+	step is to complete the check digit computation.</p><a name="Barcode.hs:buildMap"></a><pre id="Barcode.hs:buildMap" class="programlisting">-- file: ch12/Barcode.hs
+buildMap :: [[Parity Digit]] -&gt; DigitMap
+buildMap = M.mapKeys (10 -)
+         . addFirstDigit
+         . finalDigits</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id633953">Finding the correct sequence</h3></div></div></div><p id="x_FW"><a name="x_FW"></a>We now have a map of all possible checksums and the
+	sequences that lead to each.  All that remains is to take our
+	guesses at the check digit, and see if we have a corresponding
+	solution map entry.</p><a name="Barcode.hs:solve"></a><pre id="Barcode.hs:solve" class="programlisting">-- file: ch12/Barcode.hs
+solve :: [[Parity Digit]] -&gt; [[Digit]]
+solve [] = []
+solve xs = catMaybes $ map (addCheckDigit m) checkDigits
+    where checkDigits = map fromParity (last xs)
+          m = buildMap (init xs)
+          addCheckDigit m k = (++[k]) &lt;$&gt; M.lookup k m</pre><p id="x_GW"><a name="x_GW"></a>Let's try this out on the row we picked from our
+	photo, and see if we get a sensible answer.</p><a name="barcode.ghci:solve"></a><pre id="barcode.ghci:solve" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>listToMaybe . solve . candidateDigits $ input</code></strong>
+Just [9,7,8,0,1,3,2,1,1,4,6,7,7]
+</pre><p id="x_HW"><a name="x_HW"></a>Excellent!  This is exactly the string encoded in the
+	barcode we photographed.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id634020">Working with row data</h2></div></div></div><p id="x_IW"><a name="x_IW"></a>We've mentioned repeatedly that we are taking a single row
+      from our image.  Here's how.</p><a name="Barcode.hs:withRow"></a><pre id="Barcode.hs:withRow" class="programlisting">-- file: ch12/Barcode.hs
+withRow :: Int -&gt; Pixmap -&gt; (RunLength Bit -&gt; a) -&gt; a
+withRow n greymap f = f . runLength . elems $ posterized
+    where posterized = threshold 0.4 . fmap luminance . row n $ greymap</pre><p id="x_JW"><a name="x_JW"></a>The <code class="function">withRow</code> function takes a row,
+      converts it to monochrome, then calls another function on the
+      run length encoded row data.  To get the row data, it calls
+      <code class="function">row</code>.</p><a name="Barcode.hs:row"></a><pre id="Barcode.hs:row" class="programlisting">-- file: ch12/Barcode.hs
+row :: (Ix a, Ix b) =&gt; b -&gt; Array (a,b) c -&gt; Array a c
+row j a = ixmap (l,u) project a
+    where project i = (i,j)
+          ((l,_), (u,_)) = bounds a</pre><p id="x_KW"><a name="x_KW"></a>This function takes a bit of explaining.  Whereas
+      <code class="function">fmap</code> transforms the
+      <span class="emphasis"><em>values</em></span> in an array,
+      <code class="function">ixmap</code> transforms the
+      <span class="emphasis"><em>indices</em></span> of an array.  It's a very powerful
+      function that lets us “<span class="quote">slice</span>” an array however we
+      please.</p><p id="x_LW"><a name="x_LW"></a>The first argument to <code class="function">ixmap</code> is the
+      bounds of the new array.  These bounds can be of a different
+      dimension than the source array.  In <code class="code">row</code>, for
+      example, we're extracting a one-dimensional array from a
+      two-dimensional array.</p><p id="x_MW"><a name="x_MW"></a>The second argument is a <span class="emphasis"><em>projection</em></span>
+      function.  This takes an index from the new array and returns an
+      index into the source array.  The value at that projected index
+      then becomes the value in the new array at the original index.
+      For example, if we pass <code class="code">2</code> into the projection
+      function and it returns <code class="code">(2,2)</code>, the element at index
+      <code class="code">2</code> of the new array will be taken from element
+      <code class="code">(2,2)</code> of the source array.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id634156">Pulling it all together</h2></div></div></div><p id="x_NW"><a name="x_NW"></a>Our <code class="function">candidateDigits</code> function gives an
+      empty result unless we call it at the beginning of a barcode
+      sequence.  We can easily scan across a row until we get a match
+      as follows.</p><a name="Barcode.hs:findMatch"></a><pre id="Barcode.hs:findMatch" class="programlisting">-- file: ch12/Barcode.hs
+findMatch :: [(Run, Bit)] -&gt; Maybe [[Digit]]
+findMatch = listToMaybe
+          . filter (not . null)
+          . map (solve . candidateDigits)
+          . tails</pre><p id="x_OW"><a name="x_OW"></a>Here, we're taking advantage of lazy evaluation.  The call
+      to <code class="function">map</code> over <code class="function">tails</code> will
+      only be evaluated until it results in a non-empty list.</p><p id="x_PW"><a name="x_PW"></a>Next, we choose a row from an image, and try to find a
+      barcode in it.</p><a name="Barcode.hs:findEAN13"></a><pre id="Barcode.hs:findEAN13" class="programlisting">-- file: ch12/Barcode.hs
+findEAN13 :: Pixmap -&gt; Maybe [Digit]
+findEAN13 pixmap = withRow center pixmap (fmap head . findMatch)
+  where (_, (maxX, _)) = bounds pixmap
+        center = (maxX + 1) `div` 2</pre><p id="x_QW"><a name="x_QW"></a>Finally, here's a very simple wrapper that prints barcodes
+      from whatever netpbm image files we pass into our program on the
+      command line.</p><a name="Barcode.hs:main"></a><pre id="Barcode.hs:main" class="programlisting">-- file: ch12/Barcode.hs
+main :: IO ()
+main = do
+  args &lt;- getArgs
+  forM_ args $ \arg -&gt; do
+    e &lt;- parse parseRawPPM &lt;$&gt; L.readFile arg
+    case e of
+      Left err -&gt;     print $ "error: " ++ err
+      Right pixmap -&gt; print $ findEAN13 pixmap</pre><p id="x_RW"><a name="x_RW"></a>Notice that, of the more than thirty functions we've defined
+      in this chapter, <code class="function">main</code> is the only one that
+      lives in <span class="type">IO</span>.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id634269">A few comments on development style</h2></div></div></div><p id="x_SW"><a name="x_SW"></a>You may have noticed that many of the functions we presented
+      in this chapter were short functions at the top level of the
+      source file.  This is no accident.  As we mentioned earlier,
+      when we started on this chapter, we didn't know what form our
+      solution was going to take.</p><p id="x_TW"><a name="x_TW"></a>Quite often, then, we had to explore a problem space in
+      order to figure out where we were going.  To do this, we spent a
+      lot of time fiddling about in <span class="command"><strong>ghci</strong></span>, performing tiny
+      experiments on individual functions.  This kind of exploration
+      requires that a function be declared at the top level of a
+      source file, as otherwise <span class="command"><strong>ghci</strong></span> won't be able to see it.</p><p id="x_UW"><a name="x_UW"></a>Once we were satisfied that individual functions were
+      behaving themselves, we started to glue them together, again
+      investigating the consequences in <span class="command"><strong>ghci</strong></span>.  This is where our
+      devotion to writing type signatures paid back, as we immediately
+      discovered when a particular composition of functions couldn't
+      possibly work.</p><p id="x_VW"><a name="x_VW"></a>At the end of this process, we were left with a large number
+      of very small top-level functions, each with a type signature.
+      This isn't the most compact representation possible; we could
+      have hoisted many of those functions into <code class="literal">let</code> or <code class="literal">where</code>
+      blocks when we were done with them.  However, we find that the
+      added vertical space, small function bodies, and type signatures
+      make the code far more readable, so we generally avoided
+      “<span class="quote">golfing</span>” functions after we wrote them<sup>[<a name="id634348" href="#ftn.id634348" class="footnote">30</a>]</sup>.</p><p id="x_WW"><a name="x_WW"></a>Working in a language with strong, static typing does not at
+      all interfere with incrementally and fluidly developing a
+      solution to a problem.  We find the turnaround between writing a
+      function and getting useful feedback from <span class="command"><strong>ghci</strong></span> to be very
+      rapid; it greatly assists us in writing good code
+      quickly.</p></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id631244" href="#id631244" class="para">29</a>] </sup>The formula originates in ITU-R Recommendation
+	    601.</p></div><div class="footnote"><p><sup>[<a name="ftn.id634348" href="#id634348" class="para">30</a>] </sup>Our use of the word “<span class="quote">golf</span>” comes from a
+	  game originally played by Perl hackers, in which programmers
+	  try to create the smallest piece of code for some purpose.
+	  The code with the fewest (key)strokes wins.</p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="testing-and-quality-assurance.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="data-structures.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 11. Testing and quality assurance </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 13. Data Structures</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

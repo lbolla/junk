@@ -1,0 +1,618 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 1. Getting Started</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="why-functional-programming-why-haskell.html" title="Why functional programming? Why Haskell?"><link rel="next" href="types-and-functions.html" title="Chapter 2. Types and Functions"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 1. Getting Started</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="why-functional-programming-why-haskell.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="types-and-functions.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="starting"><div class="titlepage"><div><div><h2 class="title">Chapter 1. Getting Started</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="getting-started.html#starting.ghc">Your Haskell environment</a></span></dt><dt><span class="sect1"><a href="getting-started.html#starting.ghci">Getting started with ghci, the interpreter</a></span></dt><dt><span class="sect1"><a href="getting-started.html#starting.calc">Basic interaction: using ghci as a calculator</a></span></dt><dd><dl><dt><span class="sect2"><a href="getting-started.html#starting.calc.arithmetic">Simple arithmetic</a></span></dt><dt><span class="sect2"><a href="getting-started.html#starting.calc.neg">An arithmetic quirk: writing negative numbers</a></span></dt><dt><span class="sect2"><a href="getting-started.html#starting.calc.comparison">Boolean logic, operators, and value comparisons</a></span></dt><dt><span class="sect2"><a href="getting-started.html#starting.calc.precedence">Operator precedence and associativity</a></span></dt><dt><span class="sect2"><a href="getting-started.html#starting.calc.undef">Undefined values, and introducing variables</a></span></dt><dt><span class="sect2"><a href="getting-started.html#id575887">Dealing with precedence and associativity rules</a></span></dt></dl></dd><dt><span class="sect1"><a href="getting-started.html#starting.ghci.edit">Command line editing in ghci</a></span></dt><dt><span class="sect1"><a href="getting-started.html#starting.list">Lists</a></span></dt><dd><dl><dt><span class="sect2"><a href="getting-started.html#starting.list.op">Operators on lists</a></span></dt></dl></dd><dt><span class="sect1"><a href="getting-started.html#starting.string">Strings and characters</a></span></dt><dt><span class="sect1"><a href="getting-started.html#starting.types">First steps with types</a></span></dt><dt><span class="sect1"><a href="getting-started.html#id577314">A simple program</a></span></dt><dt><span class="sect1"><a href="getting-started.html#starting.types.exercises">Exercises</a></span></dt></dl></div><p id="x_TM"><a name="x_TM"></a>As you read the early chapters of this book, keep in
+    mind that we will sometimes introduce ideas in restricted,
+    simplified form.  Haskell is a deep language, and presenting every
+    aspect of a given subject all at once is likely to prove
+    overwhelming.  As we build a solid foundation in Haskell, we will
+    expand upon these initial explanations.</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="starting.ghc">Your Haskell environment</h2></div></div></div><p id="x_g"><a name="x_g"></a>Haskell is a language with many implementations, of
+      which two are in wide use.  Hugs is an interpreter that is
+      primarily used for teaching.  For real applications, the Glasgow
+      Haskell Compiler (<span class="application">GHC</span>) is much more popular.  Compared to
+      Hugs, <span class="application">GHC</span> is more suited to “<span class="quote">real work</span>”: it
+      compiles to native code, supports parallel execution, and
+      provides useful performance analysis and debugging tools.  For
+      these reasons, <span class="application">GHC</span> is the Haskell implementation that we will
+      be using throughout this book.</p><p id="x_h"><a name="x_h"></a><span class="application">GHC</span> has three main components.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_jl"><a name="x_jl"></a><span class="command"><strong>ghc</strong></span> is an optimizing compiler that generates fast
+	  native code.</p></li><li><p id="x_kl"><a name="x_kl"></a><span class="command"><strong>ghci</strong></span> is an interactive interpreter and
+	  debugger.</p></li><li><p id="x_ll"><a name="x_ll"></a><span class="command"><strong>runghc</strong></span> is a program for running Haskell programs as
+	  scripts, without needing to compile them first.</p></li></ul></div><div class="note"><table border="0" summary="Note: How we refer to the components of GHC"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">How we refer to the components of GHC</th></tr><tr><td align="left" valign="top"><p id="x_i"><a name="x_i"></a>When we discuss the <span class="application">GHC</span> system as a whole, we
+	will refer to it as <span class="application">GHC</span>.  If we are talking about a specific
+	command, we will mention <span class="command"><strong>ghc</strong></span>, <span class="command"><strong>ghci</strong></span>, or <span class="command"><strong>runghc</strong></span> by
+	name.</p></td></tr></table></div><p id="x_j"><a name="x_j"></a>In this book, we assume that you're using at least
+      version 6.8.2 of <span class="application">GHC</span>, which was released in 2007.  Many of our
+      examples will work unmodified with older versions.  However, we
+      <span class="emphasis"><em>recommend</em></span> using the newest version
+      available for your platform.  If you're using Windows or Mac OS
+      X, you can get started easily and quickly using a prebuilt
+      installer.  To obtain a copy of <span class="application">GHC</span> for these platforms, visit
+      <a class="ulink" href="http://www.haskell.org/ghc/download.html" target="_top">the <span class="application">GHC</span>
+	download page</a>, and look for the list of binary
+      packages and installers.</p><p id="x_k"><a name="x_k"></a>Many Linux distributors, and providers of BSD and
+      other Unix variants, make custom binary packages of <span class="application">GHC</span>
+      available. Because these are built specifically for each
+      environment, they are much easier to install and use than the
+      generic binary packages that are available from the <span class="application">GHC</span>
+      download page. You can find a list of distributions that
+      custom-build <span class="application">GHC</span> at the <span class="application">GHC</span> <a class="ulink" href="http://www.haskell.org/ghc/distribution_packages.html" target="_top">distribution 
+	packages</a> page.</p><p id="x_nL"><a name="x_nL"></a>For more detailed information about how to install <span class="application">GHC</span> on
+      a variety of popular platforms, we've provided some instructions
+      in <a class="xref" href="installing-ghc-and-haskell-libraries.html" title="Appendix A. Installing GHC and Haskell libraries">Appendix A, <i>Installing GHC and Haskell libraries</i></a>.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="starting.ghci">Getting started with ghci, the interpreter</h2></div></div></div><p id="x_L1"><a name="x_L1"></a>The interactive interpreter for <span class="application">GHC</span> is a program
+      named <span class="command"><strong>ghci</strong></span>.  It lets us enter and evaluate Haskell
+      expressions, explore modules, and debug our code.  If you are
+      familiar with Python or Ruby, <span class="command"><strong>ghci</strong></span> is somewhat similar to
+      <code class="filename">python</code> and <code class="filename">irb</code>, the
+      interactive Python and Ruby interpreters.</p><div class="note"><table border="0" summary="Note: The ghci command has a narrow focus"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">The ghci command has a narrow focus</th></tr><tr><td align="left" valign="top"><p id="x_UM"><a name="x_UM"></a>We typically cannot copy some code out of a
+	Haskell source file and paste it into <span class="command"><strong>ghci</strong></span>.  This does not
+	have a significant effect on debugging pieces of code, but it
+	can initially be surprising if you are used to, say, the
+	interactive Python interpreter.</p></td></tr></table></div><p id="x_VM"><a name="x_VM"></a>On Unix-like systems, we run <span class="command"><strong>ghci</strong></span> as a command
+      in a shell window.  On Windows, it's available via the Start
+      Menu.  For example, if you installed using the <span class="application">GHC</span> installer
+      on Windows XP, you should go to “<span class="quote">All Programs</span>”,
+      then “<span class="quote">GHC</span>”; you will then see <span class="command"><strong>ghci</strong></span> in the list.
+      (See <a class="xref" href="installing-ghc-and-haskell-libraries.html#install.win" title="Windows">the section called “Windows”</a> for a
+      screenshot.)</p><p id="x_M1"><a name="x_M1"></a>When we run <span class="command"><strong>ghci</strong></span>, it displays a startup banner, followed
+      by a <code class="prompt">Prelude&gt;</code> prompt.  Here, we're showing
+      version 6.8.3 on a Linux box.</p><pre id="id574609" class="screen">
+<code class="prompt">$</code> <strong class="userinput"><code>ghci</code></strong>
+GHCi, version 6.8.3: http://www.haskell.org/ghc/  :? for help
+Loading package base ... linking ... done.
+<code class="prompt">Prelude&gt;</code>
+</pre><p id="x_uK"><a name="x_uK"></a>The word <code class="code">Prelude</code> in the prompt
+      indicates that <code class="classname">Prelude</code>, a
+      standard library of useful functions, is loaded and ready to
+      use. When we load other modules or source files, they will show
+      up in the prompt, too.</p><div class="tip"><table border="0" summary="Tip: Getting help"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Getting help</th></tr><tr><td align="left" valign="top"><p id="x_ml"><a name="x_ml"></a>If you enter <code class="code">:?</code> at the <span class="command"><strong>ghci</strong></span>
+	prompt, it will print a long help message.</p></td></tr></table></div><p id="x_o1"><a name="x_o1"></a>The <code class="classname">Prelude</code>
+      module is sometimes referred to as “<span class="quote">the standard
+	prelude</span>”, because its contents are defined by the
+      Haskell 98 standard. Usually, it's simply shortened to
+      “<span class="quote">the prelude</span>”.</p><div class="note"><table border="0" summary="Note: About the ghci prompt"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">About the ghci prompt</th></tr><tr><td align="left" valign="top"><p id="x_N1"><a name="x_N1"></a>The prompt displayed by <span class="command"><strong>ghci</strong></span> changes
+	frequently depending on what modules we have loaded.  It can
+	often grow long enough to leave little visual room on a single
+	line for our input.</p><p id="x_WM"><a name="x_WM"></a>For brevity and consistency, we have replaced <span class="command"><strong>ghci</strong></span>'s
+	default prompts throughout this book with the prompt string
+	<code class="prompt">ghci&gt;</code>.</p><p id="x_nl"><a name="x_nl"></a>If you want to do this youself, use <span class="command"><strong>ghci</strong></span>'s <code class="code">:set
+	  prompt</code> directive, as follows.</p><pre id="id574731" class="screen">
+<code class="prompt">Prelude&gt;</code> <strong class="userinput"><code>:set prompt "ghci&gt; "</code></strong>
+<code class="prompt">ghci&gt;</code></pre></td></tr></table></div><p id="x_p1"><a name="x_p1"></a>The prelude is always implicitly available; we
+      don't need to take any actions to use the types, values, or
+      functions it defines.  To use definitions from other modules, we
+      must load them into <span class="command"><strong>ghci</strong></span>, using the <span class="command"><strong>:module</strong></span>
+      command.</p><a name="basics.ghci:module"></a><pre id="basics.ghci:module" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module + Data.Ratio</code></strong>
+</pre><p id="x_tA1"><a name="x_tA1"></a>We can now use the functionality of the
+      <code class="code">Data.Ratio</code> module, which lets us work with rational
+      numbers (fractions).</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="starting.calc">Basic interaction: using ghci as a calculator</h2></div></div></div><p id="x_R1"><a name="x_R1"></a>In addition to providing a convenient interface
+      for testing code fragments, <span class="command"><strong>ghci</strong></span> can function as a readily
+      accessible desktop calculator. We can easily express any
+      calculator operation in <span class="command"><strong>ghci</strong></span> and, as an added bonus, we can
+      add more complex operations as we become more familiar with
+      Haskell. Even using the interpreter in this simple way can help
+      us to become more comfortable with how Haskell works.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="starting.calc.arithmetic">Simple arithmetic</h3></div></div></div><p id="x_S1"><a name="x_S1"></a>We can immediately start entering expressions,
+	to see what <span class="command"><strong>ghci</strong></span> will do with them.  Basic arithmetic works
+	similarly to languages like C and Python: we write
+	expressions in <span class="emphasis"><em>infix</em></span> form, where an
+	operator appears between its operands.</p><a name="basics.ghci:arithmetic"></a><pre id="basics.ghci:arithmetic" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>2 + 2</code></strong>
+4
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>31337 * 101</code></strong>
+3165037
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>7.0 / 2.0</code></strong>
+3.5
+</pre><p id="x_ZM"><a name="x_ZM"></a>The infix style of
+	writing an expression is just a convenience: we can also write
+	an expression in <span class="emphasis"><em>prefix</em></span> form, where the
+	operator precedes its arguments.  To do this, we must enclose
+	the operator in parentheses.</p><a name="basics.ghci:prefix"></a><pre id="basics.ghci:prefix" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>2 + 2</code></strong>
+4
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(+) 2 2</code></strong>
+4
+</pre><p id="x_T1"><a name="x_T1"></a>As the expressions above imply, Haskell has a
+	notion of integers and floating point numbers.  Integers can
+	be arbitrarily large.  Here, <code class="function">(^)</code>
+	provides integer exponentiation.</p><a name="basics.ghci:bignum"></a><pre id="basics.ghci:bignum" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>313 ^ 15</code></strong>
+27112218957718876716220410905036741257
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="starting.calc.neg">An arithmetic quirk: writing negative numbers</h3></div></div></div><p id="x_X1"><a name="x_X1"></a>Haskell presents us with one peculiarity in how we must
+	write numbers: it's often necessary to enclose a negative
+	number in parentheses.  This affects us as soon as we move
+	beyond the simplest expressions.</p><p id="x_bM"><a name="x_bM"></a>We'll start by writing a negative number.</p><a name="basics.ghci:neg.simple"></a><pre id="basics.ghci:neg.simple" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>-3</code></strong>
+-3
+</pre><p id="x_cM"><a name="x_cM"></a>The <code class="code">-</code> above is a unary operator.  In other
+	words, we didn't write the single number “<span class="quote">-3</span>”; we
+	wrote the number “<span class="quote">3</span>”, and applied the operator
+	<code class="code">-</code> to it.  The <code class="code">-</code> operator is
+	Haskell's only unary operator, and we cannot mix it with infix
+	operators.</p><a name="basics.ghci:neg.error"></a><pre id="basics.ghci:neg.error" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>2 + -3</code></strong>
+
+&lt;interactive&gt;:1:0:
+    precedence parsing error
+        cannot mix `(+)' [infixl 6] and prefix `-' [infixl 6] in the same infix expression
+</pre><p id="x_dM"><a name="x_dM"></a>If we want to use the unary minus near an infix
+	operator, we must wrap the expression it applies to in
+	parentheses.</p><a name="basics.ghci:neg.better"></a><pre id="basics.ghci:neg.better" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>2 + (-3)</code></strong>
+-1
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>3 + (-(13 * 37))</code></strong>
+-478
+</pre><p id="x_uA1"><a name="x_uA1"></a>This avoids a parsing ambiguity.  When we apply a function
+	in Haskell, we write the name of the function, followed by its
+	argument, for example <code class="code">f 3</code>.  If we did not need to
+	wrap a negative number in parentheses, we would have two
+	profoundly different ways to read <code class="code">f-3</code>: it could
+	be either “<span class="quote">apply the function <code class="function">f</code> to
+	  the number <code class="code">-3</code></span>”, or “<span class="quote">subtract the
+	  number <code class="code">3</code> from the variable
+	  <code class="varname">f</code></span>”.</p><p id="x_Z1"><a name="x_Z1"></a><span class="emphasis"><em>Most</em></span> of the time, we can
+	omit white space (“<span class="quote">blank</span>” characters such as
+	space and tab) from expressions, and Haskell will parse them
+	as we intended.  But not always.  Here is an expression that
+	works:</p><a name="basics.ghci:whitespace.ok"></a><pre id="basics.ghci:whitespace.ok" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>2*3</code></strong>
+6
+</pre><p id="x_a1"><a name="x_a1"></a>And here is one that seems similar to the
+	problematic negative number example above, but results in a
+	different error message.</p><a name="basics.ghci:whitespace.eek"></a><pre id="basics.ghci:whitespace.eek" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>2*-3</code></strong>
+
+&lt;interactive&gt;:1:1: Not in scope: `*-'
+</pre><p id="x_b1"><a name="x_b1"></a>Here, the Haskell implementation is reading
+	<code class="literal">*-</code> as a single operator.  Haskell lets us
+	define new operators (a subject that we will return to later),
+	but we haven't defined <code class="literal">*-</code>.  Once again, a
+	few parentheses get us and <span class="command"><strong>ghci</strong></span> looking at the expression in
+	the same way.</p><a name="basics.ghci:whitespace.whew"></a><pre id="basics.ghci:whitespace.whew" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>2*(-3)</code></strong>
+-6
+</pre><p id="x_c1"><a name="x_c1"></a>Compared to other languages, this unusual
+	treatment of negative numbers might seem annoying, but it
+	represents a reasoned trade-off.  Haskell lets us define new
+	operators at any time.  This is not some kind of esoteric
+	language feature; we will see quite a few user-defined operators
+	in the chapters ahead. The language designers chose to accept
+	a slightly cumbersome syntax for negative numbers in exchange
+	for this expressive power.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="starting.calc.comparison">Boolean logic, operators, and value comparisons</h3></div></div></div><p id="x_j1"><a name="x_j1"></a>The values of Boolean logic in Haskell are
+	<code class="literal">True</code> and <code class="literal">False</code>.  The capitalization of these names is
+	important.  The language uses C-influenced operators for
+	working with Boolean values: <code class="function">(&amp;&amp;)</code>
+	is logical “<span class="quote">and</span>”, and <code class="function">(||)</code>
+	is logical “<span class="quote">or</span>”.</p><a name="basics.ghci:boolean"></a><pre id="basics.ghci:boolean" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>True &amp;&amp; False</code></strong>
+False
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>False || True</code></strong>
+True
+</pre><p id="x_k1"><a name="x_k1"></a>While some programming languages treat the
+	number zero as synonymous with <code class="literal">False</code>,
+	Haskell does not, nor does it consider a non-zero value to be
+	<code class="literal">True</code>.</p><a name="basics.ghci:boolean.bad"></a><pre id="basics.ghci:boolean.bad" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>True &amp;&amp; 1</code></strong>
+
+&lt;interactive&gt;:1:8:
+    No instance for (Num Bool)
+      arising from the literal `1' at &lt;interactive&gt;:1:8
+    Possible fix: add an instance declaration for (Num Bool)
+    In the second argument of `(&amp;&amp;)', namely `1'
+    In the expression: True &amp;&amp; 1
+    In the definition of `it': it = True &amp;&amp; 1
+</pre><p id="x_fM"><a name="x_fM"></a>Once again, we are faced with a
+	substantial-looking error message. In brief, it tells us that
+	the Boolean type, <span class="type">Bool</span>, is not a member of the
+	family of numeric types, <code class="code">Num</code>.  The error message
+	is rather long because <span class="command"><strong>ghci</strong></span> is pointing out the location of
+	the problem, and hinting at a possible change we could make
+	that might fix the problem.</p><p id="x_vA1"><a name="x_vA1"></a>Here is a more detailed breakdown of the error
+	message.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_wA1"><a name="x_wA1"></a>“<span class="quote"><code class="code">No instance for (Num Bool)</code></span>”
+	    tells us that <span class="command"><strong>ghci</strong></span> is trying to treat the numeric value
+	    <span class="type">1</span> as having a <span class="type">Bool</span> type, but it
+	    cannot.</p></li><li><p id="x_xA1"><a name="x_xA1"></a>“<span class="quote"><code class="code">arising from the literal
+		`1'</code></span>” indicates that it was our use of
+	    the number <code class="code">1</code> that caused the problem.</p></li><li><p id="x_yA1"><a name="x_yA1"></a>“<span class="quote"><code class="code">In the definition of `it'</code></span>”
+	    refers to a <span class="command"><strong>ghci</strong></span> short cut that we will revisit in a few
+	    pages.</p></li></ul></div><div class="tip"><table border="0" summary="Tip: Remain fearless in the face of error messages"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Remain fearless in the face of error messages</th></tr><tr><td align="left" valign="top"><p id="x_G2"><a name="x_G2"></a>We have an important point to make here, which
+	  we will repeat throughout the early sections of this book.
+	  If you run into problems or error messages that you do not
+	  yet understand, <span class="emphasis"><em>don't panic</em></span>. Early on,
+	  all you have to do is figure out enough to make progress on
+	  a problem. As you acquire experience, you will find it
+	  easier to understand parts of error messages that initially
+	  seem obscure.</p><p id="x_gM"><a name="x_gM"></a>The numerous error messages have a purpose: they
+	  actually help us in writing correct code, by making us
+	  perform some amount of debugging “<span class="quote">up front</span>”,
+	  before we ever run a program.  If you are coming from a
+	  background of working with more permissive languages, this
+	  way of working may come as something of a shock.  Bear with
+	  us.</p></td></tr></table></div><p id="x_l1"><a name="x_l1"></a>Most of Haskell's comparison operators are
+	similar to those used in C and the many languages it has
+	influenced.</p><a name="basics.ghci:comparison"></a><pre id="basics.ghci:comparison" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>1 == 1</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>2 &lt; 3</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>4 &gt;= 3.99</code></strong>
+True
+</pre><p id="x_m1"><a name="x_m1"></a>One operator that differs from its C counterpart
+	is “<span class="quote">is not equal to</span>”.  In C, this is written as
+	<code class="code">!=</code>.  In Haskell, we write
+	<code class="function">(/=)</code>, which resembles the ≠
+	notation used in mathematics.</p><a name="basics.ghci:neq"></a><pre id="basics.ghci:neq" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>2 /= 3</code></strong>
+True
+</pre><p id="x_hM"><a name="x_hM"></a>Also, where C-like languages often use
+	<code class="function">!</code> for logical negation, Haskell uses the
+	<code class="function">not</code> function.</p><a name="basics.ghci:not"></a><pre id="basics.ghci:not" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>not True</code></strong>
+False
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="starting.calc.precedence">Operator precedence and associativity</h3></div></div></div><p id="x_U1"><a name="x_U1"></a>Like written algebra and other programming
+	languages that use infix operators, Haskell has a notion of
+	operator precedence.  We can use parentheses to explicitly
+	group parts of an expression, and precedence allows us to omit
+	a few parentheses. For example, the multiplication operator
+	has a higher precedence than the addition operator, so Haskell
+	treats the following two expressions as equivalent.</p><a name="basics.ghci:parens"></a><pre id="basics.ghci:parens" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>1 + (4 * 4)</code></strong>
+17
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>1 + 4 * 4</code></strong>
+17
+</pre><p id="x_iM"><a name="x_iM"></a>Haskell assigns numeric precedence values to
+	operators, with 1 being the lowest precedence and 9 the
+	highest.  A higher-precedence operator is applied before a
+	lower-precedence operator.  We can use <span class="command"><strong>ghci</strong></span> to inspect the
+	precedence levels of individual operators, using its
+	<span class="command"><strong>:info</strong></span> command.</p><a name="basics.ghci:precedence"></a><pre id="basics.ghci:precedence" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:info (+)</code></strong>
+class (Eq a, Show a) =&gt; Num a where
+  (+) :: a -&gt; a -&gt; a
+  ...
+  	-- Defined in GHC.Num
+infixl 6 +
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:info (*)</code></strong>
+class (Eq a, Show a) =&gt; Num a where
+  ...
+  (*) :: a -&gt; a -&gt; a
+  ...
+  	-- Defined in GHC.Num
+infixl 7 *
+</pre><p id="x_jM"><a name="x_jM"></a>The information we seek is in the line
+	“<span class="quote"><code class="code">infixl 6 +</code></span>”, which indicates that
+	the <code class="function">(+)</code> operator has a precedence of 6.
+	(We will explain the other output in a later chapter.)
+	The “<span class="quote"><code class="code">infixl 7 *</code></span>” tells us that the
+	<code class="function">(*)</code> operator has a precedence of 7. Since
+	<code class="function">(*)</code> has a higher precedence than
+	<code class="function">(+)</code>, we can now see why <code class="code">1 + 4 *
+	  4</code> is evaluated as <code class="code">1 + (4 * 4)</code>, and not
+	<code class="code">(1 + 4) * 4</code>.</p><p id="x_kM"><a name="x_kM"></a>Haskell also defines <span class="emphasis"><em>associativity</em></span> of
+	operators.  This determines whether an expression containing
+	multiple uses of an operator is evaluated from left to right, or
+	right to left.  The <code class="function">(+)</code> and
+	<code class="function">(*)</code> operators are left associative, which
+	is represented as <code class="code">infixl</code> in the <span class="command"><strong>ghci</strong></span> output
+	above.  A right associative operator is displayed with
+	<code class="code">infixr</code>.</p><a name="basics.ghci:caret"></a><pre id="basics.ghci:caret" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:info (^)</code></strong>
+(^) :: (Num a, Integral b) =&gt; a -&gt; b -&gt; a 	-- Defined in GHC.Real
+infixr 8 ^
+</pre><p id="x_lM"><a name="x_lM"></a>The combination of precedence and associativity
+	rules are usually referred to as <span class="emphasis"><em>fixity</em></span>
+	rules.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="starting.calc.undef">Undefined values, and introducing variables</h3></div></div></div><p id="x_d1"><a name="x_d1"></a>Haskell's prelude, the standard library we
+	mentioned earlier, defines at least one well-known
+	mathematical constant for us.</p><a name="basics.ghci:pi"></a><pre id="basics.ghci:pi" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>pi</code></strong>
+3.141592653589793
+</pre><p id="x_e1"><a name="x_e1"></a>But its coverage of mathematical constants is
+	not comprehensive, as we can quickly see.  Let us look for
+	Euler's number, <code class="varname">e</code>.</p><a name="basics.ghci:e"></a><pre id="basics.ghci:e" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>e</code></strong>
+
+&lt;interactive&gt;:1:0: Not in scope: `e'
+</pre><p id="x_f1"><a name="x_f1"></a>Oh well.  We have to define it ourselves.</p><div class="note"><table border="0" summary="Note: Don't worry about the error message"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Don't worry about the error message</th></tr><tr><td align="left" valign="top"><p id="x_g1"><a name="x_g1"></a>If the above “<span class="quote">not in scope</span>” error
+	  message seems a little daunting, do not worry.  All it means
+	  is that there is no variable defined with the name
+	  <code class="varname">e</code>.</p></td></tr></table></div><p id="x_h1"><a name="x_h1"></a>Using <span class="command"><strong>ghci</strong></span>'s <code class="literal">let</code> construct, we can make a
+	temporary definition of <code class="varname">e</code> ourselves.</p><a name="basics.ghci:let"></a><pre id="basics.ghci:let" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let e = exp 1</code></strong>
+</pre><p id="x_mM"><a name="x_mM"></a>This is an application of the exponential
+	function, <code class="function">exp</code>, and our first example of
+	applying a function in Haskell.  While languages like Python
+	require parentheses around the arguments to a function,
+	Haskell does not.</p><p id="x_i1"><a name="x_i1"></a>With <code class="varname">e</code> defined, we can now
+	use it in arithmetic expressions.  The
+	<code class="function">(^)</code> exponentiation operator that we
+	introduced earlier can only raise a number to an integer
+	power.  To use a floating point number as the exponent, we use
+	the <code class="function">(**)</code> exponentiation operator.</p><a name="basics.ghci:epipi"></a><pre id="basics.ghci:epipi" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>(e ** pi) - pi</code></strong>
+19.99909997918947
+</pre><div class="warning"><table border="0" summary="Warning: This syntax is ghci-specific"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="/support/figs/warning.png"></td><th align="left">This syntax is ghci-specific</th></tr><tr><td align="left" valign="top"><p id="x_nM"><a name="x_nM"></a>The syntax for <code class="literal">let</code> that <span class="command"><strong>ghci</strong></span> accepts is
+	  not the same as we would use at the “<span class="quote">top level</span>”
+	  of a normal Haskell program. We will see the normal syntax
+	  in <a class="xref" href="defining-types-streamlining-functions.html#deftypes.locals" title="Introducing local variables">the section called “Introducing local variables”</a>.</p></td></tr></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id575887">Dealing with precedence and associativity rules</h3></div></div></div><p id="x_V1"><a name="x_V1"></a>It is sometimes better to leave at least some
+	parentheses in place, even when Haskell allows us to omit
+	them.  Their presence can help future readers (including
+	ourselves) to understand what we intended.</p><p id="x_W1"><a name="x_W1"></a>Even more importantly, complex expressions that
+	rely completely on operator precedence are notorious sources
+	of bugs.  A compiler and a human can easily end up with
+	different notions of what even a short, parenthesis-free
+	expression is supposed to do.</p><p id="x_pM"><a name="x_pM"></a>There is no need to remember all of the
+	precedence and associativity rules numbers: it is simpler to
+	add parentheses if you are unsure.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="starting.ghci.edit">Command line editing in ghci</h2></div></div></div><p id="x_O1"><a name="x_O1"></a>On most systems, <span class="command"><strong>ghci</strong></span> has some amount of command
+      line editing ability. In case you are not familiar with command
+      line editing, it's a huge time saver.  The basics are common to
+      both Unix-like and Windows systems.  Pressing the <span class="keycap"><strong>up</strong></span> arrow key on your keyboard recalls
+      the last line of input you entered; pressing <span class="keycap"><strong>up</strong></span> repeatedly cycles through earlier
+      lines of input. You can use the <span class="keycap"><strong>left</strong></span> and <span class="keycap"><strong>right</strong></span> arrow keys to move around
+      inside a line of input.  On Unix (but not Windows,
+      unfortunately), the <span class="keycap"><strong>tab</strong></span> key
+      completes partially entered identifiers.</p><div class="tip"><table border="0" summary="Tip: Where to look for more information"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Where to look for more information</th></tr><tr><td align="left" valign="top"><p id="x_XM"><a name="x_XM"></a>We've barely scratched the surface of command
+	line editing here.  Since you can work more effectively if
+	you're more familiar with the capabilities of your command
+	line editing system, you might find it useful to do some
+	further reading.</p><p id="x_YM"><a name="x_YM"></a>On Unix-like systems, <span class="command"><strong>ghci</strong></span> uses the <a class="ulink" href="http://tiswww.case.edu/php/chet/readline/rltop.html#Documentation" target="_top">GNU 
+	  readline library</a>, which is powerful and
+	customisable.  On Windows, <span class="command"><strong>ghci</strong></span>'s command line editing
+	capabilities are provided by the <a class="ulink" href="http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/doskey.mspx" target="_top"><span class="command"><strong>doskey</strong></span> 
+	  command</a>.</p></td></tr></table></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="starting.list">Lists</h2></div></div></div><p id="x_K2"><a name="x_K2"></a>A list is surrounded by square brackets; the
+      elements are separated by commas.</p><a name="basics.ghci:list"></a><pre id="basics.ghci:list" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>[1, 2, 3]</code></strong>
+[1,2,3]
+</pre><div class="note"><table border="0" summary="Note: Commas are separators, not terminators"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Commas are separators, not terminators</th></tr><tr><td align="left" valign="top"><p id="x_qM"><a name="x_qM"></a>Some languages permit the last element in a list
+	to be followed by an optional trailing comma before a closing
+	bracket, but Haskell doesn't allow this.  If you leave in a
+	trailing comma (e.g. <code class="code">[1,2,]</code>), you'll get a parse
+	error.</p></td></tr></table></div><p id="x_L2"><a name="x_L2"></a>A list can be of any length.  The empty list is
+      written <code class="literal">[]</code>.</p><a name="basics.ghci:list.shortlong"></a><pre id="basics.ghci:list.shortlong" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>[]</code></strong>
+[]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>["foo", "bar", "baz", "quux", "fnord", "xyzzy"]</code></strong>
+["foo","bar","baz","quux","fnord","xyzzy"]
+</pre><p id="x_M2"><a name="x_M2"></a>All elements of a list must be of the same type.
+      Here, we violate this rule: our list starts with two
+      <span class="type">Bool</span> values, but ends with a string.</p><a name="basics.ghci:list.bad"></a><pre id="basics.ghci:list.bad" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>[True, False, "testing"]</code></strong>
+
+&lt;interactive&gt;:1:14:
+    Couldn't match expected type `Bool' against inferred type `[Char]'
+      Expected type: Bool
+      Inferred type: [Char]
+    In the expression: "testing"
+    In the expression: [True, False, "testing"]
+</pre><p id="x_N2"><a name="x_N2"></a>Once again, <span class="command"><strong>ghci</strong></span>'s error message is verbose, but
+      it's simply telling us that there is no way to turn the string
+      into a Boolean value, so the list expression isn't properly
+      typed.</p><p id="x_O2"><a name="x_O2"></a>If we write a series of elements using
+      <span class="emphasis"><em>enumeration notation</em></span>, Haskell will fill in
+      the contents of the list for us.</p><a name="basics.ghci:range"></a><pre id="basics.ghci:range" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>[1..10]</code></strong>
+[1,2,3,4,5,6,7,8,9,10]
+</pre><p id="x_rM"><a name="x_rM"></a>Here, the <code class="literal">..</code> characters denote
+      an <span class="emphasis"><em>enumeration</em></span>. We can only use this
+      notation for types whose elements we can enumerate. It makes no
+      sense for text strings, for instance: there is not any sensible,
+      general way to enumerate <code class="code">["foo".."quux"]</code>.</p><p id="x_vK"><a name="x_vK"></a>By the way, notice that the above use of range
+      notation gives us a <span class="emphasis"><em>closed interval</em></span>; the
+      list contains both endpoints.</p><p id="x_P2"><a name="x_P2"></a>When we write an enumeration, we can optionally
+      specify the size of the step to use by providing the first two
+      elements, followed by the value at which to stop generating the
+      enumeration.</p><a name="basics.ghci:range.step"></a><pre id="basics.ghci:range.step" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>[1.0,1.25..2.0]</code></strong>
+[1.0,1.25,1.5,1.75,2.0]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>[1,4..15]</code></strong>
+[1,4,7,10,13]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>[10,9..1]</code></strong>
+[10,9,8,7,6,5,4,3,2,1]
+</pre><p id="x_wK"><a name="x_wK"></a>In the latter case above, the list is quite
+      sensibly missing the end point of the enumeration, because it
+      isn't an element of the series we defined.</p><p id="x_sM"><a name="x_sM"></a>We can omit the end point of an enumeration.  If a
+      type doesn't have a natural “<span class="quote">upper bound</span>”, this
+      will produce values indefinitely. For example, if you type
+      <code class="literal">[1..]</code> at the <span class="command"><strong>ghci</strong></span> prompt, you'll have to
+      interrupt or kill <span class="command"><strong>ghci</strong></span> to stop it from printing an infinite
+      succession of ever-larger numbers.  If you are tempted to do
+      this,  type <span class="keycap"><strong>C</strong></span> to
+      halt the enumeration.  We will find later on that infinite lists
+      are often useful in Haskell.</p><div class="warning"><table border="0" summary="Warning: Beware enumerating floating point numbers"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="/support/figs/warning.png"></td><th align="left">Beware enumerating floating point numbers</th></tr><tr><td align="left" valign="top"><p id="x_tM"><a name="x_tM"></a>Here's a non-intuitive bit of behaviour.</p><a name="basics.ghci:range.double"></a><pre id="basics.ghci:range.double" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>[1.0..1.8]</code></strong>
+[1.0,2.0]
+</pre><p id="x_uM"><a name="x_uM"></a>Behind the scenes, to avoid floating point
+	roundoff problems, the Haskell implementation enumerates from
+	<code class="code">1.0</code> to <code class="code">1.8+0.5</code>.</p><p id="x_wM"><a name="x_wM"></a>Using enumeration notation over floating point
+	numbers can pack more than a few surprises, so if you use it
+	at all, be careful.  Floating point behavior is quirky in all
+	programming languages; there is nothing unique to Haskell
+	here.</p></td></tr></table></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="starting.list.op">Operators on lists</h3></div></div></div><p id="x_xM"><a name="x_xM"></a>There are two ubiquitous operators for working with
+	lists.  We concatenate two lists using the
+	<code class="function">(++)</code> operator.</p><a name="basics.ghci:concat"></a><pre id="basics.ghci:concat" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>[3,1,3] ++ [3,7]</code></strong>
+[3,1,3,3,7]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>[] ++ [False,True] ++ [True]</code></strong>
+[False,True,True]
+</pre><p id="x_yM"><a name="x_yM"></a>More basic is the <code class="function">(:)</code>
+	operator, which adds an element to the front of a list.  This
+	is pronounced “<span class="quote">cons</span>” (short for
+	“<span class="quote">construct</span>”).</p><a name="basics.ghci:cons"></a><pre id="basics.ghci:cons" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>1 : [2,3]</code></strong>
+[1,2,3]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>1 : []</code></strong>
+[1]
+</pre><p id="x_zA1"><a name="x_zA1"></a>You might be tempted to try writing <code class="code">[1,2]:3</code>
+	to add an element to the end of a list, but <span class="command"><strong>ghci</strong></span> will reject
+	this with an error message, because the first argument of
+	<code class="function">(:)</code> must be an element, and the second
+	must be a list.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="starting.string">Strings and characters</h2></div></div></div><p id="x_H2"><a name="x_H2"></a>If you know a language like Perl or C, you'll find
+      Haskell's notations for strings familiar.</p><p id="x_I2"><a name="x_I2"></a>A text string is surrounded by double
+      quotes.</p><a name="basics.ghci:string"></a><pre id="basics.ghci:string" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"This is a string."</code></strong>
+"This is a string."
+</pre><p id="x_J2"><a name="x_J2"></a>As in many languages, we can represent hard-to-see
+      characters by “<span class="quote">escaping</span>” them. Haskell's escape
+      characters and escaping rules follow the widely used conventions
+      established by the C language.  For example,
+      <code class="literal">'\n'</code> denotes a newline character, and
+      <code class="literal">'\t'</code> is a tab character.  For complete
+      details, see <a class="xref" href="characters-strings-and-escaping-rules.html" title="Appendix B. Characters, strings, and escaping rules">Appendix B, <i>Characters, strings, and escaping rules</i></a>.</p><a name="basics.ghci:newline"></a><pre id="basics.ghci:newline" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>putStrLn "Here's a newline --&gt;\n&lt;-- See?"</code></strong>
+Here's a newline --&gt;
+&lt;-- See?
+</pre><p id="x_AB1"><a name="x_AB1"></a>The <code class="function">putStrLn</code> function prints a
+      string.</p><p id="x_Q2"><a name="x_Q2"></a>Haskell makes a distinction between single
+      characters and text strings.  A single character is enclosed in
+      single quotes.</p><a name="basics.ghci:char"></a><pre id="basics.ghci:char" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>'a'</code></strong>
+'a'
+</pre><p id="x_R2"><a name="x_R2"></a>In fact, a text string is simply a list of
+      individual characters.  Here's a painful way to write a short
+      string, which <span class="command"><strong>ghci</strong></span> gives back to us in a more familiar
+      form.</p><a name="basics.ghci:work"></a><pre id="basics.ghci:work" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let a = ['l', 'o', 't', 's', ' ', 'o', 'f', ' ', 'w', 'o', 'r', 'k']</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>a</code></strong>
+"lots of work"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>a == "lots of work"</code></strong>
+True
+</pre><p id="x_BB1"><a name="x_BB1"></a>The empty string is written <code class="code">""</code>, and is a
+      synonym for <code class="code">[]</code>.</p><a name="basics.ghci:emptystring"></a><pre id="basics.ghci:emptystring" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"" == []</code></strong>
+True
+</pre><p id="x_CB1"><a name="x_CB1"></a>Since a string is a list of characters, we can use the regular
+      list operators to construct new strings.</p><a name="basics.ghci:newstring"></a><pre id="basics.ghci:newstring" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>'a':"bc"</code></strong>
+"abc"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"foo" ++ "bar"</code></strong>
+"foobar"
+</pre></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="starting.types">First steps with types</h2></div></div></div><p id="x_S2"><a name="x_S2"></a>While we've talked a little about types already,
+      our interactions with <span class="command"><strong>ghci</strong></span> have so far been free of much
+      type-related thinking.  We haven't told <span class="command"><strong>ghci</strong></span> what types we've
+      been using, and it's mostly been willing to accept our
+      input.</p><p id="x_zM"><a name="x_zM"></a>Haskell requires type names to start with an uppercase
+      letter, and variable names must start with a lowercase letter.
+      Bear this in mind as you read on; it makes it much easier to
+      follow the names.</p><p id="x_T2"><a name="x_T2"></a>The first thing we can do to start exploring the
+      world of types is to get <span class="command"><strong>ghci</strong></span> to tell us more about what it's
+      doing.  <span class="command"><strong>ghci</strong></span> has a command, <span class="command"><strong>:set</strong></span>, that lets
+      us change a few of its default behaviours.  We can tell it to
+      print more type information as follows.</p><a name="types.ghci:set_t_on"></a><pre id="types.ghci:set_t_on" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:set +t</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>'c'</code></strong>
+'c'
+it :: Char
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"foo"</code></strong>
+"foo"
+it :: [Char]
+</pre><p id="x_U2"><a name="x_U2"></a>What the <code class="code">+t</code> does is tell <span class="command"><strong>ghci</strong></span> to
+      print the type of an expression after  the expression.  That
+      cryptic <code class="varname">it</code> in the output can be very useful:
+      it's actually the name of a special variable, in which <span class="command"><strong>ghci</strong></span>
+      stores the result of the last expression we evaluated.  (This
+      isn't a Haskell language feature; it's specific to <span class="command"><strong>ghci</strong></span>
+      alone.)  Let's break down the meaning of the last line of <span class="command"><strong>ghci</strong></span>
+      output.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_V2"><a name="x_V2"></a>It's telling us about the special variable
+	  <code class="varname">it</code>.</p></li><li><p id="x_W2"><a name="x_W2"></a>We can read text of the form <code class="code">x ::
+	    y</code> as meaning “<span class="quote">the expression <code class="code">x</code>
+	    has the type <code class="code">y</code></span>”.</p></li><li><p id="x_X2"><a name="x_X2"></a>Here, the expression “<span class="quote">it</span>” has the
+	  type <span class="type">[Char]</span>.  (The name <span class="type">String</span>
+	  is often used instead of <span class="type">[Char]</span>.  It is simply
+	  a synonym for <span class="type">[Char]</span>.)</p></li></ul></div><div class="tip"><table border="0" summary="Tip: The joy of it"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left"><a name="starting.it"></a>The joy of “<span class="quote">it</span>”</th></tr><tr><td align="left" valign="top"><p id="x_Y2"><a name="x_Y2"></a>That <code class="varname">it</code> variable is a handy
+	<span class="command"><strong>ghci</strong></span> shortcut.  It lets us use the result of the expression
+	we just evaluated in a new expression.</p><a name="types.ghci:it"></a><pre id="types.ghci:it" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"foo"</code></strong>
+"foo"
+it :: [Char]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>it ++ "bar"</code></strong>
+"foobar"
+it :: [Char]
+</pre><p id="x_Z2"><a name="x_Z2"></a>When evaluating an expression, <span class="command"><strong>ghci</strong></span> won't
+	change the value of <code class="varname">it</code> if the evaluation
+	fails.  This lets you write potentially bogus expressions with
+	something of a safety net.</p><a name="types.ghci:it.bad"></a><pre id="types.ghci:it.bad" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>it</code></strong>
+"foobar"
+it :: [Char]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>it ++ 3</code></strong>
+
+&lt;interactive&gt;:1:6:
+    No instance for (Num [Char])
+      arising from the literal `3' at &lt;interactive&gt;:1:6
+    Possible fix: add an instance declaration for (Num [Char])
+    In the second argument of `(++)', namely `3'
+    In the expression: it ++ 3
+    In the definition of `it': it = it ++ 3
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>it</code></strong>
+"foobar"
+it :: [Char]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>it ++ "baz"</code></strong>
+"foobarbaz"
+it :: [Char]
+</pre><p id="x_a2"><a name="x_a2"></a>When we couple <code class="varname">it</code> with
+	liberal use of the arrow keys to recall and edit the last
+	expression we typed, we gain a decent way to experiment
+	interactively: the cost of mistakes is very low.  Take
+	advantage of the opportunity to make cheap, plentiful mistakes
+	when you're exploring the language!</p></td></tr></table></div><p id="x_b2"><a name="x_b2"></a>Here are a few more of Haskell's names for types, from
+      expressions of the sort we've already seen.</p><a name="types.ghci:integer"></a><pre id="types.ghci:integer" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>7 ^ 80</code></strong>
+40536215597144386832065866109016673800875222251012083746192454448001
+it :: Integer
+</pre><p id="x_c2"><a name="x_c2"></a>Haskell's integer type is named
+      <span class="type">Integer</span>.  The size of an <span class="type">Integer</span> value
+      is bounded only by your system's memory capacity.</p><p id="x_e2"><a name="x_e2"></a>Rational numbers don't look quite the same as
+      integers.  To construct a rational number, we use the
+      <code class="function">(%)</code> operator.  The numerator is on the
+      left, the denominator on the right.</p><a name="types.ghci:ratio"></a><pre id="types.ghci:ratio" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m +Data.Ratio</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>11 % 29</code></strong>
+11%29
+it :: Ratio Integer
+</pre><p id="x_DB1"><a name="x_DB1"></a>For convenience, <span class="command"><strong>ghci</strong></span> lets us abbreviate many commands, so
+      we can write <span class="command"><strong>:m</strong></span> instead of
+      <span class="command"><strong>:module</strong></span> to load a module.</p><p id="x_f2"><a name="x_f2"></a>Notice <span class="emphasis"><em>two</em></span> words on the right
+      hand side of the <code class="code">::</code> above.  We can read this as a
+      “<span class="quote"><span class="type">Ratio</span> of <span class="type">Integer</span></span>”.  We
+      might guess that a <span class="type">Ratio</span> must have values of type
+      <span class="type">Integer</span> as both numerator and denominator. Sure
+      enough, if we try to construct a <span class="type">Ratio</span> where the
+      numerator and denominator are of different types, or of the same
+      non-integral type, <span class="command"><strong>ghci</strong></span> complains.</p><a name="types.ghci:ratio.bad"></a><pre id="types.ghci:ratio.bad" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>3.14 % 8</code></strong>
+
+&lt;interactive&gt;:1:0:
+    Ambiguous type variable `t' in the constraints:
+      `Integral t' arising from a use of `%' at &lt;interactive&gt;:1:0-7
+      `Fractional t'
+        arising from the literal `3.14' at &lt;interactive&gt;:1:0-3
+    Probable fix: add a type signature that fixes these type variable(s)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>1.2 % 3.4</code></strong>
+
+&lt;interactive&gt;:1:0:
+    Ambiguous type variable `t' in the constraints:
+      `Integral t' arising from a use of `%' at &lt;interactive&gt;:1:0-8
+      `Fractional t'
+        arising from the literal `3.4' at &lt;interactive&gt;:1:6-8
+    Probable fix: add a type signature that fixes these type variable(s)
+</pre><p id="x_g2"><a name="x_g2"></a>Although it is initially useful to have
+      <strong class="userinput"><code>:set +t</code></strong> giving us type information for
+      every expression we enter, this is a facility we will quickly
+      outgrow. After a while, we will often know what type we expect an
+      expression to have.  We can turn off the extra type information
+      at any time, using the <span class="command"><strong>:unset</strong></span> command.</p><a name="types.ghci:set_t_off"></a><pre id="types.ghci:set_t_off" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:unset +t</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>2</code></strong>
+2
+</pre><p id="x_h2"><a name="x_h2"></a>Even with this facility turned off,  we can still get that
+      type information easily when we need it, using another <span class="command"><strong>ghci</strong></span>
+      command.</p><a name="types.ghci:type"></a><pre id="types.ghci:type" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type 'a'</code></strong>
+'a' :: Char
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"foo"</code></strong>
+"foo"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type it</code></strong>
+it :: [Char]
+</pre><p id="x_i2"><a name="x_i2"></a>The <span class="command"><strong>:type</strong></span> command will print type
+      information for any expression we give it (including
+      <code class="varname">it</code>, as we see above).  It won't actually
+      evaluate the expression; it only checks its type and prints
+      that.</p><p id="x_EB1"><a name="x_EB1"></a>Why are the types reported for these two expressions
+      different?</p><a name="types.ghci:different"></a><pre id="types.ghci:different" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>3 + 2</code></strong>
+5
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type it</code></strong>
+it :: Integer
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type 3 + 2</code></strong>
+3 + 2 :: (Num t) =&gt; t
+</pre><p id="x_FB1"><a name="x_FB1"></a>Haskell has several numeric types. For example, a literal
+      number such as <code class="literal">1</code> could, depending on the
+      context in which it appears, be an integer or a floating point
+      value.  When we force <span class="command"><strong>ghci</strong></span> to evaluate the expression <code class="code">3
+	+ 2</code>, it has to choose a type so that it can print the
+      value, and it defaults to <span class="type">Integer</span>.  In the second
+      case, we ask <span class="command"><strong>ghci</strong></span> to print the type of the expression without
+      actually evaluating it, so it does not have to be so specific.
+      It answers, in effect, “<span class="quote">its type is numeric</span>”.  We
+      will see more of this style of type annotation in <a class="xref" href="using-typeclasses.html" title="Chapter 6. Using Typeclasses">Chapter 6, <i>Using Typeclasses</i></a>.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id577314">A simple program</h2></div></div></div><p id="x_GB1"><a name="x_GB1"></a>Let's take a small leap ahead, and write a small program
+      that counts the number of lines in its input.  Don't expect to
+      understand this yet; it's just fun to get our hands dirty.  In a
+      text editor, enter the following code into a file, and save it
+      as <code class="filename">WC.hs</code>.</p><a name="WC.hs:main"></a><pre id="WC.hs:main" class="programlisting">-- file: ch01/WC.hs
+-- lines beginning with "--" are comments.
+
+main = interact wordCount
+    where wordCount input = show (length (lines input)) ++ "\n"</pre><p id="x_HB1"><a name="x_HB1"></a>Find or create a text file; let's call it
+      <code class="filename">quux.txt</code><sup>[<a name="id577349" href="#ftn.id577349" class="footnote">1</a>]</sup>.</p><pre id="id577358" class="screen"><code class="prompt">$</code> <strong class="userinput"><code>cat quux.txt</code></strong>
+Teignmouth, England
+Paris, France
+Ulm, Germany
+Auxerre, France
+Brunswick, Germany
+Beaumont-en-Auge, France
+Ryazan, Russia</pre><p id="x_JB1"><a name="x_JB1"></a>From a shell or command prompt, run the following
+      command.</p><pre id="id577383" class="screen"><code class="prompt">$</code> <strong class="userinput"><code>runghc WC &lt; quux.txt</code></strong>
+7</pre><p id="x_KB1"><a name="x_KB1"></a>We have successfully written a simple program that interacts
+      with the real world!  In the chapters that follow, we will
+      successively fill the gaps in our understanding until we can
+      write programs of our own.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="starting.types.exercises">Exercises</h2></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id577421"></a><a name="id577423"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_j2"><a name="x_j2"></a>Enter the following expressions into
+	    <span class="command"><strong>ghci</strong></span>.  What are their types?</p><div class="itemizedlist"><ul type="disc"><li><p id="x_LB1"><a name="x_LB1"></a><code class="code">5 + 8</code></p></li><li><p id="x_MB1"><a name="x_MB1"></a><code class="code">3 * 5 + 8</code></p></li><li><p id="x_NB1"><a name="x_NB1"></a><code class="code">2 + 4</code></p></li><li><p id="x_OB1"><a name="x_OB1"></a><code class="code">(+) 2 4</code></p></li><li><p id="x_PB1"><a name="x_PB1"></a><code class="code">sqrt 16</code></p></li><li><p id="x_QB1"><a name="x_QB1"></a><code class="code">succ 6</code></p></li><li><p id="x_RB1"><a name="x_RB1"></a><code class="code">succ 7</code></p></li><li><p id="x_SB1"><a name="x_SB1"></a><code class="code">pred 9</code></p></li><li><p id="x_TB1"><a name="x_TB1"></a><code class="code">pred 8</code></p></li><li><p id="x_UB1"><a name="x_UB1"></a><code class="code">sin (pi / 2)</code></p></li><li><p id="x_VB1"><a name="x_VB1"></a><code class="code">truncate pi</code></p></li><li><p id="x_WB1"><a name="x_WB1"></a><code class="code">round 3.5</code></p></li><li><p id="x_XB1"><a name="x_XB1"></a><code class="code">round 3.4</code></p></li><li><p id="x_YB1"><a name="x_YB1"></a><code class="code">floor 3.7</code></p></li><li><p id="x_ZB1"><a name="x_ZB1"></a><code class="code">ceiling 3.3</code></p></li></ul></div></td></tr><tr class="question"><td align="left" valign="top"><a name="id577583"></a><a name="id577586"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_aB1"><a name="x_aB1"></a>From <span class="command"><strong>ghci</strong></span>, type <span class="command"><strong>:?</strong></span> to print some
+	    help.  Define a variable, such as <code class="code">let x = 1</code>,
+	    then type <code class="code">:show bindings</code>.  What do you see?</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id577612"></a><a name="id577614"></a><p><b>3.</b></p></td><td align="left" valign="top"><p id="x_bB1"><a name="x_bB1"></a>The <code class="function">words</code> function counts the
+	    number of words in a string.  Modify the
+	    <code class="filename">WC.hs</code> example to count the number of
+	    words in a file.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id577635"></a><a name="id577637"></a><p><b>4.</b></p></td><td align="left" valign="top"><p id="x_cB1"><a name="x_cB1"></a>Modify the <code class="filename">WC.hs</code> example again,
+	    to print the number of characters in a file.</p></td></tr></tbody></table></div></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id577349" href="#id577349" class="para">1</a>] </sup>Incidentally, what do these cities have in
+	  common?</p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="why-functional-programming-why-haskell.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="types-and-functions.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Why functional programming?  Why Haskell? </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 2. Types and Functions</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

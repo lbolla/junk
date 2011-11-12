@@ -1,0 +1,603 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 23. GUI Programming with gtk2hs</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="extended-example-web-client-programming.html" title="Chapter 22. Extended Example: Web Client Programming"><link rel="next" href="concurrent-and-multicore-programming.html" title="Chapter 24. Concurrent and multicore programming"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 23. GUI Programming with gtk2hs</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="extended-example-web-client-programming.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="concurrent-and-multicore-programming.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="gui"><div class="titlepage"><div><div><h2 class="title">Chapter 23. GUI Programming with gtk2hs</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="gui-programming-with-gtk-hs.html#gui.install">Installing gtk2hs</a></span></dt><dt><span class="sect1"><a href="gui-programming-with-gtk-hs.html#gui.overview">Overview of the GTK+ Stack</a></span></dt><dt><span class="sect1"><a href="gui-programming-with-gtk-hs.html#gui.glade">User Interface Design with Glade</a></span></dt><dd><dl><dt><span class="sect2"><a href="gui-programming-with-gtk-hs.html#gui.glade.concepts">Glade Concepts</a></span></dt></dl></dd><dt><span class="sect1"><a href="gui-programming-with-gtk-hs.html#gui.event">Event-Driven Programming</a></span></dt><dt><span class="sect1"><a href="gui-programming-with-gtk-hs.html#gui.init">Initializing the GUI</a></span></dt><dt><span class="sect1"><a href="gui-programming-with-gtk-hs.html#gui.add">The Add Podcast Window</a></span></dt><dt><span class="sect1"><a href="gui-programming-with-gtk-hs.html#gui.longrunning">Long-Running Tasks</a></span></dt><dt><span class="sect1"><a href="gui-programming-with-gtk-hs.html#gui.cabal">Using Cabal</a></span></dt><dt><span class="sect1"><a href="gui-programming-with-gtk-hs.html#gui.exercises">Exercises</a></span></dt></dl></div><p id="x_Bw"><a name="x_Bw"></a>
+    Throughout this book, we have been developing simple text-based
+    tools.  While these are often ideal interfaces, sometimes a
+    graphical user interface (GUI) is required.  There are several GUI
+    toolkits available for Haskell.  In this chapter, we will look at
+    one of the, gtk2hs.<sup>[<a name="id671126" href="#ftn.id671126" class="footnote">53</a>]</sup>
+
+  </p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="gui.install">Installing gtk2hs</h2></div></div></div><p id="x_Cw"><a name="x_Cw"></a>
+      Before we dive in to working with gtk2hs, you'll need to get it
+      installed.  On most Linux, BSD, or other POSIX platforms, you
+      will find ready-made gtk2hs packages.  You will generally need
+      to install the GTK+ development environment, Glade, and gtk2hs.
+      The specifics of doing so vary by distribution.
+    </p><p id="x_Dw"><a name="x_Dw"></a>
+      Windows and Mac developers should consult the gtk2hs downloads
+      site at <a class="ulink" href="http://www.haskell.org/gtk2hs/download/" target="_top">http://www.haskell.org/gtk2hs/download/</a>.  Begin
+      by downloading gtk2hs from there.  Then you will also need Glade
+      version 3.  Mac developers can find this at <a class="ulink" href="http://www.macports.org/" target="_top">http://www.macports.org/</a>, while Windows
+      developers should consult <a class="ulink" href="http://sourceforge.net/projects/gladewin32" target="_top">http://sourceforge.net/projects/gladewin32</a>.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="gui.overview">Overview of the GTK+ Stack</h2></div></div></div><p id="x_Ew"><a name="x_Ew"></a>
+      Before diving in to the code, let's pause a brief moment and
+      consider the architecture of the system we are going to use.
+      First off, we have GTK+.  GTK+ is a cross-platform GUI-building
+      toolkit, implemented in C.  It runs on Windows, Mac, Linux,
+      BSDs, and more.  It is also the toolkit beneath the Gnome
+      desktop environment.
+    </p><p id="x_Fw"><a name="x_Fw"></a>
+      Next, we have Glade.  Glade is a user interface designer, which
+      lets you graphically lay out your application's windows and
+      dialogs.  Glade saves the interface in XML files, which your
+      application will load at runtime.
+    </p><p id="x_Gw"><a name="x_Gw"></a>
+      The last piece of this puzzle is gtk2hs.  This is the Haskell
+      binding for GTK+, Glade, and several related libraries.  It is
+      one of many language bindings available for GTK+.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="gui.glade">User Interface Design with Glade</h2></div></div></div><p id="x_Hw"><a name="x_Hw"></a>
+      In this chapter, we are going to develop a GUI for the podcast
+      downloader we first developed in <a class="xref" href="extended-example-web-client-programming.html" title="Chapter 22. Extended Example: Web Client Programming">Chapter 22, <i>Extended Example: Web Client Programming</i></a>.  Our
+      first task is to design the user interface in Glade.  Once we
+      have accomplished that, we will write the Haskell code to
+      integrate it with the application.
+    </p><p id="x_Iw"><a name="x_Iw"></a>
+      Because this is a Haskell book, rather than a GUI design book,
+      we will move fast through some of these early parts.  For more
+      information on interface design with Glade, you may wish to
+      refer to one of these resources:
+    </p><div class="itemizedlist"><ul type="disc"><li><p id="x_Jw"><a name="x_Jw"></a>The Glade homepage, which contains documentation
+      for Glade.  <a class="ulink" href="http://glade.gnome.org/" target="_top">http://glade.gnome.org/</a>
+        </p></li><li><p id="x_Kw"><a name="x_Kw"></a>The GTK+ homepage contains information about the
+      different widgets.  Refer to the documentation section, then the
+      stable GTK documentation area.  <a class="ulink" href="http://www.gtk.org/" target="_top">http://www.gtk.org/</a>
+        </p></li><li><p id="x_Lw"><a name="x_Lw"></a>
+          The gtk2hs homepage also has a useful documentation section,
+          which contains an API reference to gtk2hs as well as a glade
+          tutorial.  <a class="ulink" href="http://www.haskell.org/gtk2hs/documentation/" target="_top">http://www.haskell.org/gtk2hs/documentation/</a>
+        </p></li></ul></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="gui.glade.concepts">Glade Concepts</h3></div></div></div><p id="x_Mw"><a name="x_Mw"></a>
+        Glade is a user interface design tool.  It lets us use a
+        graphical interface to design our graphical interface.  We
+        could build up the window components using a bunch of calls to
+        GTK+ functions, but it is usually easier to do this with
+        Glade.
+      </p><p id="x_Nw"><a name="x_Nw"></a>
+        The fundamental "thing" we work with in GTK+ is the
+        <span class="emphasis"><em>widget</em></span>.  A widget represents any part of
+        the GUI, and may contain other widgets.  Some examples of
+        widgets include a window, dialog box, button, and text within the
+        button.
+      </p><p id="x_Ow"><a name="x_Ow"></a>
+        Glade, then, is a widget layout tool.  We set up a whole tree
+        of widgets, with top-level windows at the top of the tree.
+        You can think of Glade and widgets in somewhat the same terms
+        as HTML: you can arrange widgets in a table-like layout, set
+        up padding rules, and structure the entire description in a
+        hierarchical way.
+      </p><p id="x_iJ1"><a name="x_iJ1"></a>
+        Glade saves the widget descriptions into an XML file.  Our program
+        loads this XML file at runtime.  We load the widgets by asking
+        the Glade runtime library to load a widget with a specific
+        name.
+      </p><p id="x_Pw"><a name="x_Pw"></a>
+        Here's a screenshot of an example working with Glade to design
+        our application's main screen:
+      </p><div class="informalfigure"><div class="mediaobject"><img src="figs/gui-glade-3.png" alt="Screenshot of Glade, showing components of the graphical user interface."></div></div><p id="x_Qw"><a name="x_Qw"></a>
+        In the downloadable material available for this book, you can
+        find the full Glade XML file as
+        <code class="literal">podresources.glade</code>.  You can load this file
+        in Glade and edit it if you wish.
+      </p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="gui.event">Event-Driven Programming</h2></div></div></div><p id="x_Rw"><a name="x_Rw"></a>
+      GTK+, like many GUI toolkits, is an
+      <span class="emphasis"><em>event-driven</em></span> toolkit.  That means that
+      instead of, say, displaying a dialog box and waiting for the
+      user to click on a button, we instead tell gtk2hs what function
+      to call if a certain button is clicked, but don't sit there
+      waiting for a click in the dialog box.
+    </p><p id="x_Sw"><a name="x_Sw"></a>
+      This is different from the model traditionally used for console
+      programs.  When you think about it, though, it almost has to
+      be.  A GUI program could have multiple windows open, and writing
+      code to sit there waiting for input in the particular
+      combination of open windows could be a complicated proposition.
+    </p><p id="x_Tw"><a name="x_Tw"></a>
+      Event-driven programming complements Haskell nicely.  As we've
+      discussed over and over in this book, functional languages
+      thrive on passing around functions.  So we'll be passing
+      functions to gtk2hs that get called when certain events occur.
+      These are known as <span class="emphasis"><em>callback functions</em></span>.
+    </p><p id="x_Uw"><a name="x_Uw"></a>
+      At the core of a GTK+ program is the <span class="emphasis"><em>main
+      loop</em></span>.  This is the part of the program that waits for
+      actions from the user or commands from the program and carries
+      them out.  The GTK+ main loop is handled entirely by GTK+.  To
+      us, it looks like an I/O action that we execute, that doesn't
+      return until the GUI has been disposed of.
+    </p><p id="x_Vw"><a name="x_Vw"></a>
+      Since the main loop is responsible for doing everything from
+      handling clicks of a mouse to redrawing a window when it has
+      been uncovered, it must always be available.  We can't just run
+      a long-running task -- such as downloading a podcast episode --
+      from within the main loop.  This would make the GUI
+      unresponsive, and actions such as clicking a Cancel button
+      wouldn't be processed in a timely manner.
+    </p><p id="x_Ww"><a name="x_Ww"></a>
+      Therefore, we will be using multithreading to handle these
+      long-running tasks.  More information on multithreading can be
+      found in <a class="xref" href="concurrent-and-multicore-programming.html" title="Chapter 24. Concurrent and multicore programming">Chapter 24, <i>Concurrent and multicore programming</i></a>.  For now, just know that
+      we will use <code class="literal">forkIO</code> to create new threads for
+      long-running tasks such as downloading podcast feeds and
+      episodes.  For very quick tasks, such as adding a new podcast to
+      the database, we will not bother with a separate thread since it
+      will be executed so fast the user will never notice.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="gui.init">Initializing the GUI</h2></div></div></div><p id="x_Xw"><a name="x_Xw"></a>
+      Our first steps are going to involve initializing the GUI for
+      our program.  For reasons that we'll explain in
+      <a class="xref" href="gui-programming-with-gtk-hs.html#gui.cabal" title="Using Cabal">the section called “Using Cabal”</a>, we're going to have a small
+      file called <code class="literal">PodLocalMain.hs</code> that loads
+      <code class="literal">PodMain</code> and passes to it the path to
+      <code class="literal">podresources.glade</code>, the XML file saved by
+      Glade that gives the information about our GUI widgets.
+    </p><a name="PodLocalMain.hs:all"></a><pre id="PodLocalMain.hs:all" class="programlisting">-- file: ch23/PodLocalMain.hs
+module Main where
+
+import qualified PodMainGUI
+
+main = PodMainGUI.main "podresources.glade"</pre><p id="x_Yw"><a name="x_Yw"></a>
+      Now, let's consider <code class="literal">PodMainGUI.hs</code>.  This file
+      is the only Haskell source file that we had to modify from the
+      example in <a class="xref" href="extended-example-web-client-programming.html" title="Chapter 22. Extended Example: Web Client Programming">Chapter 22, <i>Extended Example: Web Client Programming</i></a> to make it work as a GUI.
+      Let's start by looking at the start of our new
+      <code class="literal">PodMainGUI.hs</code> file -- we've renamed it from
+      <code class="literal">PodMain.hs</code> for clarity.
+    </p><a name="PodMainGUI.hs:imports"></a><pre id="PodMainGUI.hs:imports" class="programlisting">-- file: ch23/PodMainGUI.hs
+module PodMainGUI where
+
+import PodDownload
+import PodDB
+import PodTypes
+import System.Environment
+import Database.HDBC
+import Network.Socket(withSocketsDo)
+
+-- GUI libraries
+
+import Graphics.UI.Gtk hiding (disconnect)
+import Graphics.UI.Gtk.Glade
+
+-- Threading
+
+import Control.Concurrent</pre><p id="x_Zw"><a name="x_Zw"></a>
+      This first part of <code class="literal">PodMainGUI.hs</code> is similar to
+      our non-GUI version.  We import three additional components,
+      however.  First, we have <code class="literal">Graphics.UI.Gtk</code>,
+      which provides most of the GTK+ functions we will be using.
+      Both this module and <code class="literal">Database.HDBC</code> provide a
+      function named <code class="literal">disconnect</code>.  Since we'll be
+      using the HDBC version, but not the GTK+ version, we don't
+      import that function from <code class="literal">Graphics.UI.Gtk</code>.
+      <code class="literal">Graphics.UI.Gtk.Glade</code> contains functions
+      needed for loading and working with our Glade file.
+    </p><p id="x_aw"><a name="x_aw"></a>
+      We also import <code class="literal">Control.Concurrent</code>, which has
+      the basics needed for multi-threaded programming.  We'll use a
+      few functions from here as described above once we get into the
+      guts of the program.  Next, let's define a type to store
+      information about our GUI.
+    </p><a name="PodMainGUI.hs:type"></a><pre id="PodMainGUI.hs:type" class="programlisting">-- file: ch23/PodMainGUI.hs
+-- | Our main GUI type
+data GUI = GUI {
+      mainWin :: Window,
+      mwAddBt :: Button,
+      mwUpdateBt :: Button,
+      mwDownloadBt :: Button,
+      mwFetchBt :: Button,
+      mwExitBt :: Button,
+      statusWin :: Dialog,
+      swOKBt :: Button,
+      swCancelBt :: Button,
+      swLabel :: Label,
+      addWin :: Dialog,
+      awOKBt :: Button,
+      awCancelBt :: Button,
+      awEntry :: Entry}</pre><p id="x_bw"><a name="x_bw"></a>
+      Our new <code class="literal">GUI</code> type stores all the widgets we
+      will care about in the entire program.  Large programs may not
+      wish to have a monolithic type like this.  For this small
+      example, it makes sense because it can be easily passed around to
+      different functions, and we'll know that we always have the
+      information we need available.
+    </p><p id="x_cw"><a name="x_cw"></a>
+      Within this record, we have fields for a <code class="literal">Window</code> (a
+      top-level window), <code class="literal">Dialog</code> (dialog window),
+      <code class="literal">Button</code> (clickable
+      button), <code class="literal">Label</code> (piece of text), and
+      <code class="literal">Entry</code> (place for the user to enter text).
+      Let's now look at our <code class="literal">main</code> function:
+    </p><a name="PodMainGUI.hs:main"></a><pre id="PodMainGUI.hs:main" class="programlisting">-- file: ch23/PodMainGUI.hs
+main :: FilePath -&gt; IO ()
+main gladepath = withSocketsDo $ handleSqlError $
+    do initGUI                  -- Initialize GTK+ engine
+
+       -- Every so often, we try to run other threads.
+       timeoutAddFull (yield &gt;&gt; return True)
+                      priorityDefaultIdle 100
+
+       -- Load the GUI from the Glade file
+       gui &lt;- loadGlade gladepath
+
+       -- Connect to the database
+       dbh &lt;- connect "pod.db"
+
+       -- Set up our events 
+       connectGui gui dbh
+
+       -- Run the GTK+ main loop; exits after GUI is done
+       mainGUI
+       
+       -- Disconnect from the database at the end
+       disconnect dbh</pre><p id="x_dw"><a name="x_dw"></a>
+      Remember that the type of this <code class="literal">main</code> function
+      is a little different than usual because it is being called by
+      <code class="literal">main</code> in <code class="literal">PodLocalMain.hs</code>.
+      We start by calling <code class="literal">initGUI</code>, which
+      initializes the GTK+ system.  Next, we have a call to
+      <code class="literal">timeoutAddFull</code>.  This call is only needed for
+      multithreaded GTK+ programs.  It tells the GTK+ main loop to
+      pause to give other threads a chance to run every so often.
+    </p><p id="x_ew"><a name="x_ew"></a>
+      After that, we call our <code class="literal">loadGlade</code> function
+      (see below) to load the widgets from our Glade XML file.  After
+      that, we connect to our database, call our
+      <code class="literal">connectGui</code> function to set up our callback
+      functions.  Then, we fire up the GTK+ main loop.  We expect it
+      could be minutes, hours, or even days before
+      <code class="literal">mainGUI</code> returns.  When it does, it means the
+      user has closed the main window or clicked the Exit button.
+      After that, we disconnect from the database and close the
+      program.  Now, let's look at our <code class="literal">loadGlade</code>
+      function.
+    </p><a name="PodMainGUI.hs:loadGlade"></a><pre id="PodMainGUI.hs:loadGlade" class="programlisting">-- file: ch23/PodMainGUI.hs
+loadGlade gladepath =
+    do -- Load XML from glade path.
+       -- Note: crashes with a runtime error on console if fails!
+       Just xml &lt;- xmlNew gladepath
+
+       -- Load main window
+       mw &lt;- xmlGetWidget xml castToWindow "mainWindow"
+
+       -- Load all buttons
+
+       [mwAdd, mwUpdate, mwDownload, mwFetch, mwExit, swOK, swCancel,
+        auOK, auCancel] &lt;-
+           mapM (xmlGetWidget xml castToButton)
+           ["addButton", "updateButton", "downloadButton",
+            "fetchButton", "exitButton", "okButton", "cancelButton",
+            "auOK", "auCancel"]
+       
+       sw &lt;- xmlGetWidget xml castToDialog "statusDialog"
+       swl &lt;- xmlGetWidget xml castToLabel "statusLabel"
+
+       au &lt;- xmlGetWidget xml castToDialog "addDialog"
+       aue &lt;- xmlGetWidget xml castToEntry "auEntry"
+
+       return $ GUI mw mwAdd mwUpdate mwDownload mwFetch mwExit
+              sw swOK swCancel swl au auOK auCancel aue</pre><p id="x_fw"><a name="x_fw"></a>
+      This function starts by calling <code class="literal">xmlNew</code>, which 
+      loads the Glade XML file.  It returns <code class="literal">Nothing</code>
+      on error.  Here we are using pattern matching to extract the
+      result value on success.  If it fails, there will be a console
+      (not graphical) exception displayed; one of the exercises at
+      the end of this chapter addresses this.
+    </p><p id="x_gw"><a name="x_gw"></a>
+      Now that we have Glade's XML file loaded, you will see a bunch
+      of calls to <code class="literal">xmlGetWidget</code>.  This Glade
+      function is used to load the XML definition of a widget, and
+      return a GTK+ widget type for that widget.  We have to pass
+      along to that function a value indicating what GTK+ type we
+      expect -- we'll get a runtime error if these don't match.
+    </p><p id="x_hw"><a name="x_hw"></a>
+      We start by creating a widget for the main window.  It is loaded
+      from the XML widget defined with name
+      <code class="literal">"mainWindow"</code> and stored in the
+      <code class="literal">mw</code> variable.  We then use pattern matching
+      and <code class="literal">mapM</code> to load up all the buttons.
+      Then, we have two dialogs, a label, and an entry to load.
+      Finally, we use all of these to build up the GUI type and return
+      it.  Next, we need to set our callback functions up as event handlers.
+    </p><a name="PodMainGUI.hs:connectGui"></a><pre id="PodMainGUI.hs:connectGui" class="programlisting">-- file: ch23/PodMainGUI.hs
+connectGui gui dbh =
+    do -- When the close button is clicked, terminate GUI loop
+       -- by calling GTK mainQuit function
+       onDestroy (mainWin gui) mainQuit
+       
+       -- Main window buttons
+       onClicked (mwAddBt gui) (guiAdd gui dbh)
+       onClicked (mwUpdateBt gui) (guiUpdate gui dbh)
+       onClicked (mwDownloadBt gui) (guiDownload gui dbh)
+       onClicked (mwFetchBt gui) (guiFetch gui dbh)
+       onClicked (mwExitBt gui) mainQuit
+
+       -- We leave the status window buttons for later</pre><p id="x_iw"><a name="x_iw"></a>
+      We start out the <code class="literal">connectGui</code> function by
+      calling <code class="literal">onDestroy</code>.  This means that when
+      somebody clicks on the operating system's close button
+      (typically an X in
+      the titlebar on Windows or Linux, or a red circle on Mac OS X),
+      on the main window, we call the <code class="literal">mainQuit</code>
+      function.  <code class="literal">mainQuit</code> closes all GUI windows
+      and terminates the GTK+ main loop.
+    </p><p id="x_jw"><a name="x_jw"></a>
+      Next, we call <code class="literal">onClicked</code> to register event
+      handlers for clicking on our five different buttons.  For
+      buttons, these handlers are also called if the user selects the
+      button via the keyboard.  Clicking on these buttons will call
+      our functions such as <code class="literal">guiAdd</code>, passing along
+      the GUI record as well as a database handle.
+    </p><p id="x_kw"><a name="x_kw"></a>
+      At this point, we have completely defined the main window for
+      the GUI podcatcher.  It looks like this:
+    </p><div class="informalfigure"><div class="mediaobject"><img src="figs/gui-pod-mainwin.png" alt="Screenshot of the main window of the podcatcher application."></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="gui.add">The Add Podcast Window</h2></div></div></div><p id="x_lw"><a name="x_lw"></a>
+      Now that we've covered the main window, let's talk about the
+      other windows that our application presents, starting with the
+      Add Podcast window.  When the user clicks the button to add a
+      new podcast, we need to pop up a dialog box to prompt for the
+      URL of the podcast.  We have defined this dialog box in Glade,
+      so all we need to do is set it up.
+    </p><a name="PodMainGUI.hs:guiAdd"></a><pre id="PodMainGUI.hs:guiAdd" class="programlisting">-- file: ch23/PodMainGUI.hs
+guiAdd gui dbh = 
+    do -- Initialize the add URL window
+       entrySetText (awEntry gui) ""
+       onClicked (awCancelBt gui) (widgetHide (addWin gui))
+       onClicked (awOKBt gui) procOK
+       
+       -- Show the add URL window
+       windowPresent (addWin gui)
+    where procOK =
+              do url &lt;- entryGetText (awEntry gui)
+                 widgetHide (addWin gui) -- Remove the dialog
+                 add dbh url             -- Add to the DB</pre><p id="x_mw"><a name="x_mw"></a>
+      We start by calling <code class="literal">entrySetText</code> to set the
+      contents of the entry box (the place where the user types in the
+      URL) to the empty string.  That's because the same widget gets
+      reused over the lifetime of the program, and we don't want the
+      last URL the user entered to remain there.  Next, we set up
+      actions for the two buttons in the dialog.  If the users clicks
+      on the cancel button, we simply remove the dialog box from the
+      screen by calling <code class="literal">widgetHide</code> on it.  If the
+      user clicks the OK button, we call <code class="literal">procOK</code>.
+    </p><p id="x_nw"><a name="x_nw"></a>
+      <code class="literal">procOK</code> starts by retrieving the supplied URL
+      from the entry widget.  Next, it uses
+      <code class="literal">widgetHide</code> to get rid of the dialog box.
+      Finally, it calls <code class="literal">add</code> to add the URL to the
+      database.  This <code class="literal">add</code> is exactly the same
+      function as we had in the non-GUI version of the program.
+    </p><p id="x_ow"><a name="x_ow"></a>
+      The last thing we do in <code class="literal">guiAdd</code> is actually
+      display the pop-up window.  That's done by calling
+      <code class="literal">windowPresent</code>, which is the opposite of
+      <code class="literal">widgetHide</code>.
+    </p><p id="x_pw"><a name="x_pw"></a>
+      Note that the <code class="literal">guiAdd</code> function returns almost
+      immediately.  It just sets up the widgets and causes the box to
+      be displayed; at no point does it block waiting for input.
+      Here's what the dialog box looks like:
+    </p><div class="informalfigure"><div class="mediaobject"><img src="figs/gui-pod-addwin.png" alt="Screenshot of the add-a-podcast window."></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="gui.longrunning">Long-Running Tasks</h2></div></div></div><p id="x_qw"><a name="x_qw"></a>
+      As we think about the buttons available in the main window,
+      three of them correspond to tasks that could take a while to
+      complete: update, download, and fetch.  While these operations
+      take place, we'd like to do two things with our GUI: provide the
+      user with the status of the operation, and provide the user with
+      the ability to cancel the operation as it is in progress.
+    </p><p id="x_rw"><a name="x_rw"></a>
+      Since all three of these things are very similar operations, it
+      makes sense to provide a generic way to handle this
+      interaction.  We have defined a single status window widget in
+      the Glade file that will be used by all three of these.  In our
+      Haskell source code, we'll define a generic
+      <code class="literal">statusWindow</code> function that will be used by
+      all three of these operations as well.
+    </p><p id="x_sw"><a name="x_sw"></a>
+      <code class="literal">statusWindow</code> takes four parameters: the GUI
+      information, the database information, a <code class="literal">String</code> giving the
+      title of the window, and a function that will perform the
+      operation.  This function will itself be passed a function that
+      it can call to report its progress.  Here's the code:
+    </p><a name="PodMainGUI.hs:statusWindow"></a><pre id="PodMainGUI.hs:statusWindow" class="programlisting">-- file: ch23/PodMainGUI.hs
+statusWindow :: IConnection conn =&gt;
+                GUI 
+             -&gt; conn 
+             -&gt; String 
+             -&gt; ((String -&gt; IO ()) -&gt; IO ())
+             -&gt; IO ()
+statusWindow gui dbh title func =
+    do -- Clear the status text
+       labelSetText (swLabel gui) ""
+       
+       -- Disable the OK button, enable Cancel button
+       widgetSetSensitivity (swOKBt gui) False
+       widgetSetSensitivity (swCancelBt gui) True
+
+       -- Set the title
+       windowSetTitle (statusWin gui) title
+
+       -- Start the operation
+       childThread &lt;- forkIO childTasks
+
+       -- Define what happens when clicking on Cancel
+       onClicked (swCancelBt gui) (cancelChild childThread)
+       
+       -- Show the window
+       windowPresent (statusWin gui)
+    where childTasks =
+              do updateLabel "Starting thread..."
+                 func updateLabel
+                 -- After the child task finishes, enable OK
+                 -- and disable Cancel
+                 enableOK
+                 
+          enableOK = 
+              do widgetSetSensitivity (swCancelBt gui) False
+                 widgetSetSensitivity (swOKBt gui) True
+                 onClicked (swOKBt gui) (widgetHide (statusWin gui))
+                 return ()
+
+          updateLabel text =
+              labelSetText (swLabel gui) text
+          cancelChild childThread =
+              do killThread childThread
+                 yield
+                 updateLabel "Action has been cancelled."
+                 enableOK</pre><p id="x_tw"><a name="x_tw"></a>
+      This function starts by clearing the label text from the last
+      run.  Next, we disable (gray out) the OK button and enable the
+      cancel button.  While the operation is in progress, clicking OK
+      doesn't make much sense.  And when it's done, clicking Cancel
+      doesn't make much sense.
+    </p><p id="x_uw"><a name="x_uw"></a>
+      Next, we set the title of the window.  The title is the part
+      that is displayed by the system in the title bar of the window.
+      Finally, we start off the new thread (represented by
+      <code class="literal">childTasks</code>) and save off its thread ID.
+      Then, we define what to do if the user clicks on Cancel -- we
+      call <code class="literal">cancelChild</code>, passing along the thread
+      ID.  Finally, we call <code class="literal">windowPresent</code> to show
+      the status window.
+    </p><p id="x_vw"><a name="x_vw"></a>
+      In <code class="literal">childTasks</code>, we display a message saying
+      that we're starting the thread.  Then we call the actual worker
+      function, passing <code class="literal">updateLabel</code> as the function
+      to use for displaying status messages.  Note that a command-line
+      version of the program could pass <code class="literal">putStrLn</code>
+      here.
+    </p><p id="x_ww"><a name="x_ww"></a>
+      Finally, after the worker function exits, we call
+      <code class="literal">enableOK</code>.  This function disables the cancel
+      button, enables the OK button, and defines that a click on the
+      OK button causes the status window to go away.
+    </p><p id="x_xw"><a name="x_xw"></a>
+      <code class="literal">updateLabel</code> simply calls
+      <code class="literal">labelSetText</code> on the label widget to update it
+      with the displayed text.  Finally,
+      <code class="literal">cancelChild</code> kills the thread processing the
+      task, updates the label, and enables the OK button.
+    </p><p id="x_yw"><a name="x_yw"></a>
+      We now have the infrastructure in place to define our three GUI
+      functions.  They look like this:
+    </p><a name="PodMainGUI.hs:statusWindowFuncs"></a><pre id="PodMainGUI.hs:statusWindowFuncs" class="programlisting">-- file: ch23/PodMainGUI.hs
+guiUpdate :: IConnection conn =&gt; GUI -&gt; conn -&gt; IO ()
+guiUpdate gui dbh = 
+    statusWindow gui dbh "Pod: Update" (update dbh)
+
+guiDownload gui dbh =
+    statusWindow gui dbh "Pod: Download" (download dbh)
+
+guiFetch gui dbh =
+    statusWindow gui dbh "Pod: Fetch" 
+                     (\logf -&gt; update dbh logf &gt;&gt; download dbh logf)</pre><p id="x_zw"><a name="x_zw"></a>
+      For brevity, we have given the type for only the first one, but
+      all three have the same type, and Haskell can work them out via
+      type inference.  Notice our implementation of
+      <code class="literal">guiFetch</code>.  We don't call
+      <code class="literal">statusWindow</code> twice, but rather combine
+      functions in its action.
+    </p><p id="x_Ax"><a name="x_Ax"></a>
+      The final piece of the puzzle consists of the three functions
+      that do our work.  <code class="literal">add</code> is unmodified from the
+      command-line chapter.  <code class="literal">update</code> and
+      <code class="literal">download</code> are modified only to take a logging
+      function instead of calling <code class="literal">putStrLn</code> for
+      status updates.
+    </p><a name="PodMainGUI.hs:workerFuncs"></a><pre id="PodMainGUI.hs:workerFuncs" class="programlisting">-- file: ch23/PodMainGUI.hs
+add dbh url = 
+    do addPodcast dbh pc
+       commit dbh
+    where pc = Podcast {castId = 0, castURL = url}
+
+update :: IConnection conn =&gt; conn -&gt; (String -&gt; IO ()) -&gt; IO ()
+update dbh logf = 
+    do pclist &lt;- getPodcasts dbh
+       mapM_ procPodcast pclist
+       logf "Update complete."
+    where procPodcast pc =
+              do logf $ "Updating from " ++ (castURL pc)
+                 updatePodcastFromFeed dbh pc
+
+download dbh logf =
+    do pclist &lt;- getPodcasts dbh
+       mapM_ procPodcast pclist
+       logf "Download complete."
+    where procPodcast pc =
+              do logf $ "Considering " ++ (castURL pc)
+                 episodelist &lt;- getPodcastEpisodes dbh pc
+                 let dleps = filter (\ep -&gt; epDone ep == False)
+                             episodelist
+                 mapM_ procEpisode dleps
+          procEpisode ep =
+              do logf $ "Downloading " ++ (epURL ep)
+                 getEpisode dbh ep</pre><p id="x_Bx"><a name="x_Bx"></a>
+      Here's what the final result looks like after running an update:
+    </p><div class="informalfigure"><div class="mediaobject"><img src="figs/gui-update-complete.png" alt="Screenshot of a dialog box displaying the words “update complete”."></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="gui.cabal">Using Cabal</h2></div></div></div><p id="x_Cx"><a name="x_Cx"></a>
+      We presented a Cabal file to build this project for the
+      command-line version in <a class="xref" href="extended-example-web-client-programming.html#webclient.main" title="Main Program">the section called “Main Program”</a>.  We
+      need to make a few tweaks for it to work with our GUI version.
+      First, there's the obvious need to add the gtk2hs packages to
+      the list of build dependencies.  There is also the matter of the
+      Glade XML file.
+    </p><p id="x_Dx"><a name="x_Dx"></a>
+      Earlier, we wrote a <code class="literal">PodLocalMain.hs</code> that
+      simply assumed this file was named
+      <code class="literal">podresources.glade</code> and stored in the current
+      working directory.  For a real, system-wide installation, we
+      can't make that assumption.  Moreover, different systems may
+      place the file at different locations.
+    </p><p id="x_Ex"><a name="x_Ex"></a>
+      Cabal provides a way around this problem.  It automatically
+      generates a module that exports functions that can interrogate
+      the environment.  We must add a <code class="literal">Data-files</code>
+      line to our Cabal description file.  This file names all data
+      files that will be part of a system-wide installation.  Then,
+      Cabal will export a <code class="literal">Paths_pod</code> module (the
+      "pod" part comes from the <code class="literal">Name</code> line in the
+      Cabal file) that we can interrogate for the location at
+      runtime.  Here's our new Cabal description file:
+    </p><pre id="id672595" class="programlisting">
+-- ch24/pod.cabal
+Name: pod
+Version: 1.0.0
+Build-type: Simple
+Build-Depends: HTTP, HaXml, network, HDBC, HDBC-sqlite3, base, 
+               gtk, glade
+Data-files: podresources.glade
+
+Executable: pod
+Main-Is: PodCabalMain.hs
+GHC-Options: -O2
+    </pre><p id="x_Fx"><a name="x_Fx"></a>
+      And, to go with it, <code class="literal">PodCabalMain.hs</code>:
+    </p><a name="PodCabalMain.hs:all"></a><pre id="PodCabalMain.hs:all" class="programlisting">-- file: ch23/PodCabalMain.hs
+module Main where
+
+import qualified PodMainGUI
+import Paths_pod(getDataFileName)
+
+main = 
+    do gladefn &lt;- getDataFileName "podresources.glade"
+       PodMainGUI.main gladefn</pre></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="gui.exercises">Exercises</h2></div></div></div><div class="orderedlist"><ol type="1"><li><p id="x_Gx"><a name="x_Gx"></a>
+          Present a helpful GUI error message if the call to
+          <code class="literal">xmlNew</code> returns
+          <code class="literal">Nothing</code>.
+        </p></li><li><p id="x_Hx"><a name="x_Hx"></a>Modify the podcatcher to be able to run with
+      either the GUI or the command-line interface from a single code
+      base.  Hint: move common code out of
+      <code class="literal">PodMainGUI.hs</code>, then have two different
+      <code class="literal">Main</code> modules, one for the GUI, and one for
+      the command line.
+        </p></li><li><p id="x_Ix"><a name="x_Ix"></a>
+          Why does <code class="literal">guiFetch</code> combine worker
+          functions instead of calling <code class="literal">statusWindow</code>
+          twice?
+        </p></li></ol></div></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id671126" href="#id671126" class="para">53</a>] </sup>Several alternatives also
+    exist.  Alongside gtk2hs, wxHaskell is also a prominent
+    cross-platform GUI toolkit.</p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="extended-example-web-client-programming.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="concurrent-and-multicore-programming.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 22. Extended Example: Web Client Programming </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 24. Concurrent and multicore programming</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

@@ -1,0 +1,596 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 11. Testing and quality assurance</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="code-case-study-parsing-a-binary-data-format.html" title="Chapter 10. Code case study: parsing a binary data format"><link rel="next" href="barcode-recognition.html" title="Chapter 12. Barcode recognition"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 11. Testing and quality assurance</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="code-case-study-parsing-a-binary-data-format.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="barcode-recognition.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="testing"><div class="titlepage"><div><div><h2 class="title">Chapter 11. Testing and quality assurance</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="testing-and-quality-assurance.html#id628197">QuickCheck: type-based testing</a></span></dt><dd><dl><dt><span class="sect2"><a href="testing-and-quality-assurance.html#id628462">Testing for properties</a></span></dt><dt><span class="sect2"><a href="testing-and-quality-assurance.html#id628672">Testing against a model</a></span></dt></dl></dd><dt><span class="sect1"><a href="testing-and-quality-assurance.html#quickcheck.indepth">Testing case study: specifying a pretty printer</a></span></dt><dd><dl><dt><span class="sect2"><a href="testing-and-quality-assurance.html#id628734">Generating test data</a></span></dt><dt><span class="sect2"><a href="testing-and-quality-assurance.html#id629125">Testing document construction</a></span></dt><dt><span class="sect2"><a href="testing-and-quality-assurance.html#id629248">Using lists as a model</a></span></dt><dt><span class="sect2"><a href="testing-and-quality-assurance.html#id629413">Putting it altogether</a></span></dt></dl></dd><dt><span class="sect1"><a href="testing-and-quality-assurance.html#id629497">Measuring test coverage with HPC</a></span></dt></dl></div><p id="x_up"><a name="x_up"></a>
+Building real systems means caring about quality control, robustness and 
+correctness. With the right quality assurance mechanisms in place, 
+well-written code can feel like a precision machine, with all functions
+performing their tasks exactly as specified. There is no
+sloppiness around the edges, and the final result can be code that is
+self-explanatory, obviously correct -- the kind of code that inspires
+confidence.  </p><p id="x_vp"><a name="x_vp"></a>
+In Haskell, we have several tools at our disposal for building such 
+precise systems. The most obvious tool, and one built into the language
+itself, is the expressive type-system, which allows for complicated
+invariants to be enforced statically — making it impossible to write
+code violating chosen constraints. In addition, purity and polymorphism
+encourage a style of code that is modular, refactorable and testable. This is
+the kind of code that just doesn't go wrong.
+  </p><p id="x_wp"><a name="x_wp"></a>
+Testing plays a key role in keeping code on the straight-and-narrow path.
+The main testing mechanisms in Haskell are traditional unit testing (via the HUnit 
+library), and its more powerful descendant: type-based “<span class="quote">property</span>”
+testing, with QuickCheck, an open source testing framework for Haskell. Property-based
+testing encourages a high level approach to testing in the form of abstract
+invariants functions should satisfy universally, with the actual test data
+generated for the programmer by the testing library. In this way code can be
+hammered with thousands of tests that would be infeasible to write by hand,
+often uncovering subtle corner cases that wouldn't be found otherwise.
+  </p><p id="x_xp"><a name="x_xp"></a>
+In this chapter we'll look at how to use QuickCheck to establish invariants
+in code and then re-examine the pretty printer developed in previous
+chapters, testing it with QuickCheck. We'll also see how to guide the testing
+process with <span class="application">GHC</span>'s code coverage tool: HPC.
+  </p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id628197">QuickCheck: type-based testing</h2></div></div></div><p id="x_yp"><a name="x_yp"></a>
+To get an overview of how property-based testing works, we'll begin with a
+simple scenario: you've written a specialised sorting function and want to
+test its behaviour.
+    </p><p id="x_zp"><a name="x_zp"></a>
+First, we import the QuickCheck library<sup>[<a name="id628218" href="#ftn.id628218" class="footnote">27</a>]</sup>, and any other modules we need:
+    </p><a name="QC-basics.hs:module"></a><pre id="QC-basics.hs:module" class="programlisting">-- file: ch11/QC-basics.hs
+import Test.QuickCheck
+import Data.List</pre><p id="x_Aq"><a name="x_Aq"></a>
+And the function we want to test — a custom sort routine:
+    </p><a name="QC-basics.hs:mysort"></a><pre id="QC-basics.hs:mysort" class="programlisting">-- file: ch11/QC-basics.hs
+qsort :: Ord a =&gt; [a] -&gt; [a]
+qsort []     = []
+qsort (x:xs) = qsort lhs ++ [x] ++ qsort rhs
+    where lhs = filter  (&lt; x) xs
+          rhs = filter (&gt;= x) xs</pre><p id="x_Bq"><a name="x_Bq"></a>
+This is the classic Haskell sort implementation: a study in functional
+programming elegance, if not efficiency (this isn't an inplace sort). Now,
+we'd like to check that this function obeys the basic rules a good sort
+should follow. One useful invariant to start with, and one that comes up in a
+lot of purely functional code, is <span class="emphasis"><em>idempotency</em></span> —
+applying a function twice has the same result as applying it only once. For
+our sort routine, a stable sort algorithm, this should certainly be true, or
+things have gone horribly wrong! This invariant can be encoded as a property
+simply: </p><a name="QC-basics.hs:idempotent"></a><pre id="QC-basics.hs:idempotent" class="programlisting">-- file: ch11/QC-basics.hs
+prop_idempotent xs = qsort (qsort xs) == qsort xs</pre><p id="x_Cq"><a name="x_Cq"></a>
+We'll use the QuickCheck convention of prefixing test properties with
+<code class="code">prop_</code> to distinguish them from normal code. This idempotency
+property is written simply as a Haskell function stating an equality that
+must hold for any input data that is sorted. We can check this makes sense
+for a few simple cases by hand:
+  </p><a name="qc-byhand.ghci:unit"></a><pre id="qc-byhand.ghci:unit" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>prop_idempotent []       </code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>prop_idempotent [1,1,1,1]  </code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>prop_idempotent [1..100]</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>prop_idempotent [1,5,2,1,2,0,9]</code></strong>
+True
+</pre><p id="x_oy"><a name="x_oy"></a>
+Looking good. However, writing out the input data by hand is tedious, and
+violates the moral code of the efficient functional programmer: let the
+machine do the work! To automate this the QuickCheck library comes with a set
+of data generators for all the basic Haskell data types.  QuickCheck uses the
+<span class="type">Arbitrary</span> typeclass to present a uniform interface to (pseudo-)random
+data generation with the type system used to resolve which generator to use.
+QuickCheck normally hides the data generation plumbing, however we can also
+run the generators by hand to get a sense for the distribution of data
+QuickCheck produces. For example, to generate a random list of boolean
+values:
+  </p><a name="qc-arbitrary.ghci:arbitrary"></a><pre id="qc-arbitrary.ghci:arbitrary" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>generate 10 (System.Random.mkStdGen 2) arbitrary :: [Bool]</code></strong>
+[False,False,False,False,False,True]
+</pre><p id="x_py"><a name="x_py"></a>
+QuickCheck generates test data like this and passes it to the property of our
+choosing, via the <code class="code">quickCheck</code> function. The type of the property
+itself determines which data generator is used. <code class="code">quickCheck</code> then
+checks that for all the test data produced, the property is satisfied. 
+Now, since our idempotency test is polymorphic in the list element type, we
+need to pick a particular type to generate test data for, which we write as a
+type constraint on the property. To run the test, we just call
+<code class="code">quickCheck</code> with our property function, set to the required data
+type (otherwise the list element type will default to the uninteresting
+<code class="code">()</code> type):
+  </p><a name="qc-basics.ghci:basics"></a><pre id="qc-basics.ghci:basics" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type quickCheck</code></strong>
+quickCheck :: (Testable a) =&gt; a -&gt; IO ()
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>quickCheck (prop_idempotent :: [Integer] -&gt; Bool)</code></strong>
+00, passed 100 tests.
+</pre><p id="x_Dq"><a name="x_Dq"></a>
+For the 100 different lists generated, our property held — great!
+When developing tests, it is often useful to see the actual data
+generated for each test. To do this, we would replace
+<code class="code">quickCheck</code> with its sibling, <code class="code">verboseCheck</code>, to see
+(verbose) output for each test. Now, let's look at more sophisticated
+properties that our function might satisfy.
+  </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id628462">Testing for properties</h3></div></div></div><p id="x_Eq"><a name="x_Eq"></a>
+Good libraries consist of a set of orthogonal primitives having sensible
+relationships to each other. We can use QuickCheck to specify the
+relationships between functions in our code, helping us find a good library
+interface by developing functions that are interrelated via useful
+properties. QuickCheck in this way acts as an API "lint" tool — it
+provides machine support for ensuring our library API makes sense.
+    </p><p id="x_Fq"><a name="x_Fq"></a>
+The list sorting function should certainly have a number of interesting
+properties that tie it to other list operations.  For example: the first
+element in a sorted list should always be the smallest element of the input list.
+We might be tempted to specify this intuition in Haskell, using the
+<code class="code">List</code> library's <code class="code">minimum</code> function:
+    </p><a name="QC-basics.hs:relatives_wrong"></a><pre id="QC-basics.hs:relatives_wrong" class="programlisting">-- file: ch11/QC-basics.hs
+prop_minimum xs         = head (qsort xs) == minimum xs</pre><p id="x_qy"><a name="x_qy"></a>
+Testing this, though, reveals an error:
+    </p><a name="qc-wrong1.ghci:relatives_wrong1"></a><pre id="qc-wrong1.ghci:relatives_wrong1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>quickCheck (prop_minimum :: [Integer] -&gt; Bool)</code></strong>
+0** Exception: Prelude.head: empty list
+</pre><p id="x_ry"><a name="x_ry"></a>
+The property failed when sorting an empty list — for which
+<code class="code">head</code> and <code class="code">minimum</code> are't defined, as we can see from
+their definition:
+    </p><a name="minimum.hs:minimum"></a><pre id="minimum.hs:minimum" class="programlisting">-- file: ch11/minimum.hs
+head       :: [a] -&gt; a
+head (x:_) = x
+head []    = error "Prelude.head: empty list"
+
+minimum    :: (Ord a) =&gt; [a] -&gt; a
+minimum [] =  error "Prelude.minimum: empty list"
+minimum xs =  foldl1 min xs</pre><p id="x_J21"><a name="x_J21"></a>
+So this property will only hold for non-empty lists. QuickCheck, thankfully,
+comes with a full property writing embedded language, so we can specify more
+precisely our invariants, filtering out values we don't want to consider.
+For the empty list case, we really want to say: <span class="emphasis"><em>if</em></span> the
+list is non-empty, <span class="emphasis"><em>then</em></span> the
+first element of the sorted result is the minimum. This is done by using the
+<code class="code">(==&gt;)</code> implication function, which filters out invalid data
+before running the property:
+    </p><a name="QC-basics.hs:relatives_right"></a><pre id="QC-basics.hs:relatives_right" class="programlisting">-- file: ch11/QC-basics.hs
+prop_minimum' xs         = not (null xs) ==&gt; head (qsort xs) == minimum xs</pre><p id="x_sy"><a name="x_sy"></a>
+The result is quite clean. By separating out the empty list case, we can now
+confirm the property does in fact hold:
+    </p><a name="qc-right1.ghci:relatives_right1"></a><pre id="qc-right1.ghci:relatives_right1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>quickCheck (prop_minimum' :: [Integer] -&gt; Property)</code></strong>
+00, passed 100 tests.
+</pre><p id="x_ty"><a name="x_ty"></a>
+Note that we had to change the type of the property from being a simple
+<span class="type">Bool</span> result to the more general <span class="type">Property</span> type
+(the property itself is now a function that filters non-empty lists, before
+testing them, rather than a simple boolean constant).
+</p><p id="x_uy"><a name="x_uy"></a>
+We can now complete the basic property set for the sort function with some
+other invariants that it should satisfy: that the output is ordered (each
+element should be smaller than, or equal to, its successor); that the output
+is a permutation of the input (which we achieve via the list difference
+function, <code class="code">(\\)</code>); that the last sorted element should be the
+largest element; and if we find the smallest element of two different lists,
+that should be the first element if we append and sort those lists.  These
+properties can be stated as:
+    </p><a name="QC-basics.hs:relatives"></a><pre id="QC-basics.hs:relatives" class="programlisting">-- file: ch11/QC-basics.hs
+prop_ordered xs = ordered (qsort xs)
+    where ordered []       = True
+          ordered [x]      = True
+          ordered (x:y:xs) = x &lt;= y &amp;&amp; ordered (y:xs)
+
+prop_permutation xs = permutation xs (qsort xs)
+    where permutation xs ys = null (xs \\ ys) &amp;&amp; null (ys \\ xs)
+
+prop_maximum xs         =
+    not (null xs) ==&gt;
+        last (qsort xs) == maximum xs
+
+prop_append xs ys       =
+    not (null xs) ==&gt;
+    not (null ys) ==&gt;
+        head (qsort (xs ++ ys)) == min (minimum xs) (minimum ys)</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id628672">Testing against a model</h3></div></div></div><p id="x_vy"><a name="x_vy"></a>
+Another technique for gaining confidence in some code is to test it
+against a model implementation. We can tie our implementation of list
+sort to the reference sort function in the standard list library, and,
+if they behave the same, we gain confidence that our sort does the right
+thing.
+</p><a name="QC-basics.hs:model"></a><pre id="QC-basics.hs:model" class="programlisting">-- file: ch11/QC-basics.hs
+prop_sort_model xs      = sort xs == qsort xs</pre><p id="x_wy"><a name="x_wy"></a>
+This kind of model-based testing is extremely powerful. Often developers will
+have a reference implementation or prototype that, while inefficient, is
+correct. This can then be kept around and used to ensure optimised production
+code conforms to the reference. By building a large suite of these
+model-based tests, and running them regularly (on every commit, for example),
+we can cheaply ensure the precision of our code. Large Haskell projects often
+come bundled with property suites comparable in size to the project itself,
+with thousands of invariants tested on every change, keeping the code tied to
+the specification, and ensuring it behaves as required.
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="quickcheck.indepth">Testing case study: specifying a pretty printer</h2></div></div></div><p id="x_K21"><a name="x_K21"></a>Testing individual functions for their natural properties is one
+      of the basic building blocks that guides development of large systems
+      in Haskell.  We'll look now at a more complicated scenario: taking the
+      pretty printing library developed in earlier chapters, and building a
+      test suite for it.
+    </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id628734">Generating test data</h3></div></div></div><p id="x_L21"><a name="x_L21"></a>
+      Recall that the pretty printer is built around the
+      <span class="type">Doc</span>, an algebraic data type that represents well-formed
+      documents:
+    </p><a name="Prettify2.hs:Doc"></a><pre id="Prettify2.hs:Doc" class="programlisting">-- file: ch11/Prettify2.hs
+
+data Doc = Empty
+         | Char Char
+         | Text String
+         | Line
+         | Concat Doc Doc
+         | Union Doc Doc
+         deriving (Show,Eq)</pre><p id="x_M21"><a name="x_M21"></a>
+     The library itself is implemented as a set of functions that build and
+     transform values of this document type, before finally rendering the
+     finished document to a string.
+    </p><p id="x_N21"><a name="x_N21"></a>
+     QuickCheck encourages an approach to testing where the developer
+     specifies invariants that should hold for any data we can throw at the
+     code. To test the pretty printing library, then, we'll need a source of
+     input data. To do this, we take advantage of the small combinator suite for building
+     random data that QuickCheck provides via the
+     <span class="type">Arbitrary</span> class. The class provides a function,
+     <code class="code">arbitrary</code>, to generate data of each type, and with this we
+     can define our data generator for our custom data types.
+   <sup>[<a name="id628795" href="#ftn.id628795" class="footnote">28</a>]</sup>
+  </p><a name="Arbitrary.hs:Class"></a><pre id="Arbitrary.hs:Class" class="programlisting">-- file: ch11/Arbitrary.hs
+class Arbitrary a where
+  arbitrary   :: Gen a</pre><p id="x_P21"><a name="x_P21"></a> 
+    One thing to notice is that the generators run in a <span class="type">Gen</span>
+    environment, indicated by the type. This is a simple state-passing monad
+    that is used to hide the random number generator state that is threaded
+    through the code. We'll look thoroughly at monads in later chapters, but
+    for now it suffices to know that, as <span class="type">Gen</span> is defined as a
+    monad, we can use <code class="code">do</code> syntax to write new generators that
+    access the implicit random number source. To actually write generators
+    for our custom type we use any of a set of functions defined in the
+    library for introducing new random values and gluing them together to
+    build up data structures of the type we're interested in. The types of
+    the key functions are:
+  </p><a name="Arbitrary.hs:IntroductionForms"></a><pre id="Arbitrary.hs:IntroductionForms" class="programlisting">-- file: ch11/Arbitrary.hs
+  elements :: [a] -&gt; Gen a
+  choose   :: Random a =&gt; (a, a) -&gt; Gen a
+  oneof    :: [Gen a] -&gt; Gen a</pre><p id="x_Q21"><a name="x_Q21"></a>
+     The function <code class="code">elements</code>, for example, takes a list of values,
+     and returns a generator of random values from that list.
+     <code class="code">choose</code> and <code class="code">oneof</code> we'll use later. With this,
+     we can start writing generators for simple data types. For example, if
+     we define a new data type for ternary logic:
+   </p><a name="Arbitrary.hs:ternary"></a><pre id="Arbitrary.hs:ternary" class="programlisting">-- file: ch11/Arbitrary.hs
+data Ternary
+    = Yes
+    | No
+    | Unknown
+    deriving (Eq,Show)</pre><p id="x_VF1"><a name="x_VF1"></a>
+     we can write an <span class="type">Arbitrary</span> instance for the
+     <span class="type">Ternary</span> type by defining a function that picks elements
+     from a list of the possible values of <span class="type">Ternary</span> type: </p><a name="Arbitrary.hs:Instance"></a><pre id="Arbitrary.hs:Instance" class="programlisting">-- file: ch11/Arbitrary.hs
+instance Arbitrary Ternary where
+  arbitrary     = elements [Yes, No, Unknown]</pre><p id="x_R21"><a name="x_R21"></a>
+     Another approach to data generation is to generate values for one 
+     of the basic Haskell types and then translate those values into the
+     type you're actually interested in. We could have written the
+     <span class="type">Ternary</span> instance by generating integer values
+     from 0 to 2 instead, using <code class="code">choose</code>, and then mapping
+     them onto the ternary values:
+  </p><a name="Arbitrary2.hs:Instance2"></a><pre id="Arbitrary2.hs:Instance2" class="programlisting">-- file: ch11/Arbitrary2.hs
+instance Arbitrary Ternary where
+  arbitrary     = do
+      n &lt;- choose (0, 2) :: Gen Int
+      return $ case n of
+                    0 -&gt; Yes
+                    1 -&gt; No
+                    _ -&gt; Unknown</pre><p id="x_S21"><a name="x_S21"></a>For simple <span class="emphasis"><em>sum</em></span> types, this approach works
+      nicely, as the integers map nicely onto the constructors of the data
+      type.  For <span class="emphasis"><em>product</em></span> types (such as structures and
+      tuples), we need to instead generate each component of the product
+      separately (and recursively for nested types), and then combine the
+      components. For example, to generate random pairs of random values:
+    </p><a name="Arbitrary.hs:InstanceProduct"></a><pre id="Arbitrary.hs:InstanceProduct" class="programlisting">-- file: ch11/Arbitrary.hs
+instance (Arbitrary a, Arbitrary b) =&gt; Arbitrary (a, b) where
+  arbitrary = do
+      x &lt;- arbitrary
+      y &lt;- arbitrary
+      return (x, y)</pre><p id="x_T21"><a name="x_T21"></a>
+      So let's now write a generator for  all the different variants of the
+      <span class="type">Doc</span> type. We'll start by breaking the problem down, first
+      generating random constructors for each type, then, depending on the
+      result, the components of each field. The most complicated case are the
+      union and concatenation variants.
+    </p><p id="x_WF1"><a name="x_WF1"></a>
+      First, though, we need to write an instance for generating random
+      characters — QuickCheck doesn't have a default instance for
+      characters, due to the abundance of different text encodings we might
+      want to use for character tests. We'll write our own, and, as we don't
+      care about the actual text content of the document, a simple generator
+      of alphabetic characters and punctuation will suffice (richer
+      generators are simple extensions of this basic approach):
+    </p><a name="QC.hs:ArbitraryChar"></a><pre id="QC.hs:ArbitraryChar" class="programlisting">-- file: ch11/QC.hs
+instance Arbitrary Char where
+    arbitrary = elements (['A'..'Z'] ++ ['a' .. 'z'] ++ " ~!@#$%^&amp;*()")</pre><p id="x_U21"><a name="x_U21"></a>
+      With this in place, we can now write an instance for documents, by
+      enumerating the constructors, and filling the fields in. We choose a 
+      random integer to represent which document variant to generate, and
+      then dispatch based on the result. To generate concat or union document
+      nodes, we just recurse on <code class="code">arbitrary</code>, letting type
+      inference determine which instance of <code class="code">Arbitrary</code> we mean:
+    </p><a name="QC.hs:ArbitraryDoc"></a><pre id="QC.hs:ArbitraryDoc" class="programlisting">-- file: ch11/QC.hs
+instance Arbitrary Doc where
+    arbitrary = do
+        n &lt;- choose (1,6) :: Gen Int
+        case n of
+             1 -&gt; return Empty
+
+             2 -&gt; do x &lt;- arbitrary
+                     return (Char x)
+
+             3 -&gt; do x &lt;- arbitrary
+                     return (Text x)
+
+             4 -&gt; return Line
+
+             5 -&gt; do x &lt;- arbitrary
+                     y &lt;- arbitrary
+                     return (Concat x y)
+
+             6 -&gt; do x &lt;- arbitrary
+                     y &lt;- arbitrary
+                     return (Union x y)</pre><p id="x_V21"><a name="x_V21"></a>
+      That was fairly straightforward, and we can clean it up some more by
+      using the <code class="code">oneof</code> function, whose type we saw earlier, to
+      pick between different generators in a list (we can also use the
+      monadic combinator, <code class="code">liftM</code> to avoid naming intermediate
+      results from each generator):
+    </p><a name="QC.hs:ArbitraryDocConcise"></a><pre id="QC.hs:ArbitraryDocConcise" class="programlisting">-- file: ch11/QC.hs
+instance Arbitrary Doc where
+    arbitrary =
+        oneof [ return Empty
+              , liftM  Char   arbitrary
+              , liftM  Text   arbitrary
+              , return Line
+              , liftM2 Concat arbitrary arbitrary
+              , liftM2 Union  arbitrary arbitrary ]</pre><p id="x_W21"><a name="x_W21"></a>
+      The latter is more concise, just picking between a list of generators,
+      but they describe the same data either way. We can check that the output
+      makes sense, by generating a list of random documents (seeding the
+      pseudo-random generator with an initial seed of 2):
+    </p><a name="arbitrary-doc.ghci:arbitrarydoc"></a><pre id="arbitrary-doc.ghci:arbitrarydoc" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>generate 10 (System.Random.mkStdGen 2) arbitrary :: [Doc]</code></strong>
+[Line,Empty,Union Empty Line,Union (Char 'R') (Concat (Union Line (Concat (Text "i@BmSu") (Char ')'))) (Union (Concat (Concat (Concat (Text "kqV!iN") Line) Line) Line) Line)),Char 'M',Text "YdwVLrQOQh"]
+</pre><p id="x_X21"><a name="x_X21"></a>
+        Looking at the output we see a good mix of simple, base cases, and
+        some more complicated nested documents. We'll be generating hundreds
+        of these each test run, so that should do a pretty good job.  We can
+        now write some generic properties for our document functions.
+    </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id629125">Testing document construction</h3></div></div></div><p id="x_Y21"><a name="x_Y21"></a>
+      Two of the basic functions on documents are the null document constant
+      (a nullary function), <code class="code">empty</code>, and the append function. Their types are:
+    </p><a name="Prettify2.hs:append"></a><pre id="Prettify2.hs:append" class="programlisting">-- file: ch11/Prettify2.hs
+empty :: Doc
+(&lt;&gt;)  :: Doc -&gt; Doc -&gt; Doc</pre><p id="x_Z21"><a name="x_Z21"></a>
+      Together, these should have a nice property: appending or prepending
+      the empty list onto a second list, should leave the second list
+      unchanged. We can state this invariant as a property:
+    </p><a name="QC.hs:prop_empty"></a><pre id="QC.hs:prop_empty" class="programlisting">-- file: ch11/QC.hs
+prop_empty_id x =
+    empty &lt;&gt; x == x
+  &amp;&amp;
+    x &lt;&gt; empty == x</pre><p id="x_a21"><a name="x_a21"></a>
+      Confirming that this is indeed true, we're now underway with our testing:
+    </p><a name="qc-test1.ghci:run_prop_empty"></a><pre id="qc-test1.ghci:run_prop_empty" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>quickCheck prop_empty_id</code></strong>
+00, passed 100 tests.
+</pre><p id="x_b21"><a name="x_b21"></a>
+      To look at what actual test documents were generated (by replacing
+      <code class="code">quickCheck</code> with <code class="code">verboseCheck</code>).  A good
+      mixture of both simple and complicated cases are being generated.
+      We can refine the data generation further, with constraints on the
+      proportion of generated data, if desirable.
+    </p><p id="x_c21"><a name="x_c21"></a>
+      Other functions in the API are also simple enough to have their
+      behaviour fully described via properties. By doing so we can maintain
+      an external, checkable description of the function's behaviour, so
+      later changes won't break these basic invariants.
+    </p><a name="QC.hs:simple_stuff"></a><pre id="QC.hs:simple_stuff" class="programlisting">-- file: ch11/QC.hs
+
+prop_char c   = char c   == Char c
+
+prop_text s   = text s   == if null s then Empty else Text s
+
+prop_line     = line     == Line
+
+prop_double d = double d == text (show d)</pre><p id="x_d21"><a name="x_d21"></a>
+     These properties are enough to fully test the structure returned by the
+     basic document operators. To test the rest of the library will require
+     more work.
+    </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id629248">Using lists as a model</h3></div></div></div><p id="x_e21"><a name="x_e21"></a>
+      Higher order functions are the basic glue of reusable programming, and
+      our pretty printer library is no exception — a custom fold
+      function is used internally to implement both document concatenation
+      and interleaving separators between document chunks. The 
+      <code class="code">fold</code> defined for documents takes a list of document
+      pieces, and glues them all together with a supplied combining function:
+    </p><a name="Prettify2.hs:fold"></a><pre id="Prettify2.hs:fold" class="programlisting">-- file: ch11/Prettify2.hs
+fold :: (Doc -&gt; Doc -&gt; Doc) -&gt; [Doc] -&gt; Doc
+fold f = foldr f empty</pre><p id="x_f21"><a name="x_f21"></a>
+      We can write tests in isolation for specific instances of fold easily.
+      Horizontal concatenation of documents, for example, is easy to specify
+      by writing a reference implementation on lists:
+    </p><a name="QC.hs:hcat"></a><pre id="QC.hs:hcat" class="programlisting">-- file: ch11/QC.hs
+
+prop_hcat xs = hcat xs == glue xs
+    where
+        glue []     = empty
+        glue (d:ds) = d &lt;&gt; glue ds</pre><p id="x_g21"><a name="x_g21"></a>
+      It is a similar story for <code class="code">punctuate</code>, where we can model
+      inserting punctuation with list interspersion (from
+      <code class="code">Data.List</code>, <code class="code">intersperse</code> is a function that
+      takes an element and interleaves it between other elements of a list):
+    </p><a name="QC.hs:punctuate_wrong"></a><pre id="QC.hs:punctuate_wrong" class="programlisting">-- file: ch11/QC.hs
+
+prop_punctuate s xs = punctuate s xs == intersperse s xs</pre><p id="x_h21"><a name="x_h21"></a>
+     While this looks fine, running it reveals a flaw in our reasoning:
+    </p><pre id="id629343" class="screen">
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code> quickCheck prop_punctuate</code></strong>
+Falsifiable, after 6 tests:
+Empty
+[Line,Text "",Line]
+    </pre><p id="x_i21"><a name="x_i21"></a>
+     The pretty printing  library optimises away redundant empty documents,
+     something the model implementation doesn't, so we'll need to augment our
+     model to match reality.  First, we can intersperse the punctuation text
+     throughout the document list, then a little loop to clean up the
+     <code class="code">Empty</code> documents scattered through, like so:
+    </p><a name="QC.hs:punctuate"></a><pre id="QC.hs:punctuate" class="programlisting">-- file: ch11/QC.hs
+prop_punctuate' s xs = punctuate s xs == combine (intersperse s xs)
+    where
+        combine []           = []
+        combine [x]          = [x]
+
+        combine (x:Empty:ys) = x : combine ys
+        combine (Empty:y:ys) = y : combine ys
+        combine (x:y:ys)     = x `Concat` y : combine ys</pre><p id="x_j21"><a name="x_j21"></a>
+    Running this in GHCi, we can confirm the result. It is reassuring to have
+    the test framework spot the flaws in our reasoning about the code
+    — exactly what we're looking for:
+    </p><a name="qc-punctuate.ghci:prop_punctuate"></a><pre id="qc-punctuate.ghci:prop_punctuate" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>quickCheck prop_punctuate'</code></strong>
+00, passed 100 tests.
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id629413">Putting it altogether</h3></div></div></div><p id="x_k21"><a name="x_k21"></a>
+     We can put all these tests together in a single file, and run them
+     simply by using one of QuickCheck's driver functions. Several exist,
+     including elaborate parallel ones. The basic batch driver is often good
+     enough, however. All we need do is set up some default test parameters,
+     and then list the functions we want to test:
+   </p><a name="Run.hs:testscript"></a><pre id="Run.hs:testscript" class="programlisting">-- file: ch11/Run.hs
+import Prettify2
+import Test.QuickCheck.Batch
+
+options = TestOptions
+      { no_of_tests         = 200
+      , length_of_tests     = 1
+      , debug_tests         = False }
+
+main = do
+    runTests "simple" options
+        [ run prop_empty_id
+        , run prop_char
+        , run prop_text
+        , run prop_line
+        , run prop_double
+        ]
+
+    runTests "complex" options
+        [ run prop_hcat
+        , run prop_puncutate'
+        ]</pre><p id="x_l21"><a name="x_l21"></a>
+We've structured the code here as a separate, standalone test script, with
+instances and properties in their own file, separate to the library source.
+This is typical for library projects, where the tests are kept apart from 
+the library itself, and import the library via the module system.  The test
+script can then be compiled and executed:
+   </p><pre id="id629456" class="screen">
+<code class="prompt">$ </code><strong class="userinput"><code>ghc --make Run.hs</code></strong>
+<code class="prompt">$ </code><strong class="userinput"><code>./Run </code></strong>
+                 simple : .....                            (1000)
+                complex : ..                               (400)
+   </pre><p id="x_m21"><a name="x_m21"></a>
+     A total of 1400 individual tests were created, which is comforting. We
+     can increase the depth easily enough, but to find out exactly how well
+     the code is being tested we should turn to the built in code coverage
+     tool, HPC, which can state precisely what is going on.
+   </p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id629497">Measuring test coverage with HPC</h2></div></div></div><p id="x_n21"><a name="x_n21"></a>
+    HPC (Haskell Program Coverage) is an extension to the compiler to
+    observe what parts of the code were actually executed during a given
+    program run. This is useful in the context of testing, as it lets us
+    observe precisely which functions, branches and expressions were
+    evaluated. The result is precise knowledge about the percent of code
+    tested, that's easy to obtain. HPC comes with a simple utility to
+    generate useful graphs of program coverage, making it easy to zoom in 
+    on weak spots in the test suite.
+   </p><p id="x_o21"><a name="x_o21"></a>
+     To obtain test coverage data, all we need to do is add the
+     <code class="code">-fhpc</code> flag to the command line, when compiling the tests:
+   </p><pre id="id629528" class="screen">
+    $ ghc -fhpc Run.hs --make
+  </pre><p id="x_p21"><a name="x_p21"></a>
+    Then run the tests as normal;
+  </p><pre id="id629542" class="screen">
+    $ ./Run
+                 simple : .....                            (1000)
+                complex : ..                               (400)
+
+   </pre><p id="x_q21"><a name="x_q21"></a>
+    During the test run the trace of the program is written to .tix and .mix
+    files in the current directory. Afterwards, these files are used by the
+    command line tool, <code class="code">hpc</code>, to display various statistics about
+    what happened. The basic interface is textual.
+    To begin, we can get a summary of the code tested during the run using
+    the <code class="code">report</code> flag to <code class="code">hpc</code>. We'll exclude the test
+    programs themselves, (using the <code class="code">--exclude</code> flag), so as to
+    concentrate only on code in the pretty printer library. 
+    Entering the following into the console:
+  </p><pre id="id629574" class="screen">
+    $ hpc report Run --exclude=Main --exclude=QC
+     18% expressions used (30/158)
+      0% boolean coverage (0/3)
+           0% guards (0/3), 3 unevaluated
+         100% 'if' conditions (0/0)
+         100% qualifiers (0/0)
+     23% alternatives used (8/34)
+      0% local declarations used (0/4)
+     42% top-level declarations used (9/21)
+    </pre><p id="x_r21"><a name="x_r21"></a>
+      we see that, on the last line, 42% of top level definitions were
+      evaluated during the test run. Not too bad for a first attempt.
+      As we test more and more functions from the library, this figure will 
+      rise. The textual version is useful for a quick summary, but to really 
+      see what's going on it is best to look at the marked up output. 
+      To generate this, use the <code class="code">markup</code> flag instead:
+    </p><pre id="id629597" class="screen">
+    $ hpc markup Run --exclude=Main --exclude=QC
+  </pre><p id="x_s21"><a name="x_s21"></a>
+      This will generate one html file for each Haskell source file, and some
+      index files. Loading the file <code class="code">hpc_index.html</code> into a 
+      browser, we can see some pretty graphs of the code coverage:
+    </p><div class="informalfigure"><div class="mediaobject"><img src="figs/ch11-hpc-round1.png" alt="Revised coverage for module Prettify2: 52% of top level definitions (up from 42%), 23% of alternatives, 18% of expressions."></div></div><p id="x_t21"><a name="x_t21"></a>
+Not too bad. Clicking through to the pretty module itself, we see the
+actual source of the program, marked up in bold yellow for code that wasn't
+tested, and code that was executed simply bold.
+  </p><div class="informalfigure"><div class="mediaobject"><img src="figs/ch11-coverage-screen.png" alt="Screenshot of annotated coverage output, displaying the Monoid instance for Doc in bold yellow (not tested), and other code nearby in bold (was executed)."></div></div><p id="x_u21"><a name="x_u21"></a>
+We forgot to test the <span class="type">Monoid</span> instance, for example, and some of
+the more complicated functions. HPC helps keep our test suite honest.
+Let's add a test for the typeclass instance of <span class="type">Monoid</span>, the
+class of types that support appending and empty elements:
+</p><a name="QC.hs:monoid_prop"></a><pre id="QC.hs:monoid_prop" class="programlisting">-- file: ch11/QC.hs
+prop_mempty_id x =
+    mempty `mappend` x == x
+  &amp;&amp;
+    x `mappend` mempty == (x :: Doc)</pre><p id="x_v21"><a name="x_v21"></a>
+Running this property in ghci, to check it is correct:
+</p><a name="qc-monoid.ghci:monoid_prop"></a><pre id="qc-monoid.ghci:monoid_prop" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>quickCheck prop_mempty_id</code></strong>
+00, passed 100 tests.
+</pre><p id="x_w21"><a name="x_w21"></a>
+  We can now recompile and run the test driver. It is important to remove
+  the old .tix file first though, or an error will occur as HPC tries to
+  combine the statistics from separate runs:
+</p><pre id="id629735" class="screen">
+  $ ghc -fhpc Run.hs --make -no-recomp
+  $ ./Run 
+  Hpc failure: inconsistent number of tick boxes
+  (perhaps remove Run.tix file?)
+  $ rm *.tix
+  $ ./Run   
+                     simple : .....                            (1000)
+                    complex : ...                              (600)
+</pre><p id="x_x21"><a name="x_x21"></a>
+Another two hundred tests were added to the suite, and our coverage 
+statistics improves to 52 percent of the code base:
+</p><div class="informalfigure"><div class="mediaobject"><img src="figs/ch11-hpc-round2.png" alt="Coverage for module Prettify2: 42% of top level definitions, 23% of alternatives, 18% of expressions."></div></div><p id="x_y21"><a name="x_y21"></a>
+HPC ensures that we're honest in our testing, as anything less than 100%
+coverage will be pointed out in glaring color. In particular, it ensures the
+programmer has to think about error cases, and complicated branches with
+obscure conditions, all forms of code smell. When combined with a saturating
+test generation system, like QuickCheck's, testing becomes a rewarding
+activity, and a core part of Haskell development.
+</p></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id628218" href="#id628218" class="para">27</a>] </sup>
+Throughout this chapter we'll use QuickCheck 1.0 (classic QuickCheck). It
+should be kept in mind that a some functions may differ in later releases of
+the library. </p></div><div class="footnote"><p><sup>[<a name="ftn.id628795" href="#id628795" class="para">28</a>] </sup>
+    The class also defines a method, <code class="code">coarbitrary</code>,
+    which given a value of some type, yields a function for new generators.
+    We can disregard for now, as it is only needed for generating random
+    values of function type. One result of disregarding
+    <code class="code">coarbitrary</code> is that GHC will warn about it not being
+    defined, however, it is safe to ignore these warnings.
+  </p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="code-case-study-parsing-a-binary-data-format.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="barcode-recognition.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 10. Code case study: parsing a binary data format </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 12. Barcode recognition</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

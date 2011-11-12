@@ -1,0 +1,1332 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 14. Monads</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="data-structures.html" title="Chapter 13. Data Structures"><link rel="next" href="programming-with-monads.html" title="Chapter 15. Programming with monads"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 14. Monads</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="data-structures.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="programming-with-monads.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="monads"><div class="titlepage"><div><div><h2 class="title">Chapter 14. Monads</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="monads.html#id638503">Introduction</a></span></dt><dt><span class="sect1"><a href="monads.html#id638567">Revisiting earlier code examples</a></span></dt><dd><dl><dt><span class="sect2"><a href="monads.html#id638573">Maybe chaining</a></span></dt><dt><span class="sect2"><a href="monads.html#id638674">Implicit state</a></span></dt></dl></dd><dt><span class="sect1"><a href="monads.html#id638775">Looking for shared patterns</a></span></dt><dt><span class="sect1"><a href="monads.html#monads.class">The Monad typeclass</a></span></dt><dt><span class="sect1"><a href="monads.html#id639479">And now, a jargon moment</a></span></dt><dt><span class="sect1"><a href="monads.html#monads.logger">Using a new monad: show your work!</a></span></dt><dd><dl><dt><span class="sect2"><a href="monads.html#id639671">Information hiding</a></span></dt><dt><span class="sect2"><a href="monads.html#monads.escape">Controlled escape</a></span></dt><dt><span class="sect2"><a href="monads.html#id639855">Leaving a trace</a></span></dt><dt><span class="sect2"><a href="monads.html#id640003">Using the Logger monad</a></span></dt></dl></dd><dt><span class="sect1"><a href="monads.html#monads.liftM">Mixing pure and monadic code</a></span></dt><dt><span class="sect1"><a href="monads.html#id640702">Putting a few misconceptions to rest</a></span></dt><dt><span class="sect1"><a href="monads.html#id640791">Building the Logger monad</a></span></dt><dd><dl><dt><span class="sect2"><a href="monads.html#id640993">Sequential logging, not sequential evaluation</a></span></dt><dt><span class="sect2"><a href="monads.html#id641037">The writer monad</a></span></dt></dl></dd><dt><span class="sect1"><a href="monads.html#id641078">The Maybe monad</a></span></dt><dd><dl><dt><span class="sect2"><a href="monads.html#id641174">Executing the Maybe monad</a></span></dt><dt><span class="sect2"><a href="monads.html#id641251">Maybe at work, and good API design</a></span></dt></dl></dd><dt><span class="sect1"><a href="monads.html#id641620">The list monad</a></span></dt><dd><dl><dt><span class="sect2"><a href="monads.html#id642195">Understanding the list monad</a></span></dt><dt><span class="sect2"><a href="monads.html#id642436">Putting the list monad to work</a></span></dt></dl></dd><dt><span class="sect1"><a href="monads.html#monads.do">Desugaring of do blocks</a></span></dt><dd><dl><dt><span class="sect2"><a href="monads.html#id642960">Monads as a programmable semicolon</a></span></dt><dt><span class="sect2"><a href="monads.html#monads.do.avoid">Why go sugar-free?</a></span></dt></dl></dd><dt><span class="sect1"><a href="monads.html#monads.state">The state monad</a></span></dt><dd><dl><dt><span class="sect2"><a href="monads.html#id643325">Almost a state monad</a></span></dt><dt><span class="sect2"><a href="monads.html#id643585">Reading and modifying the state</a></span></dt><dt><span class="sect2"><a href="monads.html#id643643">Will the real state monad please stand up?</a></span></dt><dt><span class="sect2"><a href="monads.html#monads.state.random">Using the state monad: generating random values</a></span></dt><dt><span class="sect2"><a href="monads.html#id644027">A first attempt at purity</a></span></dt><dt><span class="sect2"><a href="monads.html#id644179">Random values in the state monad</a></span></dt><dd><dl><dt><span class="sect3"><a href="monads.html#id644258">Exercises</a></span></dt></dl></dd><dt><span class="sect2"><a href="monads.html#id644297">Running the state monad</a></span></dt><dt><span class="sect2"><a href="monads.html#id644470">What about a bit more state?</a></span></dt></dl></dd><dt><span class="sect1"><a href="monads.html#id644617">Monads and functors</a></span></dt><dd><dl><dt><span class="sect2"><a href="monads.html#monads.join">Another way of looking at monads</a></span></dt></dl></dd><dt><span class="sect1"><a href="monads.html#id645043">The monad laws, and good coding style</a></span></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id638503">Introduction</h2></div></div></div><p id="x_XW"><a name="x_XW"></a>In <a class="xref" href="io.html" title="Chapter 7. I/O">Chapter 7, <i>I/O</i></a>, we talked about the
+      <span class="type">IO</span> monad, but we intentionally kept the discussion
+      narrowly focused on how to communicate with the outside world.
+      We didn't discuss what a monad <span class="emphasis"><em>is</em></span>.</p><p id="x_YW"><a name="x_YW"></a>We've already seen in <a class="xref" href="io.html" title="Chapter 7. I/O">Chapter 7, <i>I/O</i></a> that
+      the <span class="type">IO</span>
+      monad is easy to work with.  Notational differences aside,
+      writing code in the <span class="type">IO</span> monad isn't much different
+      from coding in any other imperative language.</p><p id="x_ZW"><a name="x_ZW"></a>When we had practical problems to solve in earlier
+      chapters, we introduced structures that, as we will soon see,
+      are actually monads.  We aim to show you that a monad is often an
+      <span class="emphasis"><em>obvious</em></span> and <span class="emphasis"><em>useful</em></span>
+      tool to help solve a problem.  We'll define a few monads in this
+      chapter, to show how easy it is.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id638567">Revisiting earlier code examples</h2></div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id638573">Maybe chaining</h3></div></div></div><p id="x_bW"><a name="x_bW"></a>Let's take another look at the
+	<code class="function">parseP5</code> function that we wrote in <a class="xref" href="code-case-study-parsing-a-binary-data-format.html" title="Chapter 10. Code case study: parsing a binary data format">Chapter 10, <i>Code case study: parsing a binary data format</i></a>.</p><pre id="id638598" class="programlisting">-- file: ch10/PNM.hs
+matchHeader :: L.ByteString -&gt; L.ByteString -&gt; Maybe L.ByteString
+
+-- "nat" here is short for "natural number"
+getNat :: L.ByteString -&gt; Maybe (Int, L.ByteString)
+
+getBytes :: Int -&gt; L.ByteString
+         -&gt; Maybe (L.ByteString, L.ByteString)
+
+parseP5 s =
+  case matchHeader (L8.pack "P5") s of
+    Nothing -&gt; Nothing
+    Just s1 -&gt;
+      case getNat s1 of
+        Nothing -&gt; Nothing
+        Just (width, s2) -&gt;
+          case getNat (L8.dropWhile isSpace s2) of
+            Nothing -&gt; Nothing
+            Just (height, s3) -&gt;
+              case getNat (L8.dropWhile isSpace s3) of
+                Nothing -&gt; Nothing
+                Just (maxGrey, s4)
+                  | maxGrey &gt; 255 -&gt; Nothing
+                  | otherwise -&gt;
+                      case getBytes 1 s4 of
+                        Nothing -&gt; Nothing
+                        Just (_, s5) -&gt;
+                          case getBytes (width * height) s5 of
+                            Nothing -&gt; Nothing
+                            Just (bitmap, s6) -&gt;
+                              Just (Greymap width height maxGrey bitmap, s6)</pre><p id="x_cW"><a name="x_cW"></a>When we introduced this function, it threatened
+	to march off the right side of the page if it got much more
+	complicated. We brought the staircasing under control using
+	the <code class="function">(&gt;&gt;?)</code> function.</p><pre id="id638633" class="programlisting">-- file: ch10/PNM.hs
+(&gt;&gt;?) :: Maybe a -&gt; (a -&gt; Maybe b) -&gt; Maybe b
+Nothing &gt;&gt;? _ = Nothing
+Just v  &gt;&gt;? f = f v</pre><p id="x_dW"><a name="x_dW"></a>We carefully chose the type of
+	<code class="function">(&gt;&gt;?)</code> to let us chain together
+	functions that return a <span class="type">Maybe</span> value.  So long as
+	the result type of one function matches the parameter of the
+	next, we can chain functions returning <span class="type">Maybe</span>
+	together indefinitely.  The body of
+	<code class="function">(&gt;&gt;?)</code> hides the details of whether
+	the chain of functions we build is short-circuited somewhere,
+	due to one returning <code class="code">Nothing</code>, or completely
+	evaluated.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id638674">Implicit state</h3></div></div></div><p id="x_eW"><a name="x_eW"></a>Useful as <code class="function">(&gt;&gt;?)</code> was for
+	cleaning up the structure of <code class="function">parseP5</code>, we
+	had to incrementally consume pieces of a string as we parsed
+	it.  This forced us to pass the current value of the string
+	down our chain of <span class="type">Maybe</span>s, wrapped up in a tuple.
+	Each function in the chain put a result into one element of
+	the tuple, and the unconsumed remainder of the string into the
+	other.</p><pre id="id638704" class="programlisting">-- file: ch10/PNM.hs
+parseP5_take2 :: L.ByteString -&gt; Maybe (Greymap, L.ByteString)
+parseP5_take2 s =
+    matchHeader (L8.pack "P5") s       &gt;&gt;?
+    \s -&gt; skipSpace ((), s)           &gt;&gt;?
+    (getNat . snd)                    &gt;&gt;?
+    skipSpace                         &gt;&gt;?
+    \(width, s) -&gt;   getNat s         &gt;&gt;?
+    skipSpace                         &gt;&gt;?
+    \(height, s) -&gt;  getNat s         &gt;&gt;?
+    \(maxGrey, s) -&gt; getBytes 1 s     &gt;&gt;?
+    (getBytes (width * height) . snd) &gt;&gt;?
+    \(bitmap, s) -&gt; Just (Greymap width height maxGrey bitmap, s)
+
+skipSpace :: (a, L.ByteString) -&gt; Maybe (a, L.ByteString)
+skipSpace (a, s) = Just (a, L8.dropWhile isSpace s)</pre><p id="x_fW"><a name="x_fW"></a>Once again, we were faced with a pattern of repeated
+	behaviour: consume some string, return a result, and return
+	the remaining string for the next function to consume.
+	However, this pattern was more insidious: if we wanted to pass
+	another piece of information down the chain, we'd have to
+	modify nearly every element of the chain, turning each
+	two-tuple into a three-tuple!</p><p id="x_gW"><a name="x_gW"></a>We addressed this by moving the responsibility for
+	managing the current piece of string out of the individual
+	functions in the chain, and into the function that we used to
+	chain them together.</p><pre id="id638736" class="programlisting">-- file: ch10/Parse.hs
+(==&gt;) :: Parse a -&gt; (a -&gt; Parse b) -&gt; Parse b
+
+firstParser ==&gt; secondParser  =  Parse chainedParser
+  where chainedParser initState   =
+          case runParse firstParser initState of
+            Left errMessage -&gt;
+                Left errMessage
+            Right (firstResult, newState) -&gt;
+                runParse (secondParser firstResult) newState</pre><p id="x_hW"><a name="x_hW"></a>We also hid the details of the parsing state in the
+	<span class="type">ParseState</span> type.  Even the
+	<code class="function">getState</code> and
+	<code class="function">putState</code> functions don't inspect the
+	parsing state, so any modification to <span class="type">ParseState</span>
+	will have no effect on any existing code.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id638775">Looking for shared patterns</h2></div></div></div><p id="x_iW"><a name="x_iW"></a>When we look at the above examples in detail, they don't
+      seem to have much in common.  Obviously, they're both concerned
+      with chaining functions together, and with hiding details to let
+      us write tidier code.  However, let's take a step back and
+      consider them in <span class="emphasis"><em>less</em></span> detail.</p><p id="x_jW"><a name="x_jW"></a>First, let's look at the type definitions.</p><pre id="id638802" class="programlisting">-- file: ch14/Maybe.hs
+data Maybe a = Nothing
+             | Just a</pre><pre id="id638808" class="programlisting">-- file: ch10/Parse.hs
+newtype Parse a = Parse {
+      runParse :: ParseState -&gt; Either String (a, ParseState)
+    }</pre><p id="x_kW"><a name="x_kW"></a>The common feature of these two types is that each has a
+      single type parameter on the left of the definition, which
+      appears somewhere on the right.  These are thus generic types,
+      which know nothing about their payloads.</p><p id="x_lW"><a name="x_lW"></a>Next, we'll examine the chaining functions that we wrote for
+      the two types.</p><a name="monadness.ghci:Maybe"></a><pre id="monadness.ghci:Maybe" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (&gt;&gt;?)</code></strong>
+(&gt;&gt;?) :: Maybe a -&gt; (a -&gt; Maybe b) -&gt; Maybe b
+</pre><a name="monadness.ghci:Parse"></a><pre id="monadness.ghci:Parse" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (==&gt;)</code></strong>
+(==&gt;) :: Parse a -&gt; (a -&gt; Parse b) -&gt; Parse b
+</pre><p id="x_mW"><a name="x_mW"></a>These functions have strikingly similar types.  If we were
+      to turn those type constructors into a type variable, we'd end
+      up with a single more abstract type.</p><a name="Maybe.hs:chain"></a><pre id="Maybe.hs:chain" class="programlisting">-- file: ch14/Maybe.hs
+chain :: m a -&gt; (a -&gt; m b) -&gt; m b</pre><p id="x_nW"><a name="x_nW"></a>Finally, in each case we have a function that takes a
+      “<span class="quote">plain</span>” value, and “<span class="quote">injects</span>” it into
+      the target type.  For <span class="type">Maybe</span>, this function is
+      simply the value constructor <code class="code">Just</code>, but the injector
+      for <span class="type">Parse</span> is more complicated.</p><pre id="id638916" class="programlisting">-- file: ch10/Parse.hs
+identity :: a -&gt; Parse a
+identity a = Parse (\s -&gt; Right (a, s))</pre><p id="x_oW"><a name="x_oW"></a>Again, it's not the details or complexity that we're
+      interested in, it's the fact that each of these types has an
+      “<span class="quote">injector</span>” function, which looks like this.</p><a name="Maybe.hs:inject"></a><pre id="Maybe.hs:inject" class="programlisting">-- file: ch14/Maybe.hs
+inject :: a -&gt; m a</pre><p id="x_pW"><a name="x_pW"></a>It is <span class="emphasis"><em>exactly</em></span> these three properties,
+      and a few rules about how we can use them together, that define
+      a monad in Haskell.  Let's revisit the above list in condensed
+      form.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_qW"><a name="x_qW"></a>A type constructor <code class="varname">m</code>.</p></li><li><p id="x_rW"><a name="x_rW"></a>A function of type <span class="type">m a -&gt; (a -&gt; m b) -&gt; m b</span>
+	  for chaining the output of one function into the input of
+	  another.</p></li><li><p id="x_sW"><a name="x_sW"></a>A function of type <span class="type">a -&gt; m a</span> for injecting a
+	  normal value into the chain, i.e. it wraps a type
+	  <span class="type">a</span> with the type constructor
+	  <span class="type">m</span>.</p></li></ul></div><p id="x_tW"><a name="x_tW"></a>The properties that make the <span class="type">Maybe</span> type a monad
+      are its type constructor <span class="type">Maybe a</span>, our chaining
+      function <code class="function">(&gt;&gt;?)</code>, and the injector
+      function <code class="function">Just</code>.</p><p id="x_uW"><a name="x_uW"></a>For <span class="type">Parse</span>, the corresponding properties are the
+      type constructor <span class="type">Parse a</span>, the chaining function
+      <code class="function">(==&gt;)</code>, and the injector function
+      <code class="function">identity</code>.</p><p id="x_vW"><a name="x_vW"></a>We have intentionally said nothing about how the chaining
+      and injection functions of a monad should behave, and that's
+      because this almost doesn't matter.  In fact, monads are
+      ubiquitous in Haskell code precisely because they are so simple.
+      Many common programming patterns have a monadic structure:
+      passing around implicit data, or short-circuiting a chain of
+      evaluations if one fails, to choose but two.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="monads.class">The Monad typeclass</h2></div></div></div><p id="x_wW"><a name="x_wW"></a>We can capture the notions of chaining and injection, and
+      the types that we want them to have, in a Haskell typeclass.
+      The standard Prelude already defines just such a typeclass,
+      named <code class="code">Monad</code>.</p><a name="Maybe.hs:Monad"></a><pre id="Maybe.hs:Monad" class="programlisting">-- file: ch14/Maybe.hs
+class Monad m where
+    -- chain
+    (&gt;&gt;=)  :: m a -&gt; (a -&gt; m b) -&gt; m b
+    -- inject
+    return :: a -&gt; m a</pre><p id="x_xW"><a name="x_xW"></a>Here, <code class="function">(&gt;&gt;=)</code> is our chaining function.  We've already been
+      introduced to it in <a class="xref" href="io.html#io.bind" title="Sequencing">the section called “Sequencing”</a>.  It's often
+      referred to as “<span class="quote">bind</span>”, as it binds the result of
+      the computation on the left to the parameter of the
+      one on the right.</p><p id="x_yW"><a name="x_yW"></a>Our injection function is <code class="literal">return</code>.  As we noted
+      in <a class="xref" href="io.html#io.return" title="The True Nature of Return">the section called “The True Nature of Return”</a>, the choice of the name <code class="literal">return</code> is a
+      little unfortunate.  That name is widely used in imperative
+      languages, where it has a fairly well understood meaning.  In
+      Haskell, its behaviour is much less constrained.  In particular,
+      calling <code class="literal">return</code> in the middle of a chain of functions won't
+      cause the chain to exit early.  A useful way to link its
+      behavior to its name is that it <span class="emphasis"><em>returns</em></span> a
+      pure value (of type <span class="type">a</span>) into a monad (of type
+      <span class="type">m a</span>).</p><p id="x_zW"><a name="x_zW"></a>While <code class="function">(&gt;&gt;=)</code> and <code class="literal">return</code> are the core functions of the
+      <code class="code">Monad</code> typeclass, it also defines two other
+      functions.  The first is <code class="function">(&gt;&gt;)</code>.  Like <code class="function">(&gt;&gt;=)</code>, it performs
+      chaining, but it ignores the value on the left.</p><a name="Maybe.hs:bind_"></a><pre id="Maybe.hs:bind_" class="programlisting">-- file: ch14/Maybe.hs
+    (&gt;&gt;) :: m a -&gt; m b -&gt; m b
+    a &gt;&gt; f = a &gt;&gt;= \_ -&gt; f</pre><p id="x_AX"><a name="x_AX"></a>We use this function when we want to perform
+      actions in a certain order, but don't care what the result of
+      one is.  This might seem pointless: why would we not care what a
+      function's return value is?  Recall, though, that we defined a
+      <code class="function">(==&gt;&amp;)</code> combinator earlier to express
+      exactly this.  Alternatively, consider a function like <code class="function">print</code>,
+      which provides a placeholder result that we do not need to
+      inspect.</p><a name="bind.ghci:print"></a><pre id="bind.ghci:print" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type print "foo"</code></strong>
+print "foo" :: IO ()
+</pre><p id="x_BX"><a name="x_BX"></a>If we use plain <code class="function">(&gt;&gt;=)</code>, we have to provide as its right hand
+      side a function that ignores its argument.</p><a name="bind.ghci:bind"></a><pre id="bind.ghci:bind" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>print "foo" &gt;&gt;= \_ -&gt; print "bar"</code></strong>
+"foo"
+"bar"
+</pre><p id="x_CX"><a name="x_CX"></a>But if we use <code class="function">(&gt;&gt;)</code>, we can omit the needless
+      function.</p><a name="bind.ghci:bind_"></a><pre id="bind.ghci:bind_" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>print "baz" &gt;&gt; print "quux"</code></strong>
+"baz"
+"quux"
+</pre><p id="x_DX"><a name="x_DX"></a>As we showed above, the default implementation of <code class="function">(&gt;&gt;)</code> is
+      defined in terms of <code class="function">(&gt;&gt;=)</code>.</p><p id="x_EX"><a name="x_EX"></a>The second non-core <code class="code">Monad</code> function is <code class="function">fail</code>,
+      which takes an error message and does something to make the
+      chain of functions fail.</p><a name="Maybe.hs:fail"></a><pre id="Maybe.hs:fail" class="programlisting">-- file: ch14/Maybe.hs
+    fail :: String -&gt; m a
+    fail = error</pre><div class="warning"><table border="0" summary="Warning: Beware of fail"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="/support/figs/warning.png"></td><th align="left"><a name="monads.monad.fail"></a>Beware of fail</th></tr><tr><td align="left" valign="top"><p id="x_FX"><a name="x_FX"></a>Many <code class="code">Monad</code> instances don't override
+	the default implementation of <code class="function">fail</code> that we show here, so
+	in those monads, <code class="function">fail</code> uses <code class="function">error</code>.  Calling
+	<code class="function">error</code> is usually highly undesirable,
+	since it throws an exception that callers either cannot catch
+	or will not expect.</p><p id="x_ZG1"><a name="x_ZG1"></a>Even if you know that right now you're executing in a
+	monad that has <code class="function">fail</code> do something more sensible, we still
+	recommend avoiding it.  It's far too easy to cause yourself a
+	problem later when you refactor your code and forget that a
+	previously safe use of <code class="function">fail</code> might be dangerous in its new
+	context.</p></td></tr></table></div><p id="x_GX"><a name="x_GX"></a>To revisit the parser that we developed in <a class="xref" href="code-case-study-parsing-a-binary-data-format.html" title="Chapter 10. Code case study: parsing a binary data format">Chapter 10, <i>Code case study: parsing a binary data format</i></a>, here is its <code class="code">Monad</code>
+      instance.</p><a name="Parse.hs:Monad"></a><pre id="Parse.hs:Monad" class="programlisting">-- file: ch10/Parse.hs
+instance Monad Parse where
+    return = identity
+    (&gt;&gt;=) = (==&gt;)
+    fail = bail</pre></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id639479">And now, a jargon moment</h2></div></div></div><p id="x_HX"><a name="x_HX"></a>There are a few terms of jargon around monads that you may
+      not be familiar with.  These aren't formal terms, but they're in
+      common use, so it's helpful to know about them.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_IX"><a name="x_IX"></a>“<span class="quote">Monadic</span>” simply means “<span class="quote">pertaining to
+	    monads</span>”.  A monadic <span class="emphasis"><em>type</em></span> is an
+	  instance of the <code class="code">Monad</code> typeclass; a monadic
+	  <span class="emphasis"><em>value</em></span> has a monadic type.</p></li><li><p id="x_JX"><a name="x_JX"></a>When we say that a type “<span class="quote">is a monad</span>”, this
+	  is really a shorthand way of saying that it's an instance
+	  of the <code class="code">Monad</code> typeclass.  Being an instance of
+	  <code class="code">Monad</code> gives us the necessary monadic triple of
+	  type constructor, injection function, and chaining
+	  function.</p></li><li><p id="x_KX"><a name="x_KX"></a>In the same way, a reference to “<span class="quote">the
+	    <span class="type">Foo</span> monad</span>” implies that we're talking
+	  about the type named <span class="type">Foo</span>, and that it's an
+	  instance of <code class="code">Monad</code>.</p></li><li><p id="x_LX"><a name="x_LX"></a>An “<span class="quote">action</span>” is another name for a monadic
+	  value.  This use of the word probably originated with the
+	  introduction of monads for I/O, where a monadic value like
+	  <code class="code">print "foo"</code> can have an observable side effect.
+	  A function with a monadic return type might also be referred
+	  to as an action, though this is a little less common.</p></li></ul></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="monads.logger">Using a new monad: show your work!</h2></div></div></div><p id="x_MX"><a name="x_MX"></a>In our introduction to monads, we showed how some
+      pre-existing code was already monadic in form.  Now that we are
+      beginning to grasp what a monad is, and we've seen the
+      <code class="code">Monad</code> typeclass, let's build a monad with
+      foreknowledge of what we're doing.  We'll start out by defining
+      its interface, then we'll put it to use.  Once we have those out
+      of the way, we'll finally build it.</p><p id="x_NX"><a name="x_NX"></a>Pure Haskell code is wonderfully clean to write, but of
+      course it can't perform I/O.  Sometimes, we'd like to
+      have a record of decisions we made, without writing log
+      information to a file.  Let's develop a small
+      library to help with this.</p><p id="x_OX"><a name="x_OX"></a>Recall the <code class="function">globToRegex</code> function that we
+      developed in <a class="xref" href="efficient-file-processing-regular-expressions-and-file-name-matching.html#glob.translate" title="Translating a glob pattern into a regular expression">the section called “Translating a glob pattern into a regular
+      expression”</a>.  We will
+      modify it so that it keeps a record of each of the special
+      pattern sequences that it translates.  We are revisiting
+      familiar territory for a reason: it lets us compare non-monadic
+      and monadic versions of the same code.</p><p id="x_PX"><a name="x_PX"></a>To start off, we'll wrap our result type with a
+      <code class="code">Logger</code> type constructor.</p><a name="Logger.hs:globToRegex.type"></a><pre id="Logger.hs:globToRegex.type" class="programlisting">-- file: ch14/Logger.hs
+globToRegex :: String -&gt; Logger String</pre><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id639671">Information hiding</h3></div></div></div><p id="x_QX"><a name="x_QX"></a>We'll intentionally keep the internals of the
+	<span class="type">Logger</span> module abstract.</p><a name="Logger.hs:module"></a><pre id="Logger.hs:module" class="programlisting">-- file: ch14/Logger.hs
+module Logger
+    (
+      Logger
+    , Log
+    , runLogger
+    , record
+    ) where</pre><p id="x_RX"><a name="x_RX"></a>Hiding the details like this has two benefits: it grants
+	us considerable flexibility in how we implement our monad, and
+	more importantly, it gives users a simple interface.</p><p id="x_SX"><a name="x_SX"></a>Our <span class="type">Logger</span> type is purely a
+	<span class="emphasis"><em>type</em></span> constructor.  We don't export the
+	<span class="emphasis"><em>value</em></span> constructor that a user would need
+	to create a value of this type.  All they can use
+	<span class="type">Logger</span> for is writing type signatures.</p><p id="x_TX"><a name="x_TX"></a>The <span class="type">Log</span> type is just a synonym for a list of
+	strings, to make a few signatures more readable.  We use
+	a list of strings to keep the implementation simple.</p><a name="Logger.hs:Log"></a><pre id="Logger.hs:Log" class="programlisting">-- file: ch14/Logger.hs
+type Log = [String]</pre><p id="x_UX"><a name="x_UX"></a>Instead of giving our users a value constructor, we
+	provide them with a function, <code class="function">runLogger</code>,
+	that evaluates a logged action.  This returns both the result
+	of an action and whatever was logged while the result was
+	being computed.</p><a name="Logger.hs:runLogger.type"></a><pre id="Logger.hs:runLogger.type" class="programlisting">-- file: ch14/Logger.hs
+runLogger :: Logger a -&gt; (a, Log)</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="monads.escape">Controlled escape</h3></div></div></div><p id="x_VX"><a name="x_VX"></a>The <code class="code">Monad</code> typeclass doesn't provide any means
+	for values to escape their monadic shackles.  We can inject a
+	value into a monad using <code class="literal">return</code>.  We can extract a value
+	from a monad using <code class="function">(&gt;&gt;=)</code> but the function on the right, which
+	can see an unwrapped value, has to wrap its own result back up
+	again.</p><p id="x_WX"><a name="x_WX"></a>Most monads have one or more
+	<code class="function">runLogger</code>-like functions.  The notable
+	exception is of course <span class="type">IO</span>, which we usually only
+	escape from by exiting a program.</p><p id="x_XX"><a name="x_XX"></a>A monad execution function runs the code inside the monad
+	and unwraps its result.  Such functions are usually the only
+	means provided for a value to escape from its monadic wrapper.
+	The author of a monad thus has complete control over how
+	whatever happens inside the monad gets out.</p><p id="x_YX"><a name="x_YX"></a>Some monads have several execution functions.  In our
+	case, we can imagine a few alternatives to
+	<code class="function">runLogger</code>: one might only return the log
+	messages, while another might return just the result and drop
+	the log messages.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id639855">Leaving a trace</h3></div></div></div><p id="x_ZX"><a name="x_ZX"></a>When executing inside a <span class="type">Logger</span>
+	action, user code calls <code class="function">record</code> to record
+	something.</p><a name="Logger.hs:record.type"></a><pre id="Logger.hs:record.type" class="programlisting">-- file: ch14/Logger.hs
+record :: String -&gt; Logger ()</pre><p id="x_aG1"><a name="x_aG1"></a>Since recording occurs in the plumbing of our monad, our
+	action's result supplies no information.</p><p id="x_aX"><a name="x_aX"></a>Usually, a monad will provide one or more helper
+	functions like our <code class="function">record</code>.  These are our
+	means for accessing the special behaviors of that
+	monad.</p><p id="x_bX"><a name="x_bX"></a>Our module also defines the <code class="code">Monad</code>
+	instance for the <span class="type">Logger</span> type.  These definitions
+	are all that a client module needs in order to be able to use
+	this monad.</p><p id="x_cX"><a name="x_cX"></a>Here is a preview, in <span class="command"><strong>ghci</strong></span>, of how our monad
+	will behave.</p><a name="logger.ghci:simple"></a><pre id="logger.ghci:simple" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let simple = return True :: Logger Bool</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runLogger simple</code></strong>
+(True,[])
+</pre><p id="x_dX"><a name="x_dX"></a>When we run the logged action using
+	<code class="function">runLogger</code>, we get back a pair.  The first
+	element is the result of our code; the second is the list of
+	items logged while the action executed.  We haven't logged
+	anything, so the list is empty.  Let's fix that.</p><a name="logger.ghci:logged"></a><pre id="logger.ghci:logged" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>runLogger (record "hi mom!" &gt;&gt; return 3.1337)</code></strong>
+(3.1337,["hi mom!"])
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id640003">Using the Logger monad</h3></div></div></div><p id="x_eX"><a name="x_eX"></a>Here's how we kick off our glob-to-regexp conversion
+	inside the <span class="type">Logger</span> monad.</p><a name="Logger.hs:rooted"></a><pre id="Logger.hs:rooted" class="programlisting">-- file: ch14/Logger.hs
+globToRegex cs =
+    globToRegex' cs &gt;&gt;= \ds -&gt;
+    return ('^':ds)</pre><p id="x_gX"><a name="x_gX"></a>There are a few coding style issues worth mentioning here.
+	The body of the function starts on the line after its name. By
+	doing this, we gain some horizontal white space.  We've also
+	“<span class="quote">hung</span>” the parameter of the anonymous function at
+	the end of the line. This is common practice in monadic
+	code.</p><p id="x_fX"><a name="x_fX"></a>Remember the type of <code class="function">(&gt;&gt;=)</code>: it extracts the
+	value on the left from its <span class="type">Logger</span> wrapper, and
+	passes the unwrapped value to the function on the right.  The
+	function on the right must, in turn, wrap
+	<span class="emphasis"><em>its</em></span> result with the <span class="type">Logger</span>
+	wrapper.  This is exactly what <code class="literal">return</code> does: it takes a pure
+	value, and wraps it in the monad's type constructor.</p><a name="logger.ghci:bind.type"></a><pre id="logger.ghci:bind.type" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (&gt;&gt;=)</code></strong>
+(&gt;&gt;=) :: (Monad m) =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (globToRegex "" &gt;&gt;=)</code></strong>
+(globToRegex "" &gt;&gt;=) :: (String -&gt; Logger b) -&gt; Logger b
+</pre><p id="x_hX"><a name="x_hX"></a>Even when we write a function that does almost nothing, we
+	must call <code class="function">return</code> to wrap the result with
+	the correct type.</p><a name="Logger.hs:eof"></a><pre id="Logger.hs:eof" class="programlisting">-- file: ch14/Logger.hs
+globToRegex' :: String -&gt; Logger String
+globToRegex' "" = return "$"</pre><p id="x_iX"><a name="x_iX"></a>When we call <code class="function">record</code> to save a log
+	entry, we use <code class="function">(&gt;&gt;)</code> instead of <code class="function">(&gt;&gt;=)</code> to chain it with the
+	following action.</p><a name="Logger.hs:question"></a><pre id="Logger.hs:question" class="programlisting">-- file: ch14/Logger.hs
+globToRegex' ('?':cs) =
+    record "any" &gt;&gt;
+    globToRegex' cs &gt;&gt;= \ds -&gt;
+    return ('.':ds)</pre><p id="x_jX"><a name="x_jX"></a>Recall that this is a variant of <code class="function">(&gt;&gt;=)</code> that ignores the
+	result on the left.  We know that the result of
+	<code class="function">record</code> will always be <code class="code">()</code>, so
+	there's no point in capturing it.</p><p id="x_kX"><a name="x_kX"></a>We can use <code class="literal">do</code> notation, which we first encountered in
+	<a class="xref" href="io.html#io.bind" title="Sequencing">the section called “Sequencing”</a>, to somewhat tidy up our
+	code.</p><a name="Logger.hs:asterisk"></a><pre id="Logger.hs:asterisk" class="programlisting">-- file: ch14/Logger.hs
+globToRegex' ('*':cs) = do
+    record "kleene star"
+    ds &lt;- globToRegex' cs
+    return (".*" ++ ds)</pre><p id="x_lX"><a name="x_lX"></a>The choice of <code class="literal">do</code> notation versus explicit
+	<code class="function">(&gt;&gt;=)</code> with anonymous functions is mostly a matter of taste,
+	though almost everyone's taste is to use <code class="literal">do</code> notation for
+	anything longer than about two lines. There is one significant
+	difference between the two styles, though, which we'll return
+	to in <a class="xref" href="monads.html#monads.do" title="Desugaring of do blocks">the section called “Desugaring of do blocks”</a>.</p><p id="x_mX"><a name="x_mX"></a>Parsing a character class mostly follows the same pattern
+	that we've already seen.</p><a name="Logger.hs:class"></a><pre id="Logger.hs:class" class="programlisting">-- file: ch14/Logger.hs
+globToRegex' ('[':'!':c:cs) =
+    record "character class, negative" &gt;&gt;
+    charClass cs &gt;&gt;= \ds -&gt;
+    return ("[^" ++ c : ds)
+globToRegex' ('[':c:cs) =
+    record "character class" &gt;&gt;
+    charClass cs &gt;&gt;= \ds -&gt;
+    return ("[" ++ c : ds)
+globToRegex' ('[':_) =
+    fail "unterminated character class"</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="monads.liftM">Mixing pure and monadic code</h2></div></div></div><p id="x_oX"><a name="x_oX"></a>Based on the code we've seen so far, monads seem to have a
+      substantial shortcoming: the type constructor that wraps a
+      monadic value makes it tricky to use a normal, pure function on
+      a value trapped inside a monadic wrapper.  Here's a simple
+      illustration of the apparent problem.  Let's say we have a
+      trivial piece of code that runs in the <span class="type">Logger</span> monad
+      and returns a string.</p><a name="logger.ghci:m"></a><pre id="logger.ghci:m" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let m = return "foo" :: Logger String</code></strong>
+</pre><p id="x_pX"><a name="x_pX"></a>If we want to find out the length of that string, we can't
+      simply call <code class="function">length</code>: the string is wrapped,
+      so the types don't match up.</p><a name="logger.ghci:m.length"></a><pre id="logger.ghci:m.length" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>length m</code></strong>
+
+&lt;interactive&gt;:1:7:
+    Couldn't match expected type `[a]'
+           against inferred type `Logger String'
+    In the first argument of `length', namely `m'
+    In the expression: length m
+    In the definition of `it': it = length m
+</pre><p id="x_qX"><a name="x_qX"></a>What we've done so far to work around this is something like
+      the following.</p><a name="logger.ghci:m.length2"></a><pre id="logger.ghci:m.length2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type   m &gt;&gt;= \s -&gt; return (length s)</code></strong>
+m &gt;&gt;= \s -&gt; return (length s) :: Logger Int
+</pre><p id="x_rX"><a name="x_rX"></a>We use <code class="function">(&gt;&gt;=)</code> to unwrap the string, then write a small
+      anonymous function that calls <code class="function">length</code> and
+      rewraps the result using <code class="function">return</code>.</p><p id="x_sX"><a name="x_sX"></a>This need crops up often in Haskell code.  We won't be
+      surprised to learn that a shorthand already exists: we use
+      the <span class="emphasis"><em>lifting</em></span> technique that we introduced
+      for functors in <a class="xref" href="code-case-study-parsing-a-binary-data-format.html#binary.functor" title="Introducing functors">the section called “Introducing functors”</a>.  Lifting a
+      pure function into a functor usually involves unwrapping the
+      value inside the functor, calling the function on it, and
+      rewrapping the result with the same constructor.</p><p id="x_tX"><a name="x_tX"></a>We do exactly the same thing with a monad.  Because the
+      <code class="code">Monad</code> typeclass already provides the <code class="function">(&gt;&gt;=)</code> and
+      <code class="literal">return</code> functions that know how to unwrap and wrap a value, the
+      <code class="function">liftM</code> function doesn't need to know any details of
+      a monad's implementation.</p><a name="Logger.hs:liftM"></a><pre id="Logger.hs:liftM" class="programlisting">-- file: ch14/Logger.hs
+liftM :: (Monad m) =&gt; (a -&gt; b) -&gt; m a -&gt; m b
+liftM f m = m &gt;&gt;= \i -&gt;
+            return (f i)</pre><p id="x_uX"><a name="x_uX"></a>When we declare a type to be an instance of the
+      <code class="code">Functor</code> typeclass, we have to write our own version
+      of <code class="function">fmap</code> specially tailored to that type. By
+      contrast, <code class="function">liftM</code> doesn't need to know
+      anything of a monad's internals, because they're abstracted by
+      <code class="function">(&gt;&gt;=)</code> and <code class="literal">return</code>.  We only need to write it once, with the
+      appropriate type constraint.</p><p id="x_vX"><a name="x_vX"></a>The <code class="function">liftM</code> function is predefined for us
+      in the standard <code class="code">Control.Monad</code> module.</p><p id="x_wX"><a name="x_wX"></a>To see how <code class="function">liftM</code> can help readability,
+      we'll compare two otherwise identical pieces of code. First, the
+      familiar kind that does not use
+      <code class="function">liftM</code>.</p><a name="Logger.hs:charClass_wordy"></a><pre id="Logger.hs:charClass_wordy" class="programlisting">-- file: ch14/Logger.hs
+charClass_wordy (']':cs) =
+    globToRegex' cs &gt;&gt;= \ds -&gt;
+    return (']':ds)
+charClass_wordy (c:cs) =
+    charClass_wordy cs &gt;&gt;= \ds -&gt;
+    return (c:ds)</pre><p id="x_xX"><a name="x_xX"></a>Now we can eliminate the <code class="function">(&gt;&gt;=)</code> and anonymous function cruft
+      with <code class="function">liftM</code>.</p><a name="Logger.hs:charClass"></a><pre id="Logger.hs:charClass" class="programlisting">-- file: ch14/Logger.hs
+charClass (']':cs) = (']':) `liftM` globToRegex' cs
+charClass (c:cs) = (c:) `liftM` charClass cs</pre><p id="x_yX"><a name="x_yX"></a>As with <code class="function">fmap</code>, we often use
+      <code class="function">liftM</code> in infix form.  An easy way to read
+      such an expression is “<span class="quote">apply the pure function on the left
+	to the result of the monadic action on the
+	right</span>”.</p><p id="x_zX"><a name="x_zX"></a>The <code class="function">liftM</code> function is so
+      useful that <code class="code">Control.Monad</code> defines several variants,
+      which combine longer chains of actions.  We can see one in the
+      last clause of our <code class="function">globToRegex'</code>
+      function.</p><a name="Logger.hs:last"></a><pre id="Logger.hs:last" class="programlisting">-- file: ch14/Logger.hs
+globToRegex' (c:cs) = liftM2 (++) (escape c) (globToRegex' cs)
+
+escape :: Char -&gt; Logger String
+escape c
+    | c `elem` regexChars = record "escape" &gt;&gt; return ['\\',c]
+    | otherwise           = return [c]
+  where regexChars = "\\+()^$.{}]|"</pre><p id="x_AY"><a name="x_AY"></a>The <code class="function">liftM2</code> function that we
+      use above is defined as follows.</p><a name="Logger.hs:liftM2"></a><pre id="Logger.hs:liftM2" class="programlisting">-- file: ch14/Logger.hs
+liftM2 :: (Monad m) =&gt; (a -&gt; b -&gt; c) -&gt; m a -&gt; m b -&gt; m c
+liftM2 f m1 m2 =
+    m1 &gt;&gt;= \a -&gt;
+    m2 &gt;&gt;= \b -&gt;
+    return (f a b)</pre><p id="x_BY"><a name="x_BY"></a>It executes the first action, then the second, then combines
+      their results using the pure function <code class="varname">f</code>, and
+      wraps that result.  In addition to <code class="function">liftM2</code>,
+      the variants in <code class="code">Control.Monad</code> go up to
+      <code class="function">liftM5</code>.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id640702">Putting a few misconceptions to rest</h2></div></div></div><p id="x_CY"><a name="x_CY"></a>We've now seen enough examples of monads in action to have
+      some feel for what's going on.  Before we continue, there are a
+      few oft-repeated myths about monads that we're going to address.
+      You're bound to encounter these assertions “<span class="quote">in the
+	wild</span>”, so you might as well be prepared with a few good
+      retorts.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_DY"><a name="x_DY"></a><span class="emphasis"><em>Monads can be hard to understand.</em></span>
+	  We've already shown that monads “<span class="quote">fall out
+	    naturally</span>” from several problems.  We've found that
+	  the best key to understanding them is to explain several
+	  concrete examples, then talk about what they have in
+	  common.</p></li><li><p id="x_EY"><a name="x_EY"></a><span class="emphasis"><em>Monads are only useful for I/O and imperative
+	    coding.</em></span> While we use monads for I/O in Haskell,
+	  they're valuable for many other purposes besides.  We've
+	  already used them for short-circuiting a chain of
+	  computations, hiding complicated state, and logging.  Even
+	  so, we've barely scratched the surface.</p></li><li><p id="x_FY"><a name="x_FY"></a><span class="emphasis"><em>Monads are unique to
+	    Haskell.</em></span> Haskell is probably the language that
+	  makes the most explicit use of monads, but people write them
+	  in other languages, too, ranging from C++ to OCaml.  They
+	  happen to be particularly tractable in Haskell, due to <code class="literal">do</code>
+	  notation, the power and inference of the type system, and
+	  the language's syntax.</p></li><li><p id="x_GY"><a name="x_GY"></a><span class="emphasis"><em>Monads are for controlling the order of
+	    evaluation.</em></span></p></li></ul></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id640791">Building the Logger monad</h2></div></div></div><p id="x_HY"><a name="x_HY"></a>The definition of our <span class="type">Logger</span> type is very
+      simple.</p><a name="Logger.hs:Logger"></a><pre id="Logger.hs:Logger" class="programlisting">-- file: ch14/Logger.hs
+newtype Logger a = Logger { execLogger :: (a, Log) }</pre><p id="x_IY"><a name="x_IY"></a>It's a pair, where the first element is the result of
+      an action, and the second is a list of messages logged while
+      that action was run.</p><p id="x_JY"><a name="x_JY"></a>We've wrapped the tuple in a <code class="code">newtype</code> to make it a distinct
+      type.  The <code class="function">runLogger</code> function extracts the
+      tuple from its wrapper.  The function that we're exporting to
+      execute a logged action, <code class="function">runLogger</code>, is
+      just a synonym for <code class="function">execLogger</code>.</p><a name="Logger.hs:runLogger"></a><pre id="Logger.hs:runLogger" class="programlisting">-- file: ch14/Logger.hs
+runLogger = execLogger</pre><p id="x_KY"><a name="x_KY"></a>Our <code class="function">record</code> helper function creates a
+      singleton list of the message we pass it.</p><a name="Logger.hs:record"></a><pre id="Logger.hs:record" class="programlisting">-- file: ch14/Logger.hs
+record s = Logger ((), [s])</pre><p id="x_bG1"><a name="x_bG1"></a>The result of this action is <code class="code">()</code>, so that's the
+      value we put in the result slot.</p><p id="x_LY"><a name="x_LY"></a>Let's begin our <code class="code">Monad</code> instance with <code class="literal">return</code>,
+      which is trivial: it logs nothing, and stores its input in the
+      result slot of the tuple.</p><a name="Logger.hs:return"></a><pre id="Logger.hs:return" class="programlisting">-- file: ch14/Logger.hs
+instance Monad Logger where
+    return a = Logger (a, [])</pre><p id="x_MY"><a name="x_MY"></a>Slightly more interesting is <code class="function">(&gt;&gt;=)</code>, which is the heart of
+      the monad.  It combines an action and a monadic function to give
+      a new result and a new log.</p><a name="Logger.hs:bind"></a><pre id="Logger.hs:bind" class="programlisting">-- file: ch14/Logger.hs
+    -- (&gt;&gt;=) :: Logger a -&gt; (a -&gt; Logger b) -&gt; Logger b
+    m &gt;&gt;= k = let (a, w) = execLogger m
+                  n      = k a
+                  (b, x) = execLogger n
+              in Logger (b, w ++ x)</pre><p id="x_NY"><a name="x_NY"></a>Let's spell out explicitly what is going on. We use
+      <code class="function">runLogger</code> to extract the result
+      <code class="varname">a</code> from the action <code class="varname">m</code>, and
+      we pass it to the monadic function <code class="varname">k</code>.  We
+      extract the result <code class="varname">b</code> from that in turn, and
+      put it into the result slot of the final action.  We concatenate
+      the logs <code class="varname">w</code> and <code class="varname">x</code> to give
+      the new log.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id640993">Sequential logging, not sequential evaluation</h3></div></div></div><p id="x_OY"><a name="x_OY"></a>Our definition of <code class="function">(&gt;&gt;=)</code> ensures that messages logged on
+	the left will appear in the new log before those on the right.
+	However, it says nothing about when the values
+	<code class="varname">a</code> and <code class="varname">b</code> are evaluated:
+	<code class="function">(&gt;&gt;=)</code> is lazy.</p><p id="x_PY"><a name="x_PY"></a>Like most other aspects of a monad's behaviour, strictness
+	is under the control of the monad's implementor.  It is not a
+	constant shared by all monads.  Indeed, some monads
+	come in multiple flavours, each with different levels of
+	strictness.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id641037">The writer monad</h3></div></div></div><p id="x_vq"><a name="x_vq"></a>Our <span class="type">Logger</span> monad is a specialised version of
+	the standard <span class="type">Writer</span> monad, which can be found in
+	the <span class="type">Control.Monad.Writer</span> module of the
+	<code class="code">mtl</code> package.  We will present a
+	<span class="type">Writer</span> example in <a class="xref" href="programming-with-monads.html#monadcase.io.class" title="Using typeclasses">the section called “Using typeclasses”</a>.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id641078">The Maybe monad</h2></div></div></div><p id="x_QY"><a name="x_QY"></a>The <span class="type">Maybe</span> type is very nearly the simplest
+      instance of <code class="code">Monad</code>.  It represents a computation
+      that might not produce a result.</p><a name="Maybe.hs:instance"></a><pre id="Maybe.hs:instance" class="programlisting">-- file: ch14/Maybe.hs
+instance Monad Maybe where
+    Just x &gt;&gt;= k  =  k x
+    Nothing &gt;&gt;= _ =  Nothing
+
+    Just _ &gt;&gt; k   =  k
+    Nothing &gt;&gt; _  =  Nothing
+
+    return x      =  Just x
+
+    fail _        =  Nothing</pre><p id="x_RY"><a name="x_RY"></a>When we chain together a number of computations over
+      <span class="type">Maybe</span> using <code class="function">(&gt;&gt;=)</code> or <code class="function">(&gt;&gt;)</code>, if any of them returns
+      <code class="code">Nothing</code>, then we don't evaluate any of the
+      remaining computations.</p><p id="x_SY"><a name="x_SY"></a>Note, though, that the chain is not completely
+      short-circuited.  Each <code class="function">(&gt;&gt;=)</code> or <code class="function">(&gt;&gt;)</code> in the chain will still
+      match a <code class="code">Nothing</code> on its left, and produce a
+      <code class="function">Nothing</code> on its right, all the way to the
+      end.  It's easy to forget this point: when a computation in the
+      chain fails, the subsequent production, chaining, and
+      consumption of <code class="code">Nothing</code> values is cheap at runtime,
+      but it's not free.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id641174">Executing the Maybe monad</h3></div></div></div><p id="x_TY"><a name="x_TY"></a>A function suitable for executing the <span class="type">Maybe</span>
+	monad is <code class="function">maybe</code>.  (Remember that
+	“<span class="quote">executing</span>” a monad involves evaluating it and
+	returning a result that's had the monad's type wrapper
+	removed.)</p><a name="Maybe.hs:maybe"></a><pre id="Maybe.hs:maybe" class="programlisting">-- file: ch14/Maybe.hs
+maybe :: b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+maybe n _ Nothing  = n
+maybe _ f (Just x) = f x</pre><p id="x_UY"><a name="x_UY"></a>Its first parameter is the value to return if the result
+	is <code class="code">Nothing</code>.  The second is a function to apply to
+	a result wrapped in the <code class="code">Just</code> constructor; the
+	result of that application is then returned.</p><p id="x_VY"><a name="x_VY"></a>Since the <span class="type">Maybe</span> type is so simple,
+	it's about as common to simply pattern-match on a
+	<span class="type">Maybe</span> value as it is to call
+	<code class="function">maybe</code>.  Each one is more readable in
+	different circumstances.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id641251">Maybe at work, and good API design</h3></div></div></div><p id="x_WY"><a name="x_WY"></a>Here's an example of <span class="type">Maybe</span> in use as a monad.
+	Given a customer's name, we want to find the billing address
+	of their mobile phone carrier.</p><a name="Carrier.hs:findCarrierBillingAddress"></a><pre id="Carrier.hs:findCarrierBillingAddress" class="programlisting">-- file: ch14/Carrier.hs
+import qualified Data.Map as M
+
+type PersonName = String
+type PhoneNumber = String
+type BillingAddress = String
+data MobileCarrier = Honest_Bobs_Phone_Network
+                   | Morrisas_Marvelous_Mobiles
+                   | Petes_Plutocratic_Phones
+                     deriving (Eq, Ord)
+
+findCarrierBillingAddress :: PersonName
+                          -&gt; M.Map PersonName PhoneNumber
+                          -&gt; M.Map PhoneNumber MobileCarrier
+                          -&gt; M.Map MobileCarrier BillingAddress
+                          -&gt; Maybe BillingAddress</pre><p id="x_XY"><a name="x_XY"></a>Our first version is the dreaded ladder of code marching
+	off the right of the screen, with many boilerplate <code class="literal">case</code>
+	expressions.</p><a name="Carrier.hs:variation1"></a><pre id="Carrier.hs:variation1" class="programlisting">-- file: ch14/Carrier.hs
+variation1 person phoneMap carrierMap addressMap =
+    case M.lookup person phoneMap of
+      Nothing -&gt; Nothing
+      Just number -&gt;
+          case M.lookup number carrierMap of
+            Nothing -&gt; Nothing
+            Just carrier -&gt; M.lookup carrier addressMap</pre><p id="x_YY"><a name="x_YY"></a>The <code class="code">Data.Map</code> module's
+	<code class="function">lookup</code> function has a monadic return
+	type.</p><a name="carrier.ghci:lookup"></a><pre id="carrier.ghci:lookup" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Data.Map</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type Data.Map.lookup</code></strong>
+Data.Map.lookup :: (Ord k, Monad m) =&gt; k -&gt; Map k a -&gt; m a
+</pre><p id="x_ZY"><a name="x_ZY"></a>In other words, if the given key is present in
+	the map, <code class="function">lookup</code> injects it into the monad
+	using <code class="literal">return</code>.  Otherwise, it calls <code class="function">fail</code>.  This is an
+	interesting piece of API design, though one that we think was
+	a poor choice.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_cG1"><a name="x_cG1"></a>On the positive side, the behaviours of success and
+	    failure are automatically customised to our needs, based
+	    on the monad we're calling <code class="function">lookup</code>
+	    from.  Better yet, <code class="function">lookup</code> itself
+	    doesn't know or care what those behaviours are.</p><p id="x_aY"><a name="x_aY"></a>The <code class="literal">case</code> expressions above typecheck
+	    because we're comparing the result of
+	    <code class="function">lookup</code> against values of type
+	    <span class="type">Maybe</span>.</p></li><li><p id="x_dG1"><a name="x_dG1"></a>The hitch is, of course, that using <code class="function">fail</code> in the
+	    wrong monad throws a bothersome exception.  We have
+	    already warned against the use of <code class="function">fail</code>, so we will not
+	    repeat ourselves here.</p></li></ul></div><p id="x_eG1"><a name="x_eG1"></a>In practice, <span class="emphasis"><em>everyone</em></span> uses
+	<span class="type">Maybe</span> as the result type for
+	<code class="function">lookup</code>.  The result type of such a
+	conceptually simple function provides generality where it is
+	not needed: <code class="function">lookup</code> should have been
+	written to return <span class="type">Maybe</span>.</p><p id="x_fG1"><a name="x_fG1"></a>Let's set aside the API question, and deal with the
+	ugliness of our code.  We can make more sensible use of
+	<span class="type">Maybe</span>'s status as a monad.</p><a name="Carrier.hs:variation2"></a><pre id="Carrier.hs:variation2" class="programlisting">-- file: ch14/Carrier.hs
+variation2 person phoneMap carrierMap addressMap = do
+  number &lt;- M.lookup person phoneMap
+  carrier &lt;- M.lookup number carrierMap
+  address &lt;- M.lookup carrier addressMap
+  return address</pre><p id="x_bY"><a name="x_bY"></a>If any of these lookups fails, the definitions of <code class="function">(&gt;&gt;=)</code>
+	and <code class="function">(&gt;&gt;)</code> mean that the result of the function as a whole
+	will be <code class="code">Nothing</code>, just as it was for our first
+	attempt that used <code class="literal">case</code> explicitly.</p><p id="x_cY"><a name="x_cY"></a>This version is much tidier, but the
+	<code class="literal">return</code> isn't necessary.  Stylistically, it makes the code
+	look more regular, and perhaps more familiar to the eyes of an
+	imperative programmer, but behaviourally it's redundant.
+	Here's an equivalent piece of code.</p><a name="Carrier.hs:variation2a"></a><pre id="Carrier.hs:variation2a" class="programlisting">-- file: ch14/Carrier.hs
+variation2a person phoneMap carrierMap addressMap = do
+  number &lt;- M.lookup person phoneMap
+  carrier &lt;- M.lookup number carrierMap
+  M.lookup carrier addressMap</pre><p id="x_dY"><a name="x_dY"></a>When we introduced maps, we mentioned in <a class="xref" href="barcode-recognition.html#barcode.map.partial" title="Partial application awkwardness">the section called “Partial application awkwardness”</a> that the type signatures of
+	functions in the <code class="code">Data.Map</code> module often make them
+	awkward to partially apply.  The <code class="function">lookup</code>
+	function is a good example.  If we <code class="function">flip</code>
+	its arguments, we can write the function body as a
+	one-liner.</p><a name="Carrier.hs:variation3"></a><pre id="Carrier.hs:variation3" class="programlisting">-- file: ch14/Carrier.hs
+variation3 person phoneMap carrierMap addressMap =
+    lookup phoneMap person &gt;&gt;= lookup carrierMap &gt;&gt;= lookup addressMap
+  where lookup = flip M.lookup</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id641620">The list monad</h2></div></div></div><p id="x_eY"><a name="x_eY"></a>While the <code class="code">Maybe</code> type can represent
+      either no value or one, there are many situations where we might
+      want to return some number of results that we do not know in
+      advance.  Obviously, a list is well suited to this purpose. The
+      type of a list suggests that we might be able to use it as a
+      monad, because its type constructor has one free variable.  And
+      sure enough, we can use a list as a monad.</p><p id="x_fY"><a name="x_fY"></a>Rather than simply present the Prelude's <code class="code">Monad</code>
+      instance for the list type, let's try to figure out what an
+      instance <span class="emphasis"><em>ought</em></span> to look like.  This is easy
+      to do: we'll look at the types of <code class="function">(&gt;&gt;=)</code> and <code class="literal">return</code>, and
+      perform some substitutions, and see if we can use a few familiar
+      list functions.</p><p id="x_gY"><a name="x_gY"></a>The more obvious of the two functions is <code class="literal">return</code>.  We know
+      that it takes a type <code class="varname">a</code>, and wraps
+      it in a type constructor <code class="varname">m</code> to
+      give the type <code class="varname">m a</code>.  We also know
+      that the type constructor here is <span class="type">[]</span>.  Substituting
+      this type constructor for the type variable <code class="varname">m</code> gives us the type <span class="type">[] a</span>
+      (yes, this really is valid notation!), which we can rewrite in
+      more familiar form as <span class="type">[a]</span>.</p><p id="x_hY"><a name="x_hY"></a>We now know that <code class="literal">return</code> for lists should have the type
+      <code class="code">a <code class="literal">-&gt;</code> [a]</code>.  There are only a few sensible
+      possibilities for an implementation of this function.  It might
+      return the empty list, a singleton list, or an infinite list.
+      The most appealing behaviour, based on what we know so far about
+      monads, is the singleton list: it doesn't throw information
+      away, nor does it repeat it infinitely.</p><a name="ListMonad.hs:returnSingleton"></a><pre id="ListMonad.hs:returnSingleton" class="programlisting">-- file: ch14/ListMonad.hs
+returnSingleton :: a -&gt; [a]
+returnSingleton x = [x]</pre><p id="x_iY"><a name="x_iY"></a>If we perform the same substitution trick on the type of
+      <code class="function">(&gt;&gt;=)</code> as we did with <code class="literal">return</code>, we discover that it should have
+      the type <code class="code">[a] <code class="literal">-&gt;</code> (a <code class="literal">-&gt;</code> [b]) <code class="literal">-&gt;</code>
+      [b]</code>.  This seems close to the type of
+      <code class="function">map</code>.</p><a name="listmonad.ghci:map"></a><pre id="listmonad.ghci:map" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (&gt;&gt;=)</code></strong>
+(&gt;&gt;=) :: (Monad m) =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type map</code></strong>
+map :: (a -&gt; b) -&gt; [a] -&gt; [b]
+</pre><p id="x_jY"><a name="x_jY"></a>The ordering of the types in <code class="function">map</code>'s
+      arguments doesn't match, but that's easy to fix.</p><a name="listmonad.ghci:flipMap"></a><pre id="listmonad.ghci:flipMap" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (&gt;&gt;=)</code></strong>
+(&gt;&gt;=) :: (Monad m) =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type flip map</code></strong>
+flip map :: [a] -&gt; (a -&gt; b) -&gt; [b]
+</pre><p id="x_kY"><a name="x_kY"></a>We've still got a problem: the second argument of <code class="code">flip
+	map</code> has the type <code class="code">a <code class="literal">-&gt;</code> b</code>, whereas the
+      second argument of <code class="function">(&gt;&gt;=)</code> for lists has the type <code class="code">a
+      <code class="literal">-&gt;</code> [b]</code>.  What do we do about this?</p><p id="x_lY"><a name="x_lY"></a>Let's do a little more substitution and see what happens
+      with the types.  The function <code class="code">flip map</code> can return
+      any type <code class="varname">b</code> as its result.  If we
+      substitute <code class="varname">[b]</code> for <code class="varname">b</code> in both places where it appears in
+      <code class="code">flip map</code>'s type signature, its type signature reads
+      as <code class="code">a <code class="literal">-&gt;</code> (a <code class="literal">-&gt;</code> [b]) <code class="literal">-&gt;</code> [[b]]</code>.  In
+      other words, if we map a function that returns a list over a
+      list, we get a list of lists back.</p><a name="listmonad.ghci:flipMapApp"></a><pre id="listmonad.ghci:flipMapApp" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>flip map [1,2,3] (\a -&gt; [a,a+100])</code></strong>
+[[1,101],[2,102],[3,103]]
+</pre><p id="x_mY"><a name="x_mY"></a>Interestingly, we haven't really changed how closely our
+      type signatures match.  The type of <code class="function">(&gt;&gt;=)</code> is <code class="code">[a] <code class="literal">-&gt;</code>
+      (a <code class="literal">-&gt;</code> [b]) <code class="literal">-&gt;</code> [b]</code>, while that of <code class="code">flip
+	map</code> when the mapped function returns a list is
+      <code class="code">[a] <code class="literal">-&gt;</code> (a <code class="literal">-&gt;</code> [b]) <code class="literal">-&gt;</code> [[b]]</code>.
+      There's still a mismatch in one type term; we've just moved that
+      term from the middle of the type signature to the end.  However,
+      our juggling wasn't in vain: we now need a function that takes a
+      <span class="type">[[b]]</span> and returns a <span class="type">[b]</span>, and one
+      readily suggests itself in the form of
+      <code class="function">concat</code>.</p><a name="listmonad.ghci:concat"></a><pre id="listmonad.ghci:concat" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type concat</code></strong>
+concat :: [[a]] -&gt; [a]
+</pre><p id="x_nY"><a name="x_nY"></a>The types suggest that we should flip the arguments to
+      <code class="function">map</code>, then <code class="function">concat</code> the
+      results to give a single list.</p><a name="listmonad.ghci:bind"></a><pre id="listmonad.ghci:bind" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type \xs f -&gt; concat (map f xs)</code></strong>
+\xs f -&gt; concat (map f xs) :: [a] -&gt; (a -&gt; [a1]) -&gt; [a1]
+</pre><p id="x_oY"><a name="x_oY"></a>This is exactly the definition of <code class="function">(&gt;&gt;=)</code> for lists.</p><a name="ListMonad.hs:instance"></a><pre id="ListMonad.hs:instance" class="programlisting">-- file: ch14/ListMonad.hs
+instance Monad [] where
+    return x = [x]
+    xs &gt;&gt;= f = concat (map f xs)</pre><p id="x_pY"><a name="x_pY"></a>It applies <code class="varname">f</code> to every element in the list
+      <code class="varname">xs</code>, and concatenates the results to return a
+      single list.</p><p id="x_qY"><a name="x_qY"></a>With our two core <code class="code">Monad</code> definitions in hand,
+      the implementations of the non-core definitions that remain,
+      <code class="function">(&gt;&gt;)</code> and <code class="function">fail</code>, ought to be obvious.</p><a name="ListMonad.hs:rest"></a><pre id="ListMonad.hs:rest" class="programlisting">-- file: ch14/ListMonad.hs
+    xs &gt;&gt; f = concat (map (\_ -&gt; f) xs)
+    fail _ = []</pre><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id642195">Understanding the list monad</h3></div></div></div><p id="x_rY"><a name="x_rY"></a>The list monad is similar to a familiar Haskell tool, the
+	list comprehension.  We can illustrate this similarity by
+	computing the Cartesian product of two lists.  First, we'll
+	write a list comprehension.</p><a name="CartesianProduct.hs:comprehensive"></a><pre id="CartesianProduct.hs:comprehensive" class="programlisting">-- file: ch14/CartesianProduct.hs
+comprehensive xs ys = [(x,y) | x &lt;- xs, y &lt;- ys]</pre><p id="x_sY"><a name="x_sY"></a>For once, we'll use bracketed notation for the
+	monadic code instead of layout notation.  This will highlight
+	how structurally similar the monadic code is to the list
+	comprehension.</p><a name="CartesianProduct.hs:monadic"></a><pre id="CartesianProduct.hs:monadic" class="programlisting">-- file: ch14/CartesianProduct.hs
+monadic xs ys = do { x &lt;- xs; y &lt;- ys; return (x,y) }</pre><p id="x_tY"><a name="x_tY"></a>The only real difference is that the value we're
+	constructing comes at the end of the sequence of expressions,
+	instead of the beginning as in the list comprehension. Also,
+	the results of the two functions are identical.</p><a name="cartesian.ghci:comparison"></a><pre id="cartesian.ghci:comparison" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>comprehensive [1,2] "bar"</code></strong>
+[(1,'b'),(1,'a'),(1,'r'),(2,'b'),(2,'a'),(2,'r')]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>comprehensive [1,2] "bar" == monadic [1,2] "bar"</code></strong>
+True
+</pre><p id="x_uY"><a name="x_uY"></a>It's easy to be baffled by the list monad early on, so
+	let's walk through our monadic Cartesian product code again in
+	more detail.  This time, we'll rearrange the function to use
+	layout instead of brackets.</p><a name="CartesianProduct.hs:blockyDo"></a><pre id="CartesianProduct.hs:blockyDo" class="programlisting">-- file: ch14/CartesianProduct.hs
+blockyDo xs ys = do
+    x &lt;- xs
+    y &lt;- ys
+    return (x, y)</pre><p id="x_vY"><a name="x_vY"></a>For every element in the list <code class="varname">xs</code>, the
+	rest of the function is evaluated once, with
+	<code class="varname">x</code> bound to a different value from the list
+	each time.  Then for every element in the list
+	<code class="varname">ys</code>, the remainder of the function is
+	evaluated once, with <code class="varname">y</code> bound to a different
+	value from the list each time.</p><p id="x_wY"><a name="x_wY"></a>What we really have here is a doubly nested loop!  This
+	highlights an important fact about monads: you
+	<span class="emphasis"><em>cannot</em></span> predict how a block of monadic
+	code will behave unless you know what monad it will execute
+	in.</p><p id="x_xY"><a name="x_xY"></a>We'll now walk through the code even more explicitly, but
+	first let's get rid of the <code class="literal">do</code> notation, to make the
+	underlying structure clearer.  We've indented the code a
+	little unusually to make the loop nesting more obvious.</p><a name="CartesianProduct.hs:blockyPlain"></a><pre id="CartesianProduct.hs:blockyPlain" class="programlisting">-- file: ch14/CartesianProduct.hs
+blockyPlain xs ys =
+    xs &gt;&gt;=
+    \x -&gt; ys &gt;&gt;=
+    \y -&gt; return (x, y)
+
+blockyPlain_reloaded xs ys =
+    concat (map (\x -&gt;
+                 concat (map (\y -&gt;
+                              return (x, y))
+                         ys))
+            xs)</pre><p id="x_yY"><a name="x_yY"></a>If <code class="varname">xs</code> has the value
+	<code class="code">[1,2,3]</code>, the two lines that follow are evaluated
+	with <code class="varname">x</code> bound to <code class="code">1</code>, then to
+	<code class="code">2</code>, and finally to <code class="varname">3</code>. If
+	<code class="varname">ys</code> has the value <code class="code">[True,
+	  False]</code>, the final line is evaluated
+	<span class="emphasis"><em>six</em></span> times: once with <code class="varname">x</code>
+	as <code class="code">1</code> and <code class="varname">y</code> as
+	<code class="code">True</code>; again with <code class="varname">x</code> as
+	<code class="code">1</code> and <code class="varname">y</code> as <code class="code">False</code>;
+	and so on.  The <code class="literal">return</code> expression wraps each tuple in a
+	single-element list.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id642436">Putting the list monad to work</h3></div></div></div><p id="x_gG1"><a name="x_gG1"></a>Here is a simple brute force constraint solver.  Given an
+	integer, it finds all pairs of positive integers that, when
+	multiplied, give that value (this is the constraint being
+	solved).</p><a name="MultiplyTo.hs:multiplyTo"></a><pre id="MultiplyTo.hs:multiplyTo" class="programlisting">-- file: ch14/MultiplyTo.hs
+guarded :: Bool -&gt; [a] -&gt; [a]
+guarded True  xs = xs
+guarded False _  = []
+
+multiplyTo :: Int -&gt; [(Int, Int)]
+multiplyTo n = do
+  x &lt;- [1..n]
+  y &lt;- [x..n]
+  guarded (x * y == n) $
+    return (x, y)</pre><p id="x_hG1"><a name="x_hG1"></a>Let's try this in <span class="command"><strong>ghci</strong></span>.</p><a name="multiplyTo.ghci:multiplyTo"></a><pre id="multiplyTo.ghci:multiplyTo" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>multiplyTo 8</code></strong>
+[(1,8),(2,4)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>multiplyTo 100</code></strong>
+[(1,100),(2,50),(4,25),(5,20),(10,10)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>multiplyTo 891</code></strong>
+[(1,891),(3,297),(9,99),(11,81),(27,33)]
+</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="monads.do">Desugaring of do blocks</h2></div></div></div><p id="x_zY"><a name="x_zY"></a>Haskell's <code class="literal">do</code> syntax is an example of <span class="emphasis"><em>syntactic
+	sugar</em></span>: it provides an alternative way of writing
+      monadic code, without using <code class="function">(&gt;&gt;=)</code> and anonymous functions.
+      <span class="emphasis"><em>Desugaring</em></span> is the translation of syntactic
+      sugar back to the core language.</p><p id="x_AZ"><a name="x_AZ"></a>The rules for desugaring a <code class="literal">do</code> block are easy to follow. We
+      can think of a compiler as applying these rules mechanically and
+      repeatedly to a <code class="literal">do</code> block until no more <code class="literal">do</code> keywords
+      remain.</p><p id="x_BZ"><a name="x_BZ"></a>A <code class="literal">do</code> keyword followed by a single action is translated to
+      that action by itself.</p><div class="informaltable"><table border="1"><colgroup><col><col></colgroup><tbody><tr><td><a name="Do.hs:doNotation1"></a><pre id="Do.hs:doNotation1" class="programlisting">-- file: ch14/Do.hs
+doNotation1 =
+    do act</pre></td><td><a name="Do.hs:translated1"></a><pre id="Do.hs:translated1" class="programlisting">-- file: ch14/Do.hs
+translated1 =
+    act</pre></td></tr></tbody></table></div><p id="x_CZ"><a name="x_CZ"></a>A <code class="literal">do</code> keyword followed by more than one action is
+      translated to the first action, then <code class="function">(&gt;&gt;)</code>, followed by a <code class="literal">do</code>
+      keyword and the remaining actions.  When we apply this rule
+      repeatedly, the entire <code class="literal">do</code> block ends up chained together by
+      applications of <code class="function">(&gt;&gt;)</code>.</p><div class="informaltable"><table border="1"><colgroup><col><col></colgroup><tbody><tr><td><a name="Do.hs:doNotation2"></a><pre id="Do.hs:doNotation2" class="programlisting">-- file: ch14/Do.hs
+doNotation2 =
+    do act1
+       act2
+       {- ... etc. -}
+       actN</pre></td><td><a name="Do.hs:translated2"></a><pre id="Do.hs:translated2" class="programlisting">-- file: ch14/Do.hs
+translated2 =
+    act1 &gt;&gt;
+    do act2
+       {- ... etc. -}
+       actN
+
+finalTranslation2 =
+    act1 &gt;&gt;
+    act2 &gt;&gt;
+    {- ... etc. -}
+    actN</pre></td></tr></tbody></table></div><p id="x_DZ"><a name="x_DZ"></a>The <code class="literal">&lt;-</code> notation has a translation that's worth paying
+      close attention to.  On the left of the <code class="literal">&lt;-</code> is a normal
+      Haskell pattern. This can be a single variable or something more
+      complicated.  A guard expression is not allowed.</p><div class="informaltable"><table border="1"><colgroup><col><col></colgroup><tbody><tr><td><a name="Do.hs:doNotation3"></a><pre id="Do.hs:doNotation3" class="programlisting">-- file: ch14/Do.hs
+doNotation3 =
+    do pattern &lt;- act1
+       act2
+       {- ... etc. -}
+       actN</pre></td><td><a name="Do.hs:translated3"></a><pre id="Do.hs:translated3" class="programlisting">-- file: ch14/Do.hs
+translated3 =
+    let f pattern = do act2
+                       {- ... etc. -}
+                       actN
+        f _     = fail "..."
+    in act1 &gt;&gt;= f</pre></td></tr></tbody></table></div><p id="x_EZ"><a name="x_EZ"></a>This pattern is translated into a <code class="literal">let</code> binding that
+      declares a local function with a unique name (we're just using
+      <code class="varname">f</code> as an example above).  The action on the
+      right of the <code class="literal">&lt;-</code> is then chained with this function using
+      <code class="function">(&gt;&gt;=)</code>.</p><p id="x_FZ"><a name="x_FZ"></a>What's noteworthy about this translation is that if the
+      pattern match fails, the local function calls the monad's <code class="function">fail</code>
+      implementation. Here's an example using the <span class="type">Maybe</span>
+      monad.</p><a name="Do.hs:robust"></a><pre id="Do.hs:robust" class="programlisting">-- file: ch14/Do.hs
+robust :: [a] -&gt; Maybe a
+robust xs = do (_:x:_) &lt;- Just xs
+               return x</pre><p id="x_GZ"><a name="x_GZ"></a>The <code class="function">fail</code> implementation in the <span class="type">Maybe</span> monad
+      simply returns <code class="code">Nothing</code>.  If the pattern match in
+      the above function fails, we thus get <code class="code">Nothing</code> as
+      our result.</p><a name="do.ghci:robust"></a><pre id="do.ghci:robust" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>robust [1,2,3]</code></strong>
+Just 2
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>robust [1]</code></strong>
+Nothing
+</pre><p id="x_HZ"><a name="x_HZ"></a>Finally, when we write a <code class="literal">let</code> expression in a <code class="literal">do</code> block,
+      we can omit the usual <code class="literal">in</code> keyword.  Subsequent actions in the
+      block must be lined up with the <code class="literal">let</code> keyword.</p><div class="informaltable"><table border="1"><colgroup><col><col></colgroup><tbody><tr><td><a name="Do.hs:doNotation4"></a><pre id="Do.hs:doNotation4" class="programlisting">-- file: ch14/Do.hs
+doNotation4 =
+    do let val1 = expr1
+           val2 = expr2
+           {- ... etc. -}
+           valN = exprN
+       act1
+       act2
+       {- ... etc. -}
+       actN</pre></td><td><a name="Do.hs:translated4"></a><pre id="Do.hs:translated4" class="programlisting">-- file: ch14/Do.hs
+translated4 =
+    let val1 = expr1
+        val2 = expr2
+        valN = exprN
+    in do act1
+          act2
+          {- ... etc. -}
+          actN</pre></td></tr></tbody></table></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id642960">Monads as a programmable semicolon</h3></div></div></div><p id="x_IZ"><a name="x_IZ"></a>Back in <a class="xref" href="defining-types-streamlining-functions.html#deftypes.block" title="The offside rule is not mandatory">the section called “The offside rule is not mandatory”</a>, we
+	mentioned that layout is the norm in Haskell, but it's not
+	<span class="emphasis"><em>required</em></span>.  We can write a <code class="literal">do</code> block
+	using explicit structure instead of layout.</p><div class="informaltable"><table border="1"><colgroup><col><col></colgroup><tbody><tr><td><a name="Do.hs:semicolon"></a><pre id="Do.hs:semicolon" class="programlisting">-- file: ch14/Do.hs
+semicolon = do
+  {
+    act1;
+    val1 &lt;- act2;
+    let { val2 = expr1 };
+    actN;
+  }</pre></td><td><a name="Do.hs:semicolonTranslated"></a><pre id="Do.hs:semicolonTranslated" class="programlisting">-- file: ch14/Do.hs
+semicolonTranslated =
+    act1 &gt;&gt;
+    let f val1 = let val2 = expr1
+                 in actN
+        f _ = fail "..."
+    in act2 &gt;&gt;= f</pre></td></tr></tbody></table></div><p id="x_JZ"><a name="x_JZ"></a>Even though this use of explicit structure is rare, the
+	fact that it uses semicolons to separate expressions has given
+	rise to an apt slogan: monads are a kind of
+	“<span class="quote">programmable semicolon</span>”, because the behaviours
+	of <code class="function">(&gt;&gt;)</code> and <code class="function">(&gt;&gt;=)</code> are different in each monad.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="monads.do.avoid">Why go sugar-free?</h3></div></div></div><p id="x_KZ"><a name="x_KZ"></a>When we write <code class="function">(&gt;&gt;=)</code> explicitly in our code, it reminds us
+	that we're stitching functions together using
+	combinators, not simply sequencing actions.</p><p id="x_LZ"><a name="x_LZ"></a>As long as you feel like a novice with monads, we think
+	you should prefer to explicitly write <code class="function">(&gt;&gt;=)</code> over the
+	syntactic sugar of <code class="literal">do</code> notation.  The repeated reinforcement
+	of what's really happening seems, for many programmers, to
+	help to keep things clear. (It can be easy for an imperative
+	programmer to relax a little too much from exposure to the
+	<span class="type">IO</span> monad, and assume that a <code class="literal">do</code> block means
+	nothing more than a simple sequence of actions.)</p><p id="x_MZ"><a name="x_MZ"></a>Once you're feeling more familiar with monads, you can
+	choose whichever style seems more appropriate for writing a
+	particular function.  Indeed, when you read other people's
+	monadic code, you'll see that it's unusual, but by no means
+	rare, to mix <span class="emphasis"><em>both</em></span> <code class="literal">do</code> notation and
+	<code class="function">(&gt;&gt;=)</code> in a single function.</p><p id="x_iG1"><a name="x_iG1"></a>The <code class="function">(=&lt;&lt;)</code> function shows up frequently whether or not we
+	use <code class="literal">do</code> notiation.  It is a flipped version of <code class="function">(&gt;&gt;=)</code>.</p><a name="cartesian.ghci:rbind"></a><pre id="cartesian.ghci:rbind" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (&gt;&gt;=)</code></strong>
+(&gt;&gt;=) :: (Monad m) =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (=&lt;&lt;)</code></strong>
+(=&lt;&lt;) :: (Monad m) =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</pre><p id="x_jG1"><a name="x_jG1"></a>It comes in handy if we want to compose monadic functions
+	in the usual Haskell right-to-left style.</p><a name="CartesianProduct.hs:wordCount"></a><pre id="CartesianProduct.hs:wordCount" class="programlisting">-- file: ch14/CartesianProduct.hs
+wordCount = print . length . words =&lt;&lt; getContents</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="monads.state">The state monad</h2></div></div></div><p id="x_NZ"><a name="x_NZ"></a>We discovered earlier in this chapter that the
+      <span class="type">Parse</span> from <a class="xref" href="code-case-study-parsing-a-binary-data-format.html" title="Chapter 10. Code case study: parsing a binary data format">Chapter 10, <i>Code case study: parsing a binary data format</i></a> was a monad.  It has two logically
+      distinct aspects.  One is the idea of a parse failing, and
+      providing a message with the details: we represented this using
+      the <span class="type">Either</span> type.  The other involves carrying
+      around a piece of implicit state, in our case the partially
+      consumed <span class="type">ByteString</span>.</p><p id="x_OZ"><a name="x_OZ"></a>This need for a way to read and write state is
+      common enough in Haskell programs that the standard libraries
+      provide a monad named <span class="type">State</span> that is dedicated to
+      this purpose. This monad lives in the
+      <code class="code">Control.Monad.State</code> module.</p><p id="x_PZ"><a name="x_PZ"></a>Where our <span class="type">Parse</span> type carried around a
+      <span class="type">ByteString</span> as its piece of state, the
+      <span class="type">State</span> monad can carry any type of state.  We'll
+      refer to the state's unknown type as <code class="varname">s</code>.</p><p id="x_QZ"><a name="x_QZ"></a>What's an obvious and general thing we might want
+      to do with a state?  Given a state value, we inspect it, then
+      produce a result and a new state value.  Let's say the result
+      can be of any type <code class="varname">a</code>.  A type
+      signature that captures this idea is <span class="type">s -&gt; (a,
+	s)</span>: take a state <code class="varname">s</code>, do
+      something with it, and return a result <code class="varname">a</code> and possibly a new state <code class="varname">s</code>.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id643325">Almost a state monad</h3></div></div></div><p id="x_RZ"><a name="x_RZ"></a>Let's develop some simple code that's
+	<span class="emphasis"><em>almost</em></span> the <span class="type">State</span> monad, then
+	we'll take a look at the real thing.  We'll start with our
+	type definition, which has exactly the obvious type we
+	described above.</p><a name="SimpleState.hs:SimpleState"></a><pre id="SimpleState.hs:SimpleState" class="programlisting">-- file: ch14/SimpleState.hs
+type SimpleState s a = s -&gt; (a, s)</pre><p id="x_kG1"><a name="x_kG1"></a>Our monad is a function that transforms one state into
+	another, yielding a result when it does so.  Because of this,
+	the state monad is sometimes called the state transformer
+	monad.</p><p id="x_SZ"><a name="x_SZ"></a>Yes, this is a type synonym, not a new type, and
+	so we're cheating a little.  Bear with us for now; this
+	simplifies the description that follows.</p><p id="x_TZ"><a name="x_TZ"></a>Earlier in this chapter, we said that a monad
+	has a type constructor with a single type variable, and yet
+	here we have a type with two parameters.  The key here is to
+	understand that we can partially apply a
+	<span class="emphasis"><em>type</em></span> just as we can partially apply a
+	normal function.  This is easiest to follow with an
+	example.</p><a name="SimpleState.hs:StringState"></a><pre id="SimpleState.hs:StringState" class="programlisting">-- file: ch14/SimpleState.hs
+type StringState a = SimpleState String a</pre><p id="x_UZ"><a name="x_UZ"></a>Here, we've bound the type variable <code class="varname">s</code> to <span class="type">String</span>. The type
+	<span class="type">StringState</span> still has a type parameter
+	<code class="varname">a</code>, though.  It's now more
+	obvious that we have a suitable type constructor for a monad.
+	In other words, our monad's type constructor is
+	<span class="type">SimpleState s</span>, not <span class="type">SimpleState</span>
+	alone.</p><p id="x_VZ"><a name="x_VZ"></a>The next ingredient we need to make a monad is a
+	definition for the <code class="literal">return</code> function.</p><a name="SimpleState.hs:returnSt"></a><pre id="SimpleState.hs:returnSt" class="programlisting">-- file: ch14/SimpleState.hs
+returnSt :: a -&gt; SimpleState s a
+returnSt a = \s -&gt; (a, s)</pre><p id="x_WZ"><a name="x_WZ"></a>All this does is take the result and the current
+	state, and “<span class="quote">tuple them up</span>”.  You may by now be
+	used to the idea that a Haskell function with multiple
+	parameters is just a chain of single-parameter functions, but
+	just in case you're not, here's a more familiar way of writing
+	<code class="function">returnSt</code> that makes it more obvious how
+	simple this function is.</p><a name="SimpleState.hs:returnAlt"></a><pre id="SimpleState.hs:returnAlt" class="programlisting">-- file: ch14/SimpleState.hs
+returnAlt :: a -&gt; SimpleState s a
+returnAlt a s = (a, s)</pre><p id="x_XZ"><a name="x_XZ"></a>Our final piece of the monadic puzzle is a
+	definition for <code class="function">(&gt;&gt;=)</code>.  Here it is, using the actual variable
+	names from the standard library's definition of <code class="function">(&gt;&gt;=)</code> for
+	<span class="type">State</span>.</p><a name="SimpleState.hs:bindSt"></a><pre id="SimpleState.hs:bindSt" class="programlisting">-- file: ch14/SimpleState.hs
+bindSt :: (SimpleState s a) -&gt; (a -&gt; SimpleState s b) -&gt; SimpleState s b
+bindSt m k = \s -&gt; let (a, s') = m s
+                   in (k a) s'</pre><p id="x_YZ"><a name="x_YZ"></a>Those single-letter variable names aren't
+	exactly a boon to readability, so let's see if we can
+	substitute some more meaningful names.</p><a name="SimpleState.hs:bindAlt"></a><pre id="SimpleState.hs:bindAlt" class="programlisting">-- file: ch14/SimpleState.hs
+-- m == step
+-- k == makeStep
+-- s == oldState
+
+bindAlt step makeStep oldState =
+    let (result, newState) = step oldState
+    in  (makeStep result) newState</pre><p id="x_ZZ"><a name="x_ZZ"></a>To understand this definition, remember that
+	<code class="varname">step</code> is a function with the type <span class="type">s
+	  -&gt; (a, s)</span>.  When we evaluate this, we get a tuple,
+	and we have to use this to return a new function of type
+	<span class="type">s -&gt; (a, s)</span>.  This is perhaps easier to follow
+	if we get rid of the <span class="type">SimpleState</span> type synonyms
+	from <code class="function">bindAlt</code>'s type signature, and
+	examine the types of its parameters and result.</p><a name="SimpleState.hs:bindAlt.type"></a><pre id="SimpleState.hs:bindAlt.type" class="programlisting">-- file: ch14/SimpleState.hs
+bindAlt :: (s -&gt; (a, s))        -- step
+        -&gt; (a -&gt; s -&gt; (b, s))   -- makeStep
+        -&gt; (s -&gt; (b, s))        -- (makeStep result) newState</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id643585">Reading and modifying the state</h3></div></div></div><p id="x_aZ"><a name="x_aZ"></a>The definitions of <code class="function">(&gt;&gt;=)</code> and <code class="literal">return</code> for the
+	state monad simply act as plumbing: they move a piece of state
+	around, but they don't touch it in any way.  We need a few
+	other simple functions to actually do useful work with the
+	state.</p><a name="SimpleState.hs:getPut"></a><pre id="SimpleState.hs:getPut" class="programlisting">-- file: ch14/SimpleState.hs
+getSt :: SimpleState s s
+getSt = \s -&gt; (s, s)
+
+putSt :: s -&gt; SimpleState s ()
+putSt s = \_ -&gt; ((), s)</pre><p id="x_bZ"><a name="x_bZ"></a>The <code class="function">getSt</code> function simply
+	takes the current state and returns it as the result, while
+	<code class="function">putSt</code> ignores the current state and
+	replaces it with a new state.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id643643">Will the real state monad please stand up?</h3></div></div></div><p id="x_cZ"><a name="x_cZ"></a>The only simplifying trick we played in the
+	previous section was to use a type synonym instead of a type
+	definition for <span class="type">SimpleState</span>.  If we had introduced
+	a <code class="code">newtype</code> wrapper at the same time, the extra wrapping and
+	unwrapping would have made our code harder to follow.</p><p id="x_lG1"><a name="x_lG1"></a>In order to define a <code class="code">Monad</code> instance, we have
+	to provide a proper type constructor as well as definitions
+	for <code class="function">(&gt;&gt;=)</code> and <code class="literal">return</code>. This leads us to the
+	<span class="emphasis"><em>real</em></span> definition of
+	<span class="type">State</span>.</p><a name="State.hs:State"></a><pre id="State.hs:State" class="programlisting">-- file: ch14/State.hs
+newtype State s a = State {
+      runState :: s -&gt; (a, s)
+    }</pre><p id="x_dZ"><a name="x_dZ"></a>All we've done is wrap our <span class="type">s -&gt; (a,
+	  s)</span> type in a <code class="code">State</code> constructor.  By
+	using Haskell's record syntax to define the type, we're
+	automatically given a <code class="function">runState</code> function
+	that will unwrap a <span class="type">State</span> value from its
+	constructor.  The type of <code class="function">runState</code> is
+	<span class="type">State s a -&gt; s -&gt; (a, s)</span>.</p><p id="x_eZ"><a name="x_eZ"></a>The definition of <code class="literal">return</code> is almost the same as
+	for <span class="type">SimpleState</span>, except we wrap our function with
+	a <code class="code">State</code> constructor.</p><a name="State.hs:returnState"></a><pre id="State.hs:returnState" class="programlisting">-- file: ch14/State.hs
+returnState :: a -&gt; State s a
+returnState a = State $ \s -&gt; (a, s)</pre><p id="x_fZ"><a name="x_fZ"></a>The definition of <code class="function">(&gt;&gt;=)</code> is a little more
+	complicated, because it has to use
+	<code class="function">runState</code> to remove the <code class="code">State</code>
+	wrappers.</p><a name="State.hs:bindState"></a><pre id="State.hs:bindState" class="programlisting">-- file: ch14/State.hs
+bindState :: State s a -&gt; (a -&gt; State s b) -&gt; State s b
+bindState m k = State $ \s -&gt; let (a, s') = runState m s
+                              in runState (k a) s'</pre><p id="x_gZ"><a name="x_gZ"></a>This function differs from our earlier
+	<code class="function">bindSt</code> only in adding the wrapping and
+	unwrapping of a few values.  By separating the “<span class="quote">real
+	  work</span>” from the bookkeeping, we've hopefully made it
+	clearer what's really happening.</p><p id="x_hZ"><a name="x_hZ"></a>We modify the functions for reading and
+	modifying the state in the same way, by adding a little
+	wrapping.</p><a name="State.hs:getPut"></a><pre id="State.hs:getPut" class="programlisting">-- file: ch14/State.hs
+get :: State s s
+get = State $ \s -&gt; (s, s)
+
+put :: s -&gt; State s ()
+put s = State $ \_ -&gt; ((), s)</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="monads.state.random">Using the state monad: generating random values</h3></div></div></div><p id="x_iZ"><a name="x_iZ"></a>We've already used <span class="type">Parse</span>, our
+	precursor to the state monad, to parse binary data.  In that
+	case, we wired the type of the state we were manipulating
+	directly into the <span class="type">Parse</span> type.</p><p id="x_mG1"><a name="x_mG1"></a>The <span class="type">State</span> monad, by contrast, accepts any
+	type of state as a parameter.  We supply the type of the
+	state, to give e.g. <span class="type">State ByteString</span>.</p><p id="x_jZ"><a name="x_jZ"></a>The State monad will probably feel more familiar
+	to you than many other monads if you have a background in
+	imperative languages.  After all, imperative languages are all
+	about carrying around some implicit state, reading some parts,
+	and modifying others through assignment, and this is just what
+	the state monad is for.</p><p id="x_kZ"><a name="x_kZ"></a>So instead of unnecessarily cheerleading for the
+	idea of using the state monad, we'll begin by demonstrating
+	how to use it for something simple: pseudorandom value
+	generation.  In an imperative language, there's usually an
+	easily available source of uniformly distributed pseudorandom
+	numbers.  For example, in C, there's a standard
+	<code class="function">rand</code> function that generates a
+	pseudorandom number, using a global state that it
+	updates.</p><p id="x_lZ"><a name="x_lZ"></a>Haskell's standard random value generation module is
+	named <code class="code">System.Random</code>.  It allows the generation of
+	random values of any type, not just numbers.  The module
+	contains several handy functions that live in the
+	<span class="type">IO</span> monad.  For example, a rough equivalent of C's
+	<code class="function">rand</code> function would be the
+	following:</p><a name="Random.hs:rand"></a><pre id="Random.hs:rand" class="programlisting">-- file: ch14/Random.hs
+import System.Random
+
+rand :: IO Int
+rand = getStdRandom (randomR (0, maxBound))</pre><p id="x_mZ"><a name="x_mZ"></a>(The <code class="function">randomR</code> function takes
+	an inclusive range within which the generated random value
+	should lie.)</p><p id="x_nZ"><a name="x_nZ"></a>The <code class="code">System.Random</code> module provides a
+	typeclass, <code class="code">RandomGen</code>, that lets us define new
+	sources of random <span class="type">Int</span> values.  The type
+	<span class="type">StdGen</span> is the standard <code class="code">RandomGen</code>
+	instance.  It generates pseudorandom values.  If we had an
+	external source of truly random data, we could make it an
+	instance of <code class="code">RandomGen</code> and get truly random,
+	instead of merely pseudorandom, values.</p><p id="x_oZ"><a name="x_oZ"></a>Another typeclass, <code class="code">Random</code>,
+	indicates how to generate random values of a particular type.
+	The module defines <code class="code">Random</code> instances for all of
+	the usual simple types.</p><p id="x_pZ"><a name="x_pZ"></a>Incidentally, the definition of
+	<code class="function">rand</code> above reads and modifies a built-in
+	global random generator that inhabits the <span class="type">IO</span>
+	monad.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id644027">A first attempt at purity</h3></div></div></div><p id="x_qZ"><a name="x_qZ"></a>After all of our emphasis so far on avoiding the
+	<span class="type">IO</span> monad wherever possible, it would be a shame
+	if we were dragged back into it just to generate some random
+	values.  Indeed, <code class="code">System.Random</code> contains pure
+	random number generation functions.</p><p id="x_rZ"><a name="x_rZ"></a>The traditional downside of purity is that we
+	have to get or create a random number generator, then ship it
+	from the point we created it to the place where it's needed.
+	When we finally call it, it returns a <span class="emphasis"><em>new</em></span>
+	random number generator: we're in pure code, remember, so we
+	can't modify the state of the existing generator.</p><p id="x_sZ"><a name="x_sZ"></a>If we forget about immutability and reuse the
+	same generator within a function, we get back exactly the same
+	“<span class="quote">random</span>” number every time.</p><a name="Random.hs:twoBadRandoms"></a><pre id="Random.hs:twoBadRandoms" class="programlisting">-- file: ch14/Random.hs
+twoBadRandoms :: RandomGen g =&gt; g -&gt; (Int, Int)
+twoBadRandoms gen = (fst $ random gen, fst $ random gen)</pre><p id="x_tZ"><a name="x_tZ"></a>Needless to say, this has unpleasant
+	consequences.</p><a name="random.ghci:twoBadRandoms"></a><pre id="random.ghci:twoBadRandoms" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>twoBadRandoms `fmap` getStdGen</code></strong>
+Loading package old-locale-1.0.0.0 ... linking ... done.
+Loading package old-time-1.0.0.0 ... linking ... done.
+Loading package random-1.0.0.0 ... linking ... done.
+Loading package mtl-1.1.0.0 ... linking ... done.
+(945769311181683171,945769311181683171)
+</pre><p id="x_uZ"><a name="x_uZ"></a>The <code class="function">random</code> function uses
+	an implicit range instead of the user-supplied range used by
+	<code class="function">randomR</code>.  The
+	<code class="function">getStdGen</code> function retrieves the current
+	value of the global standard number generator from the
+	<span class="type">IO</span> monad.</p><p id="x_vZ"><a name="x_vZ"></a>Unfortunately, correctly passing around and
+	using successive versions of the generator does not make for
+	palatable reading.  Here's a simple example.</p><a name="Random.hs:twoGoodRandoms"></a><pre id="Random.hs:twoGoodRandoms" class="programlisting">-- file: ch14/Random.hs
+twoGoodRandoms :: RandomGen g =&gt; g -&gt; ((Int, Int), g)
+twoGoodRandoms gen = let (a, gen') = random gen
+                         (b, gen'') = random gen'
+                     in ((a, b), gen'')</pre><p id="x_wZ"><a name="x_wZ"></a>Now that we know about the state monad, though,
+	it looks like a fine candidate to hide the generator.  The
+	state monad lets us manage our mutable state tidily, while
+	guaranteeing that our code will be free of other unexpected
+	side effects, such as modifying files or making network
+	connections.  This makes it easier to reason about the
+	behavior of our code.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id644179">Random values in the state monad</h3></div></div></div><p id="x_xZ"><a name="x_xZ"></a>Here's a state monad that carries around a
+	<span class="type">StdGen</span> as its piece of state.</p><a name="Random.hs:RandomState"></a><pre id="Random.hs:RandomState" class="programlisting">-- file: ch14/Random.hs
+type RandomState a = State StdGen a</pre><p id="x_yZ"><a name="x_yZ"></a>The type synonym is of course not necessary, but
+	it's handy. It saves a little keyboarding, and if we wanted to
+	swap another random generator for <span class="type">StdGen</span>, it
+	would reduce the number of type signatures we'd need to
+	change.</p><p id="x_zZ"><a name="x_zZ"></a>Generating a random value is now a matter of
+	fetching the current generator, using it, then modifying the
+	state to replace it with the new generator.</p><a name="Random.hs:getRandom"></a><pre id="Random.hs:getRandom" class="programlisting">-- file: ch14/Random.hs
+getRandom :: Random a =&gt; RandomState a
+getRandom =
+  get &gt;&gt;= \gen -&gt;
+  let (val, gen') = random gen in
+  put gen' &gt;&gt;
+  return val</pre><p id="x_Aa"><a name="x_Aa"></a>We can now use some of the monadic machinery
+	that we saw earlier to write a much more concise function for
+	giving us a pair of random numbers.</p><a name="Random.hs:getTwoRandoms"></a><pre id="Random.hs:getTwoRandoms" class="programlisting">-- file: ch14/Random.hs
+getTwoRandoms :: Random a =&gt; RandomState (a, a)
+getTwoRandoms = liftM2 (,) getRandom getRandom</pre><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="id644258">Exercises</h4></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id644268"></a><a name="id644270"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_Ba"><a name="x_Ba"></a>Rewrite <code class="function">getRandom</code>
+		to use <code class="literal">do</code> notation.</p></td></tr></tbody></table></div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id644297">Running the state monad</h3></div></div></div><p id="x_Ca"><a name="x_Ca"></a>As we've already mentioned, each monad has its
+	own specialised evaluation functions.  In the case of the
+	state monad, we have several to choose from.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_Da"><a name="x_Da"></a><code class="function">runState</code> returns both
+	    the result and the final state.</p></li><li><p id="x_Ea"><a name="x_Ea"></a><code class="function">evalState</code> returns only
+	    the result, throwing away the final state.</p></li><li><p id="x_Fa"><a name="x_Fa"></a><code class="function">execState</code> throws the
+	    result away, returning only the final state.</p></li></ul></div><p id="x_Ga"><a name="x_Ga"></a>The <code class="function">evalState</code> and
+	<code class="function">execState</code> functions are simply
+	compositions of <code class="function">fst</code> and
+	<code class="function">snd</code> with <code class="function">runState</code>,
+	respectively. Thus, of the three,
+	<code class="function">runState</code> is the one most worth
+	remembering.</p><p id="x_Th"><a name="x_Th"></a>Here's a complete example of how to implement our
+	<code class="function">getTwoRandoms</code> function.</p><a name="Random.hs:runTwoRandoms"></a><pre id="Random.hs:runTwoRandoms" class="programlisting">-- file: ch14/Random.hs
+runTwoRandoms :: IO (Int, Int)
+runTwoRandoms = do
+  oldState &lt;- getStdGen
+  let (result, newState) = runState getTwoRandoms oldState
+  setStdGen newState
+  return result</pre><p id="x_Uh"><a name="x_Uh"></a>The call to <code class="function">runState</code> follows a
+	standard pattern: we pass it a function in the state monad and
+	an initial state.  It returns the result of the function and
+	the final state.</p><p id="x_Vh"><a name="x_Vh"></a>The code surrounding the call to
+	<code class="function">runState</code> merely obtains the current
+	global <span class="type">StdGen</span> value, then replaces it afterwards
+	so that subsequent calls to <code class="function">runTwoRandoms</code>
+	or other random generation functions will pick up the updated
+	state.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id644470">What about a bit more state?</h3></div></div></div><p id="x_Wh"><a name="x_Wh"></a>It's a little hard to imagine writing much interesting
+	code in which there's only a single state value to pass
+	around.  When we want to track multiple pieces of state at
+	once, the usual trick is to maintain them in a data type.
+	Here's an example: keeping track of the number of random
+	numbers we are handing out.</p><a name="Random.hs:CountedRandom"></a><pre id="Random.hs:CountedRandom" class="programlisting">-- file: ch14/Random.hs
+data CountedRandom = CountedRandom {
+      crGen :: StdGen
+    , crCount :: Int
+    }
+
+type CRState = State CountedRandom
+
+getCountedRandom :: Random a =&gt; CRState a
+getCountedRandom = do
+  st &lt;- get
+  let (val, gen') = random (crGen st)
+  put CountedRandom { crGen = gen', crCount = crCount st + 1 }
+  return val</pre><p id="x_Xh"><a name="x_Xh"></a>This example happens to consume both elements of the
+	state, and construct a completely new state, every time we
+	call into it.  More frequently, we're likely to read or modify
+	only part of a state.  This function gets the number of random
+	values generated so far.</p><a name="Random.hs:getCount"></a><pre id="Random.hs:getCount" class="programlisting">-- file: ch14/Random.hs
+getCount :: CRState Int
+getCount = crCount `liftM` get</pre><p id="x_Yh"><a name="x_Yh"></a>This example illustrates why we used record
+	syntax to define our <span class="type">CountedRandom</span> state.  It
+	gives us accessor functions that we can glue together with
+	<code class="function">get</code> to read specific pieces of the
+	state.</p><p id="x_Zh"><a name="x_Zh"></a>If we want to partially update a state, the code doesn't
+	come out quite so appealingly.</p><a name="Random.hs:putCount"></a><pre id="Random.hs:putCount" class="programlisting">-- file: ch14/Random.hs
+putCount :: Int -&gt; CRState ()
+putCount a = do
+  st &lt;- get
+  put st { crCount = a }</pre><p id="x_ah"><a name="x_ah"></a>Here, instead of a function, we're using record update
+	syntax.  The expression <code class="code">st { crCount = a }</code>
+	creates a new value that's an identical copy of
+	<code class="varname">st</code>, except in its <code class="code">crCount</code>
+	field, which is given the value <code class="varname">a</code>. Because
+	this is a syntactic hack, we don't get the same kind of
+	flexibility as with a function.  Record syntax may not exhibit
+	Haskell's usual elegance, but it at least gets the job
+	done.</p><p id="x_bh"><a name="x_bh"></a>There exists a function named <code class="function">modify</code>
+	that combines the <code class="function">get</code> and
+	<code class="function">put</code> steps. It takes as argument a state
+	transformation function, but it's hardly more satisfactory: we
+	still can't escape from the clumsiness of record update
+	syntax.</p><a name="Random.hs:putCountModify"></a><pre id="Random.hs:putCountModify" class="programlisting">-- file: ch14/Random.hs
+putCountModify :: Int -&gt; CRState ()
+putCountModify a = modify $ \st -&gt; st { crCount = a }</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id644617">Monads and functors</h2></div></div></div><p id="x_Ha"><a name="x_Ha"></a>Functors and monads are closely related.  The
+      terms are borrowed from a branch of mathematics called category
+      theory, but they did not make the transition completely
+      unscathed.</p><p id="x_ch"><a name="x_ch"></a>In category theory, a monad is built from a functor.  You
+      might expect that in Haskell, the <code class="code">Monad</code> typeclass
+      would thus be a subclass of <code class="code">Functor</code>, but it isn't
+      defined as such in the standard Prelude.  This is an unfortunate
+      oversight.</p><p id="x_dh"><a name="x_dh"></a>However, authors of Haskell libraries use a workaround: when
+      someone defines an instance of <code class="code">Monad</code> for a type,
+      they almost always write a <code class="code">Functor</code> instance for it,
+      too.  You can expect that you'll be
+      able to use the <code class="code">Functor</code> typeclass's
+      <code class="function">fmap</code> function with any monad.</p><p id="x_eh"><a name="x_eh"></a>If we compare the type signature of
+      <code class="function">fmap</code> with those of some of the standard
+      monad functions that we've already seen, we get a hint as to
+      what <code class="function">fmap</code> on a monad does.</p><a name="monadness.ghci:fmap"></a><pre id="monadness.ghci:fmap" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type fmap</code></strong>
+fmap :: (Functor f) =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Control.Monad</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type liftM</code></strong>
+liftM :: (Monad m) =&gt; (a1 -&gt; r) -&gt; m a1 -&gt; m r
+</pre><p id="x_fh"><a name="x_fh"></a>Sure enough, <code class="function">fmap</code> lifts a pure function
+      into the monad, just as <code class="function">liftM</code> does.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="monads.join">Another way of looking at monads</h3></div></div></div><p id="x_gh"><a name="x_gh"></a>Now that we know about the relationship between functors
+	and monads, If we look back at the list monad, we can
+	see something interesting.  Specifically, take a look at the
+	definition of <code class="function">(&gt;&gt;=)</code> for lists.</p><pre id="id644778" class="programlisting">-- file: ch14/ListMonad.hs
+instance Monad [] where
+    return x = [x]
+    xs &gt;&gt;= f = concat (map f xs)</pre><p id="x_hh"><a name="x_hh"></a>Recall that <code class="varname">f</code> has type <span class="type">a -&gt;
+	  [a]</span>.  When we call <code class="code">map f xs</code>, we get back
+	a value of type <span class="type">[[a]]</span>, which we have to
+	“<span class="quote">flatten</span>” using <code class="code">concat</code>.</p><p id="x_ih"><a name="x_ih"></a>Consider what we could do if <code class="code">Monad</code> was a
+	subclass of <code class="function">Functor</code>.  Since
+	<code class="function">fmap</code> for lists is defined to be
+	<code class="function">map</code>, we could replace
+	<code class="function">map</code> with <code class="function">fmap</code> in the
+	definition of <code class="function">(&gt;&gt;=)</code>.  This is not very interesting by itself,
+	but suppose we could go further.</p><p id="x_jh"><a name="x_jh"></a>The <code class="function">concat</code> function is of type
+	<span class="type">[[a]] -&gt; [a]</span>: as we mentioned, it flattens the
+	nesting of lists.  We could generalise this type signature
+	from lists to monads, giving us the “<span class="quote">remove a level of
+	  nesting</span>” type <span class="type">m (m a) -&gt; m a</span>.  The
+	function that has this type is conventionally named
+	<code class="function">join</code>.</p><p id="x_kh"><a name="x_kh"></a>If we had definitions of <code class="function">join</code> and
+	<code class="function">fmap</code>, we wouldn't need to write a
+	definition of <code class="function">(&gt;&gt;=)</code> for every monad, because it would be
+	completely generic.  Here's what an alternative definition of
+	the <code class="code">Monad</code> typeclass might look like, along with a
+	definition of <code class="function">(&gt;&gt;=)</code>.</p><a name="AltMonad.hs:AltMonad"></a><pre id="AltMonad.hs:AltMonad" class="programlisting">-- file: ch14/AltMonad.hs
+import Prelude hiding ((&gt;&gt;=), return)
+
+class Functor m =&gt; AltMonad m where
+    join :: m (m a) -&gt; m a
+    return :: a -&gt; m a
+
+(&gt;&gt;=) :: AltMonad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+xs &gt;&gt;= f = join (fmap f xs)</pre><p id="x_lh"><a name="x_lh"></a>Neither definition of a monad is “<span class="quote">better</span>”,
+	since if we have <code class="function">join</code> we can write
+	<code class="function">(&gt;&gt;=)</code>, and vice versa, but the different perspectives can be
+	refreshing.</p><p id="x_mh"><a name="x_mh"></a>Removing a layer of monadic wrapping can, in fact, be
+	useful in realistic circumstances.  We can find a generic
+	definition of <code class="function">join</code> in the
+	<code class="code">Control.Monad</code> module.</p><a name="MonadJoin.hs:join"></a><pre id="MonadJoin.hs:join" class="programlisting">-- file: ch14/MonadJoin.hs
+join :: Monad m =&gt; m (m a) -&gt; m a
+join x = x &gt;&gt;= id</pre><p id="x_nh"><a name="x_nh"></a>Here are some examples of what it does.</p><a name="monadjoin.ghci:examples"></a><pre id="monadjoin.ghci:examples" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>join (Just (Just 1))</code></strong>
+Just 1
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>join Nothing</code></strong>
+Nothing
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>join [[1],[2,3]]</code></strong>
+[1,2,3]
+</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id645043">The monad laws, and good coding style</h2></div></div></div><p id="x_oh"><a name="x_oh"></a>In <a class="xref" href="code-case-study-parsing-a-binary-data-format.html#binary.functor.laws" title="Thinking more about functors">the section called “Thinking more about functors”</a>, we introduced
+      two rules for how functors should always behave.</p><a name="MonadLaws.hs:functor"></a><pre id="MonadLaws.hs:functor" class="programlisting">-- file: ch14/MonadLaws.hs
+fmap id        ==   id 
+fmap (f . g)   ==   fmap f . fmap g</pre><p id="x_ph"><a name="x_ph"></a>There are also rules for how monads ought
+      to behave.  The three laws below are referred to as the monad
+      laws.  A Haskell implementation doesn't enforce these laws: it's
+      up to the author of a <code class="code">Monad</code> instance to follow
+      them.</p><p id="x_qh"><a name="x_qh"></a>The monad laws are simply formal ways of saying “<span class="quote">a
+	monad shouldn't surprise me</span>”.  In principle, we could
+      probably get away with skipping over them entirely.  It would be
+      a shame if we did, however, because the laws contain gems of
+      wisdom that we might otherwise overlook.</p><div class="tip"><table border="0" summary="Tip: Reading the laws"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Reading the laws</th></tr><tr><td align="left" valign="top"><p id="x_rh"><a name="x_rh"></a>You can read each law below as “<span class="quote">the expression on
+	  the left of the <code class="code">==</code> is equivalent to that on the
+	  right.</span>”</p></td></tr></table></div><p id="x_sh"><a name="x_sh"></a>The first law states that <code class="literal">return</code> is a <span class="emphasis"><em>left
+	identity</em></span> for <code class="function">(&gt;&gt;=)</code>.</p><a name="MonadLaws.hs:leftIdentity"></a><pre id="MonadLaws.hs:leftIdentity" class="programlisting">-- file: ch14/MonadLaws.hs
+return x &gt;&gt;= f            ===   f x</pre><p id="x_th"><a name="x_th"></a>Another way to phrase this is that there's no reason to use
+      <code class="literal">return</code> to wrap up a pure value if all you're going to do is
+      unwrap it again with <code class="function">(&gt;&gt;=)</code>.  It's actually a common style error
+      among programmers new to monads to wrap a value with <code class="literal">return</code>,
+      then unwrap it with <code class="function">(&gt;&gt;=)</code> a few lines later in the same
+      function.  Here's the same law written with <code class="literal">do</code>
+      notation.</p><a name="MonadLaws.hs:leftIdentityDo"></a><pre id="MonadLaws.hs:leftIdentityDo" class="programlisting">-- file: ch14/MonadLaws.hs
+do y &lt;- return x
+   f y                    ===   f x</pre><p id="x_uh"><a name="x_uh"></a>This law has practical consequences for our coding style: we
+      don't want to write unnecessary code, and the law lets us assume
+      that the terse code will be identical in its effect to the more
+      verbose version.</p><p id="x_vh"><a name="x_vh"></a>The second monad law states that <code class="literal">return</code> is a
+      <span class="emphasis"><em>right identity</em></span> for <code class="function">(&gt;&gt;=)</code>.</p><a name="MonadLaws.hs:rightIdentity"></a><pre id="MonadLaws.hs:rightIdentity" class="programlisting">-- file: ch14/MonadLaws.hs
+m &gt;&gt;= return              ===   m</pre><p id="x_wh"><a name="x_wh"></a>This law also has style consequences in real programs,
+      particularly if you're coming from an imperative language:
+      there's no need to use <code class="literal">return</code> if the last action in a block
+      would otherwise be returning the correct result.  Let's look at
+      this law in <code class="literal">do</code> notation.</p><a name="MonadLaws.hs:rightIdentityDo"></a><pre id="MonadLaws.hs:rightIdentityDo" class="programlisting">-- file: ch14/MonadLaws.hs
+do y &lt;- m
+   return y               ===   m</pre><p id="x_xh"><a name="x_xh"></a>Once again, if we assume that a monad obeys this law, we can
+      write the shorter code in the knowledge that it will have the
+      same effect as the longer code.</p><p id="x_yh"><a name="x_yh"></a>The final law is concerned with associativity.</p><a name="MonadLaws.hs:associativity"></a><pre id="MonadLaws.hs:associativity" class="programlisting">-- file: ch14/MonadLaws.hs
+m &gt;&gt;= (\x -&gt; f x &gt;&gt;= g)   ===   (m &gt;&gt;= f) &gt;&gt;= g</pre><p id="x_zh"><a name="x_zh"></a>This law can be a little more difficult to follow, so let's
+      look at the contents of the parentheses on each side of the
+      equation.  We can rewrite the expression on the left as
+      follows.</p><a name="MonadLaws.hs:associativityLeft"></a><pre id="MonadLaws.hs:associativityLeft" class="programlisting">-- file: ch14/MonadLaws.hs
+m &gt;&gt;= s
+  where s x = f x &gt;&gt;= g</pre><p id="x_Ai"><a name="x_Ai"></a>On the right, we can also rearrange things.</p><a name="MonadLaws.hs:associativityRight"></a><pre id="MonadLaws.hs:associativityRight" class="programlisting">-- file: ch14/MonadLaws.hs
+t &gt;&gt;= g
+  where t = m &gt;&gt;= f</pre><p id="x_Bi"><a name="x_Bi"></a>We're now claiming that the following two expressions are
+      equivalent.</p><a name="MonadLaws.hs:associativityRewrite"></a><pre id="MonadLaws.hs:associativityRewrite" class="programlisting">-- file: ch14/MonadLaws.hs
+m &gt;&gt;= s                   ===   t &gt;&gt;= g</pre><p id="x_Ci"><a name="x_Ci"></a>What this means is if we want to break up an action into
+      smaller pieces, it doesn't matter which sub-actions we hoist out
+      to make new actions with, provided we preserve their ordering.
+      If we have three actions chained together, we can substitute the
+      first two and leave the third in place, or we can replace the
+      second two and leave the first in place.</p><p id="x_Di"><a name="x_Di"></a>Even this more complicated law has a practical
+      consequence. In the terminology of software refactoring, the
+      “<span class="quote">extract method</span>” technique is a fancy term for
+      snipping out a piece of inline code, turning it into a function,
+      and calling the function from the site of the snipped code. This
+      law essentially states that this technique can be applied to
+      monadic Haskell code.</p><p id="x_Ei"><a name="x_Ei"></a>We've now seen how each of the monad laws offers us an
+      insight into writing better monadic code.  The first two laws
+      show us how to avoid unnecessary use of <code class="literal">return</code>.  The third
+      suggests that we can safely refactor a complicated action into
+      several simpler ones. We can now safely let the details fade, in
+      the knowledge that our “<span class="quote">do what I mean</span>” intuitions
+      won't be violated when we use properly written monads.</p><p id="x_nG1"><a name="x_nG1"></a>Incidentally, a Haskell compiler cannot guarantee that a
+      monad actually follows the monad laws.  It is the responsibility
+      of a monad's author to satisfy—or, preferably, prove
+      to—themselves that their code follows the laws.</p></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="data-structures.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="programming-with-monads.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 13. Data Structures </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 15. Programming with monads</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

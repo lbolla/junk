@@ -1,0 +1,965 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 9. I/O case study: a library for searching the filesystem</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="efficient-file-processing-regular-expressions-and-file-name-matching.html" title="Chapter 8. Efficient file processing, regular expressions, and file name matching"><link rel="next" href="code-case-study-parsing-a-binary-data-format.html" title="Chapter 10. Code case study: parsing a binary data format"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 9. I/O case study: a library for searching the
+    filesystem</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="efficient-file-processing-regular-expressions-and-file-name-matching.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="code-case-study-parsing-a-binary-data-format.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="find"><div class="titlepage"><div><div><h2 class="title">Chapter 9. I/O case study: a library for searching the
+    filesystem</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="io-case-study-a-library-for-searching-the-filesystem.html#find.getRecursiveContents">The find command</a></span></dt><dt><span class="sect1"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id620419">Starting simple: recursively listing a directory</a></span></dt><dd><dl><dt><span class="sect2"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id620646">Revisiting anonymous and named functions</a></span></dt><dt><span class="sect2"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id620698">Why provide both mapM and forM?</a></span></dt></dl></dd><dt><span class="sect1"><a href="io-case-study-a-library-for-searching-the-filesystem.html#find.simpleFind">A naive finding function</a></span></dt><dt><span class="sect1"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id621089">Predicates: from poverty to riches, while remaining
+      pure</a></span></dt><dt><span class="sect1"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id621667">Sizing a file safely</a></span></dt><dd><dl><dt><span class="sect2"><a href="io-case-study-a-library-for-searching-the-filesystem.html#find.acquire.use.release">The acquire-use-release cycle</a></span></dt><dd><dl><dt><span class="sect3"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id622126">Exercises</a></span></dt></dl></dd></dl></dd><dt><span class="sect1"><a href="io-case-study-a-library-for-searching-the-filesystem.html#find.predicate">A domain specific language for predicates</a></span></dt><dd><dl><dt><span class="sect2"><a href="io-case-study-a-library-for-searching-the-filesystem.html#find.predicate.lift">Avoiding boilerplate with lifting</a></span></dt><dt><span class="sect2"><a href="io-case-study-a-library-for-searching-the-filesystem.html#find.predicate.combinator">Gluing predicates together</a></span></dt><dt><span class="sect2"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id622920">Defining and using new operators</a></span></dt></dl></dd><dt><span class="sect1"><a href="io-case-study-a-library-for-searching-the-filesystem.html#find.traverse">Controlling traversal</a></span></dt><dd><dl><dt><span class="sect2"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id623372">Exercises</a></span></dt></dl></dd><dt><span class="sect1"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id623486">Density, readability, and the learning process</a></span></dt><dt><span class="sect1"><a href="io-case-study-a-library-for-searching-the-filesystem.html#find.fold">Another way of looking at traversal</a></span></dt><dd><dl><dt><span class="sect2"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id624090">Exercises</a></span></dt></dl></dd><dt><span class="sect1"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id624164">Useful coding guidelines</a></span></dt><dd><dl><dt><span class="sect2"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id624278">Common layout styles</a></span></dt></dl></dd><dt><span class="sect1"><a href="io-case-study-a-library-for-searching-the-filesystem.html#id624455">Exercises</a></span></dt></dl></div><p id="x_qN"><a name="x_qN"></a>The problem of “<span class="quote">I know I have this file, but I don't
+      know where it is</span>” has been around for as long as
+    computers have had hierarchical filesystems.  The fifth edition of
+    Unix introduced the <span class="command"><strong>find</strong></span> command in 1974; it
+    remains indispensable today.  The state of the art has come a long
+    way: modern operating systems ship with advanced document indexing
+    and search capabilities.</p><p id="x_rN"><a name="x_rN"></a>There's still a valuable place for
+    <span class="command"><strong>find</strong></span>-like capability in the programmer's
+    toolbox.  In this chapter, we'll develop a library that gives us
+    many of <span class="command"><strong>find</strong></span>'s capabilities, without leaving
+    Haskell.  We'll explore several different approaches to writing
+    this library, each with different strengths.</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="find.getRecursiveContents">The find command</h2></div></div></div><p id="x_sN"><a name="x_sN"></a>If you don't use a Unix-like operating system, or you're not
+      a heavy shell user, it's quite possible you may not have heard of
+      <span class="command"><strong>find</strong></span>.  Given a list of directories, it
+      searches each one recursively and prints the name of every entry
+      that matches an expression.</p><p id="x_tN"><a name="x_tN"></a>Individual expressions can take such forms as “<span class="quote">name
+	matches this glob pattern</span>”, “<span class="quote">entry is a plain
+	file</span>”, “<span class="quote">last modified before this date</span>”,
+      and many more.  They can be stitched together into more complex
+      expressions using “<span class="quote">and</span>” and “<span class="quote">or</span>”
+      operators.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id620419">Starting simple: recursively listing a directory</h2></div></div></div><p id="x_uN"><a name="x_uN"></a>Before we plunge into designing our library, let's solve a
+      few smaller problems.  Our first problem is to recursively list the
+      contents of a directory and its subdirectories.</p><a name="RecursiveContents.hs:RecursiveContents"></a><pre id="RecursiveContents.hs:RecursiveContents" class="programlisting">-- file: ch09/RecursiveContents.hs
+module RecursiveContents (getRecursiveContents) where
+
+import Control.Monad (forM)
+import System.Directory (doesDirectoryExist, getDirectoryContents)
+import System.FilePath ((&lt;/&gt;))
+
+getRecursiveContents :: FilePath -&gt; IO [FilePath]
+
+getRecursiveContents topdir = do
+  names &lt;- getDirectoryContents topdir
+  let properNames = filter (`notElem` [".", ".."]) names
+  paths &lt;- forM properNames $ \name -&gt; do
+    let path = topdir &lt;/&gt; name
+    isDirectory &lt;- doesDirectoryExist path
+    if isDirectory
+      then getRecursiveContents path
+      else return [path]
+  return (concat paths)</pre><p id="x_vN"><a name="x_vN"></a>The <code class="function">filter</code> expression ensures that a
+      listing for a single directory won't contain the special
+      directory names <code class="literal">.</code> or <code class="literal">..</code>,
+      which refer to the current and parent directory, respectively.
+      If we forgot to filter these out, we'd recurse
+      endlessly.</p><p id="x_wN"><a name="x_wN"></a>We encountered <code class="function">forM</code> in the
+      previous chapter; it is <code class="function">mapM</code> with its
+      arguments flipped.</p><a name="recursivecontents.ghci:forM"></a><pre id="recursivecontents.ghci:forM" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m +Control.Monad</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type mapM</code></strong>
+mapM :: (Monad m) =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type forM</code></strong>
+forM :: (Monad m) =&gt; [a] -&gt; (a -&gt; m b) -&gt; m [b]
+</pre><p id="x_xN"><a name="x_xN"></a>The body of the loop checks to see whether the current entry
+      is a directory.  If it is, it recursively calls
+      <code class="function">getRecursiveContents</code> to list that
+      directory. Otherwise, it returns a single-element list that is
+      the name of the current entry.  (Don't forget that the
+      <code class="literal">return</code> function has a unique meaning in Haskell: it
+      wraps a value with the monad's type constructor.)</p><p id="x_yN"><a name="x_yN"></a>Another thing worth pointing out is the use of the
+      variable <code class="varname">isDirectory</code>.  In an imperative
+      language such as Python, we'd normally write <code class="code">if
+	os.path.isdir(path)</code>.  However, the
+      <code class="function">doesDirectoryExist</code> function is an
+      <span class="emphasis"><em>action</em></span>; its return type is <span class="type">IO
+	Bool</span>, not <span class="type">Bool</span>.  Since an <code class="literal">if</code> expression
+      requires an expression of type <span class="type">Bool</span>, we have to use
+      <code class="code">&lt;-</code> to get the <span class="type">Bool</span> result of the
+      action out of its <span class="type">IO</span> wrapper, so that we can use
+      the plain, unwrapped <span class="type">Bool</span> in the <code class="literal">if</code>.</p><p id="x_zN"><a name="x_zN"></a>Each iteration of the loop body yields a list of
+      names, so the result of <code class="function">forM</code> here is
+      <span class="type">IO [[FilePath]]</span>.  We use <code class="function">concat</code> to
+      flatten it into a single list.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id620646">Revisiting anonymous and named functions</h3></div></div></div><p id="x_AO"><a name="x_AO"></a>In <a class="xref" href="functional-programming.html#fp.anonymous" title="Anonymous (lambda) functions">the section called “Anonymous (lambda) functions”</a>, we listed some
+	reasons not to use anonymous functions, and yet here we are,
+	using one as the body of a loop. This is one of the most
+	common uses of anonymous functions in Haskell.</p><p id="x_BO"><a name="x_BO"></a>We've already seen from their types that
+	<code class="function">forM</code> and <code class="function">mapM</code> take
+	functions as arguments. Most loop bodies are blocks of code
+	that only appear once in a program. Since we're most likely to
+	use a loop body in only one place, why give it a name?</p><p id="x_CO"><a name="x_CO"></a>Of course, it sometimes happens that we need to
+	deploy exactly the same code in several different loops.
+	Rather than cutting and pasting the same anonymous function,
+	it makes sense in such cases to give a name to an existing
+	anonymous function.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id620698">Why provide both mapM and forM?</h3></div></div></div><p id="x_DO"><a name="x_DO"></a>It might seem a bit odd that there exist two functions
+	that are identical but for the order in which they accept
+	their arguments.  However, <code class="function">mapM</code> and
+	<code class="function">forM</code> are convenient in different
+	circumstances.</p><p id="x_EO"><a name="x_EO"></a>Consider our example above, using an anonymous function as
+	a loop body.  If we were to use <code class="function">mapM</code>
+	instead of <code class="function">forM</code>, we'd have to place the
+	variable <code class="varname">properNames</code> after the body of the
+	function.  In order to get the code to parse correctly, we'd
+	have to wrap the entire anonymous function in parentheses, or
+	replace it with a named function that would otherwise be
+	unnecessary.  Try it yourself: copy the code above, replacing
+	<code class="function">forM</code> with <code class="function">mapM</code>, and
+	see what this does to the readability of the code.</p><p id="x_FO"><a name="x_FO"></a>By contrast, if the body of the loop was already a named
+	function, and the list over which we were looping was computed
+	by a complicated expression, we'd have a good case for using
+	<code class="function">mapM</code> instead.</p><p id="x_GO"><a name="x_GO"></a>The stylistic rule of thumb to follow here is to use
+	whichever of <code class="function">mapM</code> or
+	<code class="function">forM</code> lets you write the tidiest code.  If
+	the loop body and the expression computing the data over which
+	you're looping are both short, it doesn't matter which you
+	use.  If the loop is short, but the data is long, use
+	<code class="function">mapM</code>.  If the loop is long, but the data
+	short, use <code class="function">forM</code>.  And if both are long,
+	use a <code class="literal">let</code> or <code class="literal">where</code> clause to make one of them short.  With
+	just a little practice, it will become obvious which of these
+	approaches is best in every instance.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="find.simpleFind">A naive finding function</h2></div></div></div><p id="x_HO"><a name="x_HO"></a>We can use our <code class="function">getRecursiveContents</code>
+      function as the basis for a simple-minded file finder.</p><a name="SimpleFinder.hs:simpleFind"></a><pre id="SimpleFinder.hs:simpleFind" class="programlisting">-- file: ch09/SimpleFinder.hs
+import RecursiveContents (getRecursiveContents)
+
+simpleFind :: (FilePath -&gt; Bool) -&gt; FilePath -&gt; IO [FilePath]
+
+simpleFind p path = do
+  names &lt;- getRecursiveContents path
+  return (filter p names)</pre><p id="x_IO"><a name="x_IO"></a>This function takes a predicate that we use to filter the
+      names returned by <code class="function">getRecursiveContents</code>.
+      Each name passed to the predicate is a complete path, so how can
+      we perform a common operation like “<span class="quote">find all files ending
+	in the extension <code class="code">.c</code></span>”?</p><p id="x_JO"><a name="x_JO"></a>The <code class="code">System.FilePath</code> module contains numerous
+      invaluable functions that help us to manipulate file names. In
+      this case, we want <code class="function">takeExtension</code>.</p><a name="simplefinder.ghci:takeExtension"></a><pre id="simplefinder.ghci:takeExtension" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m +System.FilePath</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type takeExtension</code></strong>
+takeExtension :: FilePath -&gt; String
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>takeExtension "foo/bar.c"</code></strong>
+Loading package filepath-1.1.0.0 ... linking ... done.
+".c"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>takeExtension "quux"</code></strong>
+""
+</pre><p id="x_KO"><a name="x_KO"></a>This gives us a simple matter of writing a function that
+      takes a path, extracts its extension, and compares it with
+      <code class="code">.c</code>.</p><a name="simplefinder.ghci:find.c"></a><pre id="simplefinder.ghci:find.c" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load SimpleFinder</code></strong>
+[1 of 2] Compiling RecursiveContents ( RecursiveContents.hs, interpreted )
+[2 of 2] Compiling Main             ( SimpleFinder.hs, interpreted )
+Ok, modules loaded: RecursiveContents, Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type simpleFind (\p -&gt; takeExtension p == ".c")</code></strong>
+simpleFind (\p -&gt; takeExtension p == ".c") :: FilePath -&gt; IO [FilePath]
+</pre><p id="x_LO"><a name="x_LO"></a>While <code class="function">simpleFind</code> works, it has a few
+      glaring problems.  The first is that the predicate is not very
+      expressive.  It can only look at the name of a directory entry;
+      it cannot, for example, find out whether it's a file or a directory.
+      This means that our attempt to use
+      <code class="function">simpleFind</code> will list directories ending in
+      <code class="code">.c</code> as well as files with the same extension.</p><p id="x_MO"><a name="x_MO"></a>The second problem is that <code class="function">simpleFind</code>
+      gives us no control over how it traverses the filesystem.  To
+      see why this is significant, consider the problem of searching
+      for a source file in a tree managed by the Subversion revision
+      control system.  Subversion maintains a private
+      <code class="filename">.svn</code> directory in every directory that it
+      manages; each one contains many subdirectories and files that
+      are of no interest to us.  While we can easily enough filter out
+      any path containing <code class="filename">.svn</code>, it's more
+      efficient to simply avoid traversing these directories in the
+      first place.  For example, one of us has a Subversion source
+      tree containing 45,000 files, 30,000 of which are stored in
+      1,200 different <code class="filename">.svn</code> directories.  It's
+      cheaper to avoid traversing those 1,200 directories than to
+      filter out the 30,000 files they contain.</p><p id="x_NO"><a name="x_NO"></a>Finally, <code class="function">simpleFind</code> is
+      strict, because it consists of a series of actions executed in
+      the <span class="type">IO</span> monad.  If we have a million files to traverse, we
+      encounter a long delay, then receive one huge result containing
+      a million names.  This is bad for both resource usage and
+      responsiveness.  We might prefer a lazy stream of results
+      delivered as they arrive.</p><p id="x_OO"><a name="x_OO"></a>In the sections that follow, we'll overcome each one of
+      these problems.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id621089">Predicates: from poverty to riches, while remaining
+      pure</h2></div></div></div><p id="x_PO"><a name="x_PO"></a>Our predicates can only look at file names.  This excludes a
+      wide variety of interesting behaviours: for instance, what if
+      we'd like to list files of greater than a given size?</p><p id="x_QO"><a name="x_QO"></a>An easy reaction to this is to reach for <span class="type">IO</span>:
+      instead of our predicate being of type <span class="type">FilePath -&gt;
+	Bool</span>, why don't we change it to <span class="type">FilePath -&gt; IO
+	Bool</span>?  This would let us perform arbitrary I/O as part
+      of our predicate.  As appealing as this might seem, it's also
+      potentially a problem: such a predicate could have arbitrary
+      side effects, since a function with return type <span class="type">IO
+	a</span> can have whatever side effects it pleases.</p><p id="x_RO"><a name="x_RO"></a>Let's enlist the type system in our quest to write more
+      predictable, less buggy code: we'll keep predicates pure by
+      avoiding the taint of “<span class="quote">IO</span>”.  This will ensure that
+      they can't have any nasty side effects.   We'll feed them more
+      information, too, so that they can gain the expressiveness we
+      want without also becoming potentially dangerous.</p><p id="x_SO"><a name="x_SO"></a>Haskell's portable <code class="code">System.Directory</code> module
+      provides a useful, albeit limited, set of file metadata.</p><a name="simplefinder.ghci:System.Directory"></a><pre id="simplefinder.ghci:System.Directory" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m +System.Directory</code></strong>
+</pre><div class="itemizedlist"><ul type="disc"><li><p id="x_TO"><a name="x_TO"></a>We can use <code class="function">doesFileExist</code> and
+	  <code class="function">doesDirectoryExist</code> to determine whether
+	  a directory entry is a file or a directory.  There are not
+	  yet portable ways to query for other file types that have
+	  become widely available in recent years, such as named
+	  pipes, hard links and symbolic links.</p><a name="simplefinder.ghci:doesExist"></a><pre id="simplefinder.ghci:doesExist" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type doesFileExist</code></strong>
+doesFileExist :: FilePath -&gt; IO Bool
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>doesFileExist "."</code></strong>
+Loading package old-locale-1.0.0.0 ... linking ... done.
+Loading package old-time-1.0.0.0 ... linking ... done.
+Loading package directory-1.0.0.0 ... linking ... done.
+False
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type doesDirectoryExist</code></strong>
+doesDirectoryExist :: FilePath -&gt; IO Bool
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>doesDirectoryExist "."</code></strong>
+True
+</pre></li><li><p id="x_UO"><a name="x_UO"></a>The <code class="function">getPermissions</code> function lets us
+	  find out whether certain operations on a file or directory
+	  are allowed.</p><a name="simplefinder.ghci:getPermissions"></a><pre id="simplefinder.ghci:getPermissions" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type getPermissions</code></strong>
+getPermissions :: FilePath -&gt; IO Permissions
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:info Permissions</code></strong>
+data Permissions
+  = Permissions {readable :: Bool,
+                 writable :: Bool,
+                 executable :: Bool,
+                 searchable :: Bool}
+  	-- Defined in System.Directory
+instance Eq Permissions -- Defined in System.Directory
+instance Ord Permissions -- Defined in System.Directory
+instance Read Permissions -- Defined in System.Directory
+instance Show Permissions -- Defined in System.Directory
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>getPermissions "."</code></strong>
+Permissions {readable = True, writable = True, executable = False, searchable = True}
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type searchable</code></strong>
+searchable :: Permissions -&gt; Bool
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>searchable it</code></strong>
+True
+</pre><p id="x_VO"><a name="x_VO"></a>(If you cannot recall the special <span class="command"><strong>ghci</strong></span>
+	    variable <code class="varname">it</code>, take a look back at <a class="xref" href="getting-started.html#starting.types" title="First steps with types">the section called “First steps with types”</a>.)  A directory will be
+	    <code class="function">searchable</code> if we have permission to
+	    list its contents; files are never
+	    <code class="function">searchable</code>.</p></li><li><p id="x_WO"><a name="x_WO"></a>Finally, <code class="function">getModificationTime</code> tells
+	  us when an entry was last modified.</p><a name="simplefinder.ghci:getModificationTime"></a><pre id="simplefinder.ghci:getModificationTime" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type getModificationTime</code></strong>
+getModificationTime :: FilePath -&gt; IO System.Time.ClockTime
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>getModificationTime "."</code></strong>
+Mon Aug 18 12:08:24 CDT 2008
+</pre></li></ul></div><p id="x_XO"><a name="x_XO"></a>If we stick with portable, standard Haskell code,
+      these functions are all we have at our disposal.  (We can also
+      find a file's size using a small hack; see below.)  They're also
+      quite enough to let us illustrate the principles we're
+      interested in, without letting us get carried away with an
+      example that's too expansive.  If you need to write more
+      demanding code, the <code class="code">System.Posix</code> and
+      <code class="code">System.Win32</code> module families provide much more
+      detailed file metadata for the two major modern computing
+      platforms.  There also exists a <code class="code">unix-compat</code> package
+      on Hackage, which provides a Unix-like API on Windows.</p><p id="x_YO"><a name="x_YO"></a>How many pieces of data does our new, richer predicate need
+      to see?  Since we can find out whether an entry is a file or a
+      directory by looking at its <span class="type">Permissions</span>, we don't
+      need to pass in the results of
+      <code class="function">doesFileExist</code> or
+      <code class="function">doesDirectoryExist</code>.  We thus have four
+      pieces of data that a richer predicate needs to look at.</p><a name="BetterPredicate.hs:Predicate"></a><pre id="BetterPredicate.hs:Predicate" class="programlisting">-- file: ch09/BetterPredicate.hs
+import Control.Monad (filterM)
+import System.Directory (Permissions(..), getModificationTime, getPermissions)
+import System.Time (ClockTime(..))
+import System.FilePath (takeExtension)
+import Control.Exception (bracket, handle)
+import System.IO (IOMode(..), hClose, hFileSize, openFile)
+
+-- the function we wrote earlier
+import RecursiveContents (getRecursiveContents)
+
+type Predicate =  FilePath      -- path to directory entry
+               -&gt; Permissions   -- permissions
+               -&gt; Maybe Integer -- file size (Nothing if not file)
+               -&gt; ClockTime     -- last modified
+               -&gt; Bool</pre><p id="x_zE1"><a name="x_zE1"></a>Our <span class="type">Predicate</span> type is just a synonym for a
+      function of four arguments.  It will save us a little keyboard
+      work and screen space.</p><p id="x_ZO"><a name="x_ZO"></a>Notice that the return value of this predicate is
+      <span class="type">Bool</span>, not <span class="type">IO Bool</span>: the predicate is
+      pure, and cannot perform I/O. With this type in hand, our more
+      expressive finder function is still quite trim.</p><a name="BetterPredicate.hs:betterFind"></a><pre id="BetterPredicate.hs:betterFind" class="programlisting">-- file: ch09/BetterPredicate.hs
+-- soon to be defined
+getFileSize :: FilePath -&gt; IO (Maybe Integer)
+
+betterFind :: Predicate -&gt; FilePath -&gt; IO [FilePath]
+
+betterFind p path = getRecursiveContents path &gt;&gt;= filterM check
+    where check name = do
+            perms &lt;- getPermissions name
+            size &lt;- getFileSize name
+            modified &lt;- getModificationTime name
+            return (p name perms size modified)</pre><p id="x_aO"><a name="x_aO"></a>Let's walk through the code.  We'll talk about
+      <code class="function">getFileSize</code> in some detail soon, so let's
+      skip over it for now.</p><p id="x_bO"><a name="x_bO"></a>We can't use <code class="function">filter</code> to call our
+      predicate <code class="varname">p</code>, as <code class="varname">p</code>'s purity
+      means it cannot do the I/O needed to gather the metadata it
+      requires.</p><p id="x_cO"><a name="x_cO"></a>This leads us to the unfamiliar function
+      <code class="function">filterM</code>.  It behaves like the normal
+      <code class="function">filter</code> function, but in this case it
+      evaluates its predicate in the <span class="type">IO</span> monad, allowing
+      the predicate to perform I/O.</p><a name="simplefinder.ghci:filterM"></a><pre id="simplefinder.ghci:filterM" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m +Control.Monad</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type filterM</code></strong>
+filterM :: (Monad m) =&gt; (a -&gt; m Bool) -&gt; [a] -&gt; m [a]
+</pre><p id="x_dO"><a name="x_dO"></a>Our <code class="function">check</code> predicate is an I/O-capable
+      wrapper for our pure predicate <code class="varname">p</code>. It does all
+      the “<span class="quote">dirty</span>” work of I/O on <code class="varname">p</code>'s
+      behalf, so that we can keep <code class="varname">p</code> incapable of
+      unwanted side effects.  After gathering the metadata,
+      <code class="function">check</code> calls <code class="varname">p</code>, then uses
+      <code class="function">return</code> to wrap <code class="varname">p</code>'s
+      result with <span class="type">IO</span>.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id621667">Sizing a file safely</h2></div></div></div><p id="x_eO"><a name="x_eO"></a>Although <code class="code">System.Directory</code> doesn't let us find
+      out how large a file is, we can use the similarly portable
+      <code class="code">System.IO</code> module to do this.  It contains a
+      function named <code class="function">hFileSize</code>, which returns the
+      size in bytes of an open file.  Here's a simple function that
+      wraps it.</p><a name="BetterPredicate.hs:simpleFileSize"></a><pre id="BetterPredicate.hs:simpleFileSize" class="programlisting">-- file: ch09/BetterPredicate.hs
+simpleFileSize :: FilePath -&gt; IO Integer
+
+simpleFileSize path = do
+  h &lt;- openFile path ReadMode
+  size &lt;- hFileSize h
+  hClose h
+  return size</pre><p id="x_fO"><a name="x_fO"></a>While this function works, it's not yet suitable for us to
+      use.  In <code class="function">betterFind</code>, we call
+      <code class="function">getFileSize</code> unconditionally on any
+      directory entry; it should return <code class="code">Nothing</code> if
+      an entry is not a plain file, or the size wrapped by
+      <code class="code">Just</code> otherwise.  This function instead throws an
+      exception if an entry is not a plain file or could not be opened
+      (perhaps due to insufficient permissions), and returns the size
+      unwrapped.</p><p id="x_gO"><a name="x_gO"></a>Here's a safer version of this function.</p><a name="BetterPredicate.hs:saferFileSize"></a><pre id="BetterPredicate.hs:saferFileSize" class="programlisting">-- file: ch09/BetterPredicate.hs
+saferFileSize :: FilePath -&gt; IO (Maybe Integer)
+
+saferFileSize path = handle (\_ -&gt; return Nothing) $ do
+  h &lt;- openFile path ReadMode
+  size &lt;- hFileSize h
+  hClose h
+  return (Just size)</pre><p id="x_hO"><a name="x_hO"></a>The body of the function is almost identical, save for the
+      <code class="function">handle</code> clause.</p><p id="x_jO"><a name="x_jO"></a>Our exception handler above ignores the exception it's
+      passed, and returns <code class="code">Nothing</code>.  The only change to
+      the body that follows is that it wraps the file size with
+      <code class="function">Just</code>.</p><p id="x_kO"><a name="x_kO"></a>The <code class="function">saferFileSize</code> function now has the
+      correct type signature, and it won't throw any exceptions.  But
+      it's still not completely well behaved.  There are directory
+      entries on which <code class="function">openFile</code> will succeed, but
+      <code class="function">hFileSize</code> will throw an exception.  This
+      can happen with, for example, named pipes.  Such an exception
+      will be caught by <code class="function">handle</code>, but our call to
+      <code class="function">hClose</code> will never occur.</p><p id="x_lO"><a name="x_lO"></a>A Haskell implementation will automatically close
+      the file handle when it notices that the handle is no longer
+      being used. That will not occur until the garbage collector
+      runs, and the delay until the next garbage collection pass is
+      not predictable.</p><p id="x_mO"><a name="x_mO"></a>File handles are scarce resources.  Their scarcity is
+      enforced by the underlying operating system.  On Linux, for
+      example, a process is by default only allowed to have 1024 files
+      open simultaneously.</p><p id="x_nO"><a name="x_nO"></a>It's not hard to imagine a scenario in which a
+      program that called a version of <code class="function">betterFind</code>
+      that used <code class="function">saferFileSize</code> could crash due to
+      <code class="function">betterFind</code> exhausting the supply of open
+      file handles before enough garbage file handles could be
+      closed.</p><p id="x_oO"><a name="x_oO"></a>This is a particularly pernicious kind of bug: it has
+      several aspects that combine to make it incredibly difficult to
+      track down. It will only be triggered if
+      <code class="function">betterFind</code> visits a sufficiently large
+      number of non-files to hit the process's limit on open file handles, and
+      then returns to a caller that tries to open another file before
+      any of the accumulated garbage file handles is closed.</p><p id="x_AF1"><a name="x_AF1"></a>To make matters worse, any subsequent error will be caused
+      by data that is no longer reachable from within the program, and
+      has yet to be garbage collected.  Such a bug is thus dependent
+      on the structure of the program, the contents of the filesystem,
+      and how close the current run of the program is to triggering
+      the garbage collector.</p><p id="x_BF1"><a name="x_BF1"></a>This sort of problem is easy to overlook during development,
+      and when it later occurs in the field (as these awkward problems
+      always seem to do), it will be much harder to diagnose.</p><p id="x_pO"><a name="x_pO"></a>Fortunately, we can avoid this kind of error very
+      easily, while also making our function
+      <span class="emphasis"><em>shorter</em></span>.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="find.acquire.use.release">The acquire-use-release cycle</h3></div></div></div><p id="x_qO"><a name="x_qO"></a>We need <code class="function">hClose</code> to always be called if
+	<code class="function">openFile</code> succeeds.  The
+	<code class="code">Control.Exception</code> module provides the
+	<code class="function">bracket</code> function for exactly this
+	purpose.</p><a name="simplefinder.ghci:bracket"></a><pre id="simplefinder.ghci:bracket" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type bracket</code></strong>
+bracket :: IO a -&gt; (a -&gt; IO b) -&gt; (a -&gt; IO c) -&gt; IO c
+</pre><p id="x_rO"><a name="x_rO"></a>The <code class="function">bracket</code> function takes three
+	actions as arguments.  The first action acquires a resource.
+	The second releases the resource.  The third runs in between,
+	while the resource is acquired; let's call this the
+	“<span class="quote">use</span>” action.  If the “<span class="quote">acquire</span>”
+	action succeeds, the “<span class="quote">release</span>” action is
+	<span class="emphasis"><em>always</em></span> called.  This guarantees that the
+	resource will always be released.  The “<span class="quote">use</span>” and
+	“<span class="quote">release</span>” actions are each passed the resource
+	acquired by the “<span class="quote">acquire</span>” action.</p><p id="x_sO"><a name="x_sO"></a>If an exception occurs while the “<span class="quote">use</span>” action
+	is executing, <code class="function">bracket</code> calls the
+	“<span class="quote">release</span>” action and rethrows the exception.  If
+	the “<span class="quote">use</span>” action succeeds,
+	<code class="function">bracket</code> calls the “<span class="quote">release</span>”
+	action, and returns the value returned by the
+	“<span class="quote">use</span>” action.</p><p id="x_tO"><a name="x_tO"></a>We can now write a function that is completely safe: it
+	will not throw exceptions; neither will it accumulate garbage
+	file handles that could cause spurious failures elsewhere in
+	our program.</p><a name="BetterPredicate.hs:getFileSize"></a><pre id="BetterPredicate.hs:getFileSize" class="programlisting">-- file: ch09/BetterPredicate.hs
+getFileSize path = handle (\_ -&gt; return Nothing) $
+  bracket (openFile path ReadMode) hClose $ \h -&gt; do
+    size &lt;- hFileSize h
+    return (Just size)</pre><p id="x_uO"><a name="x_uO"></a>Look closely at the arguments of
+	<code class="function">bracket</code> above.  The first opens the file,
+	and returns the open file handle.  The second closes the
+	handle.  The third simply calls <code class="function">hFileSize</code>
+	on the handle and wraps the result in
+	<code class="function">Just</code>.</p><p id="x_vO"><a name="x_vO"></a>We need to use both <code class="function">bracket</code> and
+	<code class="function">handle</code> for this function to operate
+	correctly. The former ensures that we don't accumulate garbage
+	file handles, while the latter gets rid of exceptions.</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="id622126">Exercises</h4></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id622136"></a><a name="id622138"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_wO"><a name="x_wO"></a>Is the order in which we call
+		<code class="function">bracket</code> and
+		<code class="function">handle</code> important? Why?</p></td></tr></tbody></table></div></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="find.predicate">A domain specific language for predicates</h2></div></div></div><p id="x_xO"><a name="x_xO"></a>Let's take a stab at writing a predicate. Our
+      predicate will check for a C++ source file that is over 128KB in
+      size.</p><a name="BetterPredicate.hs:myTest"></a><pre id="BetterPredicate.hs:myTest" class="programlisting">-- file: ch09/BetterPredicate.hs
+myTest path _ (Just size) _ =
+    takeExtension path == ".cpp" &amp;&amp; size &gt; 131072
+myTest _ _ _ _ = False</pre><p id="x_zO"><a name="x_zO"></a>This isn't especially pleasing.  The predicate takes four
+      arguments, always ignores two of them, and requires two
+      equations to define.  Surely we can do better.  Let's create
+      some code that will help us to write more concise
+      predicates.</p><p id="x_CF1"><a name="x_CF1"></a>Sometimes, this kind of library is referred to as an
+      <span class="emphasis"><em>embedded domain specific language</em></span>: we use
+      our programming language's native facilities (hence
+      <span class="emphasis"><em>embedded</em></span>) to write code that lets us solve
+      some narrow problem (hence <span class="emphasis"><em>domain specific</em></span>)
+      particularly elegantly.</p><p id="x_AP"><a name="x_AP"></a>Our first step is to write a function that returns
+      one of its arguments.  This one extracts the path from the
+      arguments passed to a <span class="type">Predicate</span>.</p><a name="BetterPredicate.hs:pathP"></a><pre id="BetterPredicate.hs:pathP" class="programlisting">-- file: ch09/BetterPredicate.hs
+pathP path _ _ _ = path</pre><p id="x_BP"><a name="x_BP"></a>If we don't provide a type signature, a Haskell
+      implementation will infer a very general type for this function.
+      This can later lead to error messages that are difficult to
+      interpret, so let's give <code class="function">pathP</code> a
+      type.</p><a name="BetterPredicate.hs:InfoP"></a><pre id="BetterPredicate.hs:InfoP" class="programlisting">-- file: ch09/BetterPredicate.hs
+type InfoP a =  FilePath        -- path to directory entry
+             -&gt; Permissions     -- permissions
+             -&gt; Maybe Integer   -- file size (Nothing if not file)
+             -&gt; ClockTime       -- last modified
+             -&gt; a
+
+pathP :: InfoP FilePath</pre><p id="x_CP"><a name="x_CP"></a>We've created a type synonym that we can use as
+      shorthand for writing other, similarly structured functions.
+      Our type synonym accepts a type parameter so that we can specify
+      different result types.</p><a name="BetterPredicate.hs:sizeP"></a><pre id="BetterPredicate.hs:sizeP" class="programlisting">-- file: ch09/BetterPredicate.hs
+sizeP :: InfoP Integer
+sizeP _ _ (Just size) _ = size
+sizeP _ _ Nothing     _ = -1</pre><p id="x_DP"><a name="x_DP"></a>(We're being a little sneaky here, and returning a size of
+      -1 for entries that are not files, or that we couldn't
+      open.)</p><p id="x_EP"><a name="x_EP"></a>In fact, a quick glance shows that the
+      <span class="type">Predicate</span> type that we defined near the beginning
+      of this chapter is the same type as <span class="type">InfoP
+	Bool</span>.  (We could thus legitimately get rid of the
+	<span class="type">Predicate</span> type.)</p><p id="x_FP"><a name="x_FP"></a>What use are <code class="function">pathP</code> and
+      <code class="function">sizeP</code>?  With a little more glue, we can use
+      them in a predicate (the <code class="code">P</code> suffix on each name is
+      intended to suggest “<span class="quote">predicate</span>”).  This is where
+      things start to get interesting.</p><a name="BetterPredicate.hs:equalP"></a><pre id="BetterPredicate.hs:equalP" class="programlisting">-- file: ch09/BetterPredicate.hs
+equalP :: (Eq a) =&gt; InfoP a -&gt; a -&gt; InfoP Bool
+equalP f k = \w x y z -&gt; f w x y z == k</pre><p id="x_GP"><a name="x_GP"></a>The type signature of <code class="function">equalP</code> deserves a
+      little attention.  It takes an <span class="type">InfoP a</span>, which is
+      compatible with both <code class="function">pathP</code> and
+      <code class="function">sizeP</code>.  It takes an <span class="type">a</span>.  And it
+      returns an <span class="type">InfoP Bool</span>, which we already observed is
+      a synonym for <span class="type">Predicate</span>.  In other words,
+      <code class="function">equalP</code> constructs a predicate.</p><p id="x_HP"><a name="x_HP"></a>The <code class="function">equalP</code> function works by returning
+      an anonymous function.  That one takes the arguments accepted by
+      a predicate, passes them to <code class="varname">f</code>, and compares
+      the result to <code class="varname">k</code>.</p><p id="x_IP"><a name="x_IP"></a>This equation for <code class="function">equalP</code>  emphasises
+      the fact that we think of it as taking two arguments.  Since
+      Haskell curries all functions, writing
+      <code class="function">equalP</code> in this way is not actually
+      necessary.  We can omit the anonymous function and rely on
+      currying to work on our behalf, letting us write a function that
+      behaves identically.</p><a name="BetterPredicate.hs:equalP2"></a><pre id="BetterPredicate.hs:equalP2" class="programlisting">-- file: ch09/BetterPredicate.hs
+equalP' :: (Eq a) =&gt; InfoP a -&gt; a -&gt; InfoP Bool
+equalP' f k w x y z = f w x y z == k</pre><p id="x_JP"><a name="x_JP"></a>Before we continue with our explorations, let's load our
+      module into <span class="command"><strong>ghci</strong></span>.</p><a name="betterpredicate.ghci:load"></a><pre id="betterpredicate.ghci:load" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load BetterPredicate</code></strong>
+[1 of 2] Compiling RecursiveContents ( RecursiveContents.hs, interpreted )
+[2 of 2] Compiling Main             ( BetterPredicate.hs, interpreted )
+Ok, modules loaded: RecursiveContents, Main.
+</pre><p id="x_KP"><a name="x_KP"></a>Let's see if a simple predicate constructed from these
+      functions will work.</p><a name="betterpredicate.ghci:betterFind"></a><pre id="betterpredicate.ghci:betterFind" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type betterFind (sizeP `equalP` 1024)</code></strong>
+betterFind (sizeP `equalP` 1024) :: FilePath -&gt; IO [FilePath]
+</pre><p id="x_LP"><a name="x_LP"></a>Notice that we're not actually calling
+      <code class="function">betterFind</code>, we're merely making sure that
+      our expression typechecks.  We now have a more expressive way to
+      list all files that are exactly some size.  Our
+      success gives us enough confidence to continue.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="find.predicate.lift">Avoiding boilerplate with lifting</h3></div></div></div><p id="x_MP"><a name="x_MP"></a>Besides <code class="function">equalP</code>, we'd like
+	to be able to write other binary functions.  We'd prefer not
+	to write a complete definition of each one, because that seems
+	unnecessarily verbose.</p><p id="x_NP"><a name="x_NP"></a>To address this, let's put Haskell's powers of abstraction
+	to use.  We'll take the definition of
+	<code class="function">equalP</code>, and instead of calling
+	<code class="function">(==)</code> directly, we'll pass in as another
+	argument the binary function that we want to call.</p><a name="BetterPredicate.hs:liftP"></a><pre id="BetterPredicate.hs:liftP" class="programlisting">-- file: ch09/BetterPredicate.hs
+liftP :: (a -&gt; b -&gt; c) -&gt; InfoP a -&gt; b -&gt; InfoP c
+liftP q f k w x y z = f w x y z `q` k
+
+greaterP, lesserP :: (Ord a) =&gt; InfoP a -&gt; a -&gt; InfoP Bool
+greaterP = liftP (&gt;)
+lesserP = liftP (&lt;)</pre><p id="x_OP"><a name="x_OP"></a>This act of taking a function, such as
+	<code class="function">(&gt;)</code>, and transforming it into another
+	function that operates in a different context, here
+	<code class="function">greaterP</code>, is referred to as
+	<span class="emphasis"><em>lifting</em></span> it into that context.  This
+	explains the presence of <code class="code">lift</code> in the function's
+	name.  Lifting lets us reuse code and reduce boilerplate.
+	We'll be using it a lot, in different guises, throughout the
+	rest of this book.</p><p id="x_PP"><a name="x_PP"></a>When we lift a function, we'll often refer to its original
+	and new versions as <span class="emphasis"><em>unlifted</em></span> and
+	<span class="emphasis"><em>lifted</em></span>, respectively.</p><p id="x_QP"><a name="x_QP"></a>By the way, our placement of <code class="varname">q</code> (the
+	function to lift) as the first argument to
+	<code class="function">liftP</code> was quite deliberate.  This made it
+	possible for us to write such concise definitions of
+	<code class="function">greaterP</code> and
+	<code class="function">lesserP</code>.  Partial application makes
+	finding the “<span class="quote">best</span>” order for arguments a more
+	important part of API design in Haskell than in other
+	languages.  In languages without partial application, argument
+	ordering is a matter of taste and convention.  Put an argument
+	in the wrong place in Haskell, however, and we lose the
+	concision that partial application gives.</p><p id="x_DF1"><a name="x_DF1"></a>We can recover some of that conciseness via combinators.
+	For instance, <code class="function">forM</code> was not added to the
+	<code class="code">Control.Monad</code> module until 2007. Prior to that,
+	people wrote <code class="code">flip mapM</code> instead.</p><a name="flipMap.ghci:flipMap"></a><pre id="flipMap.ghci:flipMap" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m +Control.Monad</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t mapM</code></strong>
+mapM :: (Monad m) =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t forM</code></strong>
+forM :: (Monad m) =&gt; [a] -&gt; (a -&gt; m b) -&gt; m [b]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t flip mapM</code></strong>
+flip mapM :: (Monad m) =&gt; [a] -&gt; (a -&gt; m b) -&gt; m [b]
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="find.predicate.combinator">Gluing predicates together</h3></div></div></div><p id="x_RP"><a name="x_RP"></a>If we want to combine predicates, we can of course follow
+	the obvious path of doing so by hand.</p><a name="BetterPredicate.hs:simpleAndP"></a><pre id="BetterPredicate.hs:simpleAndP" class="programlisting">-- file: ch09/BetterPredicate.hs
+simpleAndP :: InfoP Bool -&gt; InfoP Bool -&gt; InfoP Bool
+simpleAndP f g w x y z = f w x y z &amp;&amp; g w x y z</pre><p id="x_SP"><a name="x_SP"></a>Now that we know about lifting, it becomes more
+	natural to reduce the amount of code we must write by lifting
+	our existing Boolean operators.</p><a name="BetterPredicate.hs:liftP2"></a><pre id="BetterPredicate.hs:liftP2" class="programlisting">-- file: ch09/BetterPredicate.hs
+liftP2 :: (a -&gt; b -&gt; c) -&gt; InfoP a -&gt; InfoP b -&gt; InfoP c
+liftP2 q f g w x y z = f w x y z `q` g w x y z
+
+andP = liftP2 (&amp;&amp;)
+orP = liftP2 (||)</pre><p id="x_TP"><a name="x_TP"></a>Notice that <code class="function">liftP2</code> is very similar to
+	our earlier <code class="function">liftP</code>.  In fact, it's more
+	general, because we can write <code class="function">liftP</code> in
+	terms of <code class="function">liftP2</code>.</p><a name="BetterPredicate.hs:constP"></a><pre id="BetterPredicate.hs:constP" class="programlisting">-- file: ch09/BetterPredicate.hs
+constP :: a -&gt; InfoP a
+constP k _ _ _ _ = k
+
+liftP' q f k w x y z = f w x y z `q` constP k w x y z</pre><div class="note"><table border="0" summary="Note: Combinators"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Combinators</th></tr><tr><td align="left" valign="top"><p id="x_UP"><a name="x_UP"></a>In Haskell, we refer to functions that take other
+	  functions as arguments, returning new functions, as
+	  <span class="emphasis"><em>combinators</em></span>.</p></td></tr></table></div><p id="x_VP"><a name="x_VP"></a>Now that we have some helper functions in place, we can
+	return to the <code class="function">myTest</code> function we defined
+	earlier.</p><pre id="id622877" class="programlisting">-- file: ch09/BetterPredicate.hs
+myTest path _ (Just size) _ =
+    takeExtension path == ".cpp" &amp;&amp; size &gt; 131072
+myTest _ _ _ _ = False</pre><p id="x_WP"><a name="x_WP"></a>How will this function look if we write it using our new
+	combinators?</p><a name="BetterPredicate.hs:myTest2"></a><pre id="BetterPredicate.hs:myTest2" class="programlisting">-- file: ch09/BetterPredicate.hs
+liftPath :: (FilePath -&gt; a) -&gt; InfoP a
+liftPath f w _ _ _ = f w
+
+myTest2 = (liftPath takeExtension `equalP` ".cpp") `andP`
+          (sizeP `greaterP` 131072)</pre><p id="x_XP"><a name="x_XP"></a>We've added one final combinator,
+	<code class="function">liftPath</code>, since manipulating file names
+	is such a common activity.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id622920">Defining and using new operators</h3></div></div></div><p id="x_ZP"><a name="x_ZP"></a>We can take our domain specific language further
+	by defining new infix operators.</p><a name="BetterPredicate.hs:myTest3"></a><pre id="BetterPredicate.hs:myTest3" class="programlisting">-- file: ch09/BetterPredicate.hs
+(==?) = equalP
+(&amp;&amp;?) = andP
+(&gt;?) = greaterP
+
+myTest3 = (liftPath takeExtension ==? ".cpp") &amp;&amp;? (sizeP &gt;? 131072)</pre><p id="x_aP"><a name="x_aP"></a>We chose names like <code class="function">(==?)</code> for the
+	lifted functions specifically for their visual similarity to
+	their unlifted counterparts.</p><p id="x_bP"><a name="x_bP"></a>The parentheses in our definition above are necessary,
+	because we haven't told Haskell about the precedence or
+	associativity of our new operators.  The language specifies
+	that operators without fixity declarations should be treated
+	as <code class="code">infixl 9</code>, i.e. they are evaluated from left to
+	right at the highest precedence level.  If we were to
+	omit the parentheses, the expression would thus be parsed as
+	<code class="code">(((liftPath takeExtension) ==? ".cpp") &amp;&amp;?
+	  sizeP) &gt;? 131072</code>, which is horribly wrong.</p><p id="x_cP"><a name="x_cP"></a>We can respond by writing fixity declarations for our new
+	operators.  Our first step is to find out what the fixities of
+	the unlifted operators are, so that we can mimic them.</p><a name="betterpredicate.ghci:fixities"></a><pre id="betterpredicate.ghci:fixities" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:info ==</code></strong>
+class Eq a where
+  (==) :: a -&gt; a -&gt; Bool
+  ...
+  	-- Defined in GHC.Base
+infix 4 ==
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:info &amp;&amp;</code></strong>
+(&amp;&amp;) :: Bool -&gt; Bool -&gt; Bool 	-- Defined in GHC.Base
+infixr 3 &amp;&amp;
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:info &gt;</code></strong>
+class (Eq a) =&gt; Ord a where
+  ...
+  (&gt;) :: a -&gt; a -&gt; Bool
+  ...
+  	-- Defined in GHC.Base
+infix 4 &gt;
+</pre><p id="x_dP"><a name="x_dP"></a>With these in hand, we can now write a parenthesis-free
+	expression that will be parsed identically to
+	<code class="function">myTest3</code>.</p><a name="BetterPredicate.hs:myTest4"></a><pre id="BetterPredicate.hs:myTest4" class="programlisting">-- file: ch09/BetterPredicate.hs
+infix 4 ==?
+infixr 3 &amp;&amp;?
+infix 4 &gt;?
+
+myTest4 = liftPath takeExtension ==? ".cpp" &amp;&amp;? sizeP &gt;? 131072</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="find.traverse">Controlling traversal</h2></div></div></div><p id="x_eP"><a name="x_eP"></a>When traversing the filesystem, we'd like to give ourselves
+      more control over which directories we enter, and when.  An easy
+      way in which we can allow this is to pass in a function that
+      takes a list of subdirectories of a given directory, and returns
+      another list.  This list can have elements removed, or it can be
+      ordered differently than the original list, or both.  The
+      simplest such control function is <code class="function">id</code>, which
+      will return its input list unmodified.</p><p id="x_fP"><a name="x_fP"></a>For variety, we're going to change a few aspects of our
+      representation here.  Instead of an elaborate function type
+      <span class="type">InfoP a</span>, we'll use a normal algebraic data type to
+      represent substantially the same information.</p><a name="ControlledVisit.hs:Info"></a><pre id="ControlledVisit.hs:Info" class="programlisting">-- file: ch09/ControlledVisit.hs
+data Info = Info {
+      infoPath :: FilePath
+    , infoPerms :: Maybe Permissions
+    , infoSize :: Maybe Integer
+    , infoModTime :: Maybe ClockTime
+    } deriving (Eq, Ord, Show)
+
+getInfo :: FilePath -&gt; IO Info</pre><p id="x_gP"><a name="x_gP"></a>We're using record syntax to give ourselves
+      “<span class="quote">free</span>” accessor functions, such as
+      <code class="function">infoPath</code>.  The type of our
+      <code class="function">traverse</code> function is simple, as we proposed
+      above.  To obtain <span class="type">Info</span> about a file or directory,
+      we call the <code class="function">getInfo</code> action.</p><a name="ControlledVisit.hs:traverse.type"></a><pre id="ControlledVisit.hs:traverse.type" class="programlisting">-- file: ch09/ControlledVisit.hs
+traverse :: ([Info] -&gt; [Info]) -&gt; FilePath -&gt; IO [Info]</pre><p id="x_hP"><a name="x_hP"></a>The definition of <code class="function">traverse</code> is short,
+      but dense.</p><a name="ControlledVisit.hs:traverse"></a><pre id="ControlledVisit.hs:traverse" class="programlisting">-- file: ch09/ControlledVisit.hs
+traverse order path = do
+    names &lt;- getUsefulContents path
+    contents &lt;- mapM getInfo (path : map (path &lt;/&gt;) names)
+    liftM concat $ forM (order contents) $ \info -&gt; do
+      if isDirectory info &amp;&amp; infoPath info /= path
+        then traverse order (infoPath info)
+        else return [info]
+
+getUsefulContents :: FilePath -&gt; IO [String]
+getUsefulContents path = do
+    names &lt;- getDirectoryContents path
+    return (filter (`notElem` [".", ".."]) names)
+
+isDirectory :: Info -&gt; Bool
+isDirectory = maybe False searchable . infoPerms</pre><p id="x_iP"><a name="x_iP"></a>While we're not introducing any new techniques here, this is
+      one of the densest function definitions we've yet encountered.
+      Let's walk through it almost line by line, explaining what is
+      going on.  The first couple of lines hold no mystery, as they're
+      almost verbatim copies of code we've already seen.</p><p id="x_jP"><a name="x_jP"></a>Things begin to get interesting when we assign to
+      the variable <code class="varname">contents</code>.  Let's read this line
+      from right to left.  We already know that
+      <code class="varname">names</code> is a list of directory entries.  We
+      make sure that the current directory is prepended to every
+      element of the list, and included in the list itself. We use
+      <code class="function">mapM</code> to apply <code class="function">getInfo</code>
+      to the resulting paths.</p><p id="x_kP"><a name="x_kP"></a>The line that follows is even more dense.  Again
+      reading from right to left, we see that the last element of the
+      line begins the definition of an anonymous function that
+      continues to the end of the paragraph.  Given one
+      <span class="type">Info</span> value, this function either visits a directory
+      recursively (there's an extra check to make sure we don't visit
+      <code class="varname">path</code> again), or returns that value as a
+      single-element list (to match the result type of
+      <code class="function">traverse</code>).</p><p id="x_lP"><a name="x_lP"></a>We use <code class="function">forM</code> to apply this function to
+      each element of the list of <span class="type">Info</span> values returned by
+      <code class="varname">order</code>, the user-supplied traversal control
+      function.</p><p id="x_mP"><a name="x_mP"></a>At the beginning of the line, we use the technique
+      of lifting in a new context.  The <code class="function">liftM</code>
+      function takes a regular function, <code class="function">concat</code>,
+      and lifts it into the <span class="type">IO</span> monad.  In other words, it
+      takes the result of <code class="function">forM</code> (of type <span class="type">IO
+	[[Info]]</span>) out of the <span class="type">IO</span> monad, applies
+      <code class="function">concat</code> to it (yielding a result of type
+      <span class="type">[Info]</span>, which is what we need), and puts the result
+      back into the <span class="type">IO</span> monad.</p><p id="x_nP"><a name="x_nP"></a>Finally, we mustn't forget to define our
+      <code class="function">getInfo</code> function.</p><a name="ControlledVisit.hs:getInfo"></a><pre id="ControlledVisit.hs:getInfo" class="programlisting">-- file: ch09/ControlledVisit.hs
+maybeIO :: IO a -&gt; IO (Maybe a)
+maybeIO act = handle (\_ -&gt; return Nothing) (Just `liftM` act)
+
+getInfo path = do
+  perms &lt;- maybeIO (getPermissions path)
+  size &lt;- maybeIO (bracket (openFile path ReadMode) hClose hFileSize)
+  modified &lt;- maybeIO (getModificationTime path)
+  return (Info path perms size modified)</pre><p id="x_oP"><a name="x_oP"></a>The only noteworthy thing here is  a useful combinator,
+      <code class="function">maybeIO</code>, which turns an <span class="type">IO</span>
+      action that might throw an exception into one that wraps its
+      result in <span class="type">Maybe</span>.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id623372">Exercises</h3></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id623382"></a><a name="id623384"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_pP"><a name="x_pP"></a>What should you pass to <code class="function">traverse</code>
+	      to traverse a directory tree in reverse alphabetic
+	      order?</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id623402"></a><a name="id623404"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_qP"><a name="x_qP"></a>Using <code class="function">id</code> as a control function,
+	      <code class="code">traverse id</code> performs a
+	      <span class="emphasis"><em>preorder</em></span> traversal of a tree: it
+	      returns a parent directory before its children.  Write a
+	      control function that makes <code class="code">traverse</code>
+	      perform a <span class="emphasis"><em>postorder</em></span> traversal, in
+	      which it returns children before their parent.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id623437"></a><a name="id623439"></a><p><b>3.</b></p></td><td align="left" valign="top"><p id="x_rP"><a name="x_rP"></a>Take the predicates and combinators from <a class="xref" href="io-case-study-a-library-for-searching-the-filesystem.html#find.predicate.combinator" title="Gluing predicates together">the section called “Gluing predicates together”</a> and make them
+	      work with our new <span class="type">Info</span> type.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id623462"></a><a name="id623464"></a><p><b>4.</b></p></td><td align="left" valign="top"><p id="x_sP"><a name="x_sP"></a>Write a wrapper for <code class="function">traverse</code>
+	      that lets you control traversal using one predicate, and
+	      filter results using another.</p></td></tr></tbody></table></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id623486">Density, readability, and the learning process</h2></div></div></div><p id="x_tP"><a name="x_tP"></a>Code as dense as <code class="function">traverse</code>  is
+      not unusual in Haskell.  The gain in expressiveness is
+      significant, and it requires a relatively small amount of
+      practice to be able to fluently read and write code in this
+      style.</p><p id="x_uP"><a name="x_uP"></a>For comparison, here's a less dense presentation of the same
+      code.  This might be more typical of a less experienced Haskell
+      programmer.</p><a name="ControlledVisit.hs:traverseVerbose"></a><pre id="ControlledVisit.hs:traverseVerbose" class="programlisting">-- file: ch09/ControlledVisit.hs
+traverseVerbose order path = do
+    names &lt;- getDirectoryContents path
+    let usefulNames = filter (`notElem` [".", ".."]) names
+    contents &lt;- mapM getEntryName ("" : usefulNames)
+    recursiveContents &lt;- mapM recurse (order contents)
+    return (concat recursiveContents)
+  where getEntryName name = getInfo (path &lt;/&gt; name)
+        isDirectory info = case infoPerms info of
+                             Nothing -&gt; False
+                             Just perms -&gt; searchable perms
+        recurse info = do
+            if isDirectory info &amp;&amp; infoPath info /= path
+                then traverseVerbose order (infoPath info)
+                else return [info]</pre><p id="x_vP"><a name="x_vP"></a>All we've done here is make a few substitutions.  Instead of
+      liberally using partial application and function composition,
+      we've defined some local functions in a <code class="literal">where</code> block.  In place
+      of the <code class="function">maybe</code> combinator, we're using a
+      <code class="literal">case</code> expression.  And instead of using
+      <code class="function">liftM</code>, we're manually lifting
+      <code class="function">concat</code> ourselves.</p><p id="x_wP"><a name="x_wP"></a>This is not to say that density is a uniformly good
+      property.  Each line of the original
+      <code class="function">traverse</code> function is short.  We introduce a
+      local variable (<code class="varname">usefulNames</code>) and a local
+      function (<code class="function">isDirectory</code>) specifically to keep
+      the lines short and the code clearer.  Our names are
+      descriptive.  While we use function composition and pipelining,
+      the longest pipeline contains only three elements.</p><p id="x_xP"><a name="x_xP"></a>The key to writing maintainable Haskell code is to find a
+      balance between density and readability.  Where your code falls
+      on this continuum is likely to be influenced by your level of
+      experience.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_yP"><a name="x_yP"></a>As a beginning Haskell programmer, Andrew doesn't know
+	  his way around the standard libraries very well.  As a
+	  result, he unwittingly duplicates a lot of existing code.</p></li><li><p id="x_zP"><a name="x_zP"></a>Zack has been programming for a few months,
+	  and has mastered the use of <code class="function">(.)</code> to
+	  compose long pipelines of code.  Every time the needs of his
+	  program change slightly, he has to construct a new pipeline
+	  from scratch: he can't understand the existing pipeline any
+	  longer, and it is in any case too fragile to change.</p></li><li><p id="x_AQ"><a name="x_AQ"></a>Monica has been coding for a while.  She's
+	  familiar enough with Haskell libraries and idioms to write
+	  tight code, but she avoids a hyperdense style.  Her code is
+	  maintainable, and she finds it easy to refactor when faced
+	  with changing requirements.</p></li></ul></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="find.fold">Another way of looking at traversal</h2></div></div></div><p id="x_QQ"><a name="x_QQ"></a>While the <code class="function">traverse</code> function gives us
+      more control than our original <code class="function">betterFind</code>
+      function, it still has a significant failing: we can avoid
+      recursing into directories, but we can't filter other names
+      until after we've generated the entire list of names in a tree.
+      If we are traversing a directory containing 100,000 files of
+      which we care about three, we'll allocate a 100,000-element list
+      before we have a chance to trim it down to the three we really
+      want.</p><p id="x_RQ"><a name="x_RQ"></a>One approach would be to provide a filter function as a new
+      argument to <code class="function">traverse</code>, which we would apply
+      to the list of names as we generate it.  This would allow us to
+      allocate a list of only as many elements as we need.</p><p id="x_SQ"><a name="x_SQ"></a>However, this approach also has a weakness: say we know that
+      we want at most three entries from our list, and that those
+      three entries happen to be the first three of the 100,000 that
+      we traverse.  In this case, we'll needlessly visit 99,997 other
+      entries.  This is not by any means a contrived example: for
+      example, the Maildir mailbox format stores a folder of email
+      messages as a directory of individual files.  It's common for a
+      single directory representing a mailbox to contain tens of
+      thousands of files.</p><p id="x_TQ"><a name="x_TQ"></a>We can address the weaknesses of our two prior traversal
+      functions by taking a different perspective: what if we think of
+      filesystem traversal as a <span class="emphasis"><em>fold</em></span> over the
+      directory hierarchy?</p><p id="x_UQ"><a name="x_UQ"></a>The familiar folds, <code class="function">foldr</code> and
+      <code class="function">foldl'</code>, neatly generalise the idea of
+      traversing a list while accumulating a result.  It's hardly a
+      stretch to extend the idea of folding from lists to directory
+      trees, but we'd like to add an element of
+      <span class="emphasis"><em>control</em></span> to our fold.  We'll represent this
+      control as an algebraic data type.</p><a name="FoldDir.hs:Iterate"></a><pre id="FoldDir.hs:Iterate" class="programlisting">-- file: ch09/FoldDir.hs
+data Iterate seed = Done     { unwrap :: seed }
+                  | Skip     { unwrap :: seed }
+                  | Continue { unwrap :: seed }
+                    deriving (Show)
+
+type Iterator seed = seed -&gt; Info -&gt; Iterate seed</pre><p id="x_VQ"><a name="x_VQ"></a>The <span class="type">Iterator</span> type gives us a convenient alias
+      for the function that we fold with.  It takes a seed and an
+      <span class="type">Info</span> value representing a directory entry, and
+      returns both a new seed and an instruction for our fold
+      function, where the instructions are represented as the
+      constructors of the <span class="type">Iterate</span> type.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_WQ"><a name="x_WQ"></a>If the instruction is <code class="code">Done</code>, traversal
+	  should cease immediately.  The value wrapped by
+	  <code class="code">Done</code> should be returned as the result.</p></li><li><p id="x_XQ"><a name="x_XQ"></a>If the instruction is <code class="code">Skip</code> and the current
+	  <span class="type">Info</span> represents a directory, traversal will not
+	  recurse into that directory.</p></li><li><p id="x_YQ"><a name="x_YQ"></a>Otherwise, the traversal should continue, using the
+	  wrapped value as the input to the next call to the fold
+	  function.</p></li></ul></div><p id="x_ZQ"><a name="x_ZQ"></a>Our fold is logically a kind of left fold, because we start
+      folding from the first entry we encounter, and the seed for each
+      step is the result of the prior step.</p><a name="FoldDir.hs:foldTree"></a><pre id="FoldDir.hs:foldTree" class="programlisting">-- file: ch09/FoldDir.hs
+foldTree :: Iterator a -&gt; a -&gt; FilePath -&gt; IO a
+
+foldTree iter initSeed path = do
+    endSeed &lt;- fold initSeed path
+    return (unwrap endSeed)
+  where
+    fold seed subpath = getUsefulContents subpath &gt;&gt;= walk seed
+
+    walk seed (name:names) = do
+      let path' = path &lt;/&gt; name
+      info &lt;- getInfo path'
+      case iter seed info of
+        done@(Done _) -&gt; return done
+        Skip seed'    -&gt; walk seed' names
+        Continue seed'
+          | isDirectory info -&gt; do
+              next &lt;- fold seed' path'
+              case next of
+                done@(Done _) -&gt; return done
+                seed''        -&gt; walk (unwrap seed'') names
+          | otherwise -&gt; walk seed' names
+    walk seed _ = return (Continue seed)</pre><p id="x_aQ"><a name="x_aQ"></a>There are a few interesting things about the way this code
+      is written.  The first is the use of scoping to avoid having to
+      pass extra parameters around.  The top-level
+      <code class="function">foldTree</code> function is just a wrapper for
+      <code class="function">fold</code> that peels off the constructor of the
+      <code class="function">fold</code>'s final result.</p><p id="x_bQ"><a name="x_bQ"></a>Because <code class="function">fold</code> is a local function, we
+      don't have to pass <code class="function">foldTree</code>'s
+      <code class="varname">iter</code> variable into it; it can already access
+      it in the outer scope.  Similarly, <code class="function">walk</code> can
+      see <code class="varname">path</code> in its outer scope.</p><p id="x_cQ"><a name="x_cQ"></a>Another point to note is that <code class="function">walk</code> is a
+      tail recursive loop, instead of an anonymous function called by
+      <code class="function">forM</code> as in our earlier functions.  By
+      taking the reins ourselves, we can stop early if we need to.
+      This lets us drop out when our iterator returns
+      <code class="code">Done</code>.</p><p id="x_dQ"><a name="x_dQ"></a>Although <code class="function">fold</code> calls
+      <code class="function">walk</code>, <code class="function">walk</code> calls
+      <code class="function">fold</code> recursively to traverse
+      subdirectories.  Each function returns a seed wrapped in an
+      <span class="type">Iterate</span>: when <code class="function">fold</code> is called
+      by <code class="function">walk</code> and returns,
+      <code class="function">walk</code> examines its result to see whether it
+      should continue or drop out because it returned
+      <code class="code">Done</code>.  In this way, a return of
+      <code class="function">Done</code> from the caller-supplied iterator
+      immediately terminates all mutually recursive calls between the
+      two functions.</p><p id="x_eQ"><a name="x_eQ"></a>What does an iterator look like in practice?  Here's a
+      somewhat complicated example that looks for at most three bitmap
+      images, and won't recurse into Subversion metadata
+      directories.</p><a name="FoldDir.hs:atMostThreePictures"></a><pre id="FoldDir.hs:atMostThreePictures" class="programlisting">-- file: ch09/FoldDir.hs
+atMostThreePictures :: Iterator [FilePath]
+
+atMostThreePictures paths info
+    | length paths == 3
+      = Done paths
+    | isDirectory info &amp;&amp; takeFileName path == ".svn"
+      = Skip paths
+    | extension `elem` [".jpg", ".png"]
+      = Continue (path : paths)
+    | otherwise
+      = Continue paths
+  where extension = map toLower (takeExtension path)
+        path = infoPath info</pre><p id="x_fQ"><a name="x_fQ"></a>To use this, we'd call <code class="code">foldTree atMostThreePictures
+	[]</code>, giving us a return value of type <span class="type">IO
+	[FilePath]</span>.</p><p id="x_gQ"><a name="x_gQ"></a>Of course, iterators don't have to be this complicated.
+      Here's one that counts the number of directories it
+      encounters.</p><a name="FoldDir.hs:countDirectories"></a><pre id="FoldDir.hs:countDirectories" class="programlisting">-- file: ch09/FoldDir.hs
+countDirectories count info =
+    Continue (if isDirectory info
+              then count + 1
+              else count)</pre><p id="x_hQ"><a name="x_hQ"></a>Here, the initial seed that we pass to
+      <code class="function">foldTree</code> should be the number zero.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id624090">Exercises</h3></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id624100"></a><a name="id624102"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_mQ"><a name="x_mQ"></a>Modify <code class="function">foldTree</code> to allow the
+	      caller to change the order of traversal of entries in a
+	      directory.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id624120"></a><a name="id624122"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_nQ"><a name="x_nQ"></a>The <code class="function">foldTree</code> function performs
+	      preorder traversal.  Modify it to allow the caller to
+	      determine the order of traversal.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id624140"></a><a name="id624142"></a><p><b>3.</b></p></td><td align="left" valign="top"><p id="x_oQ"><a name="x_oQ"></a>Write a combinator library that makes it possible to
+	      express the kinds of iterators that
+	      <code class="function">foldTree</code> accepts.  Does it
+	      make the iterators you write any more succinct?</p></td></tr></tbody></table></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id624164">Useful coding guidelines</h2></div></div></div><p id="x_BQ"><a name="x_BQ"></a>While many good Haskell programming habits come with
+      experience, we have a few general guidelines to offer so that
+      you can write readable code more quickly.</p><p id="x_CQ"><a name="x_CQ"></a>As we already mentioned in <a class="xref" href="defining-types-streamlining-functions.html#deftypes.tabs" title="A note about tabs versus spaces">the section called “A note about tabs versus spaces”</a>, never use tab characters
+      in Haskell source files.  Use spaces.</p><p id="x_DQ"><a name="x_DQ"></a>If you find yourself proudly thinking that a particular
+      piece of code is fiendishly clever, stop and consider whether
+      you'll be able to understand it again after you've stepped away
+      from it for a month.</p><p id="x_EQ"><a name="x_EQ"></a>The conventional way of naming types and variables with
+      compound names is to use “<span class="quote">camel case</span>”, i.e.
+      <code class="varname">myVariableName</code>.  This style is almost
+      universal in Haskell code.  Regardless of your opinion of other
+      naming practices, if you follow a non-standard convention, your
+      Haskell code will be somewhat jarring to the eyes of other
+      readers.</p><p id="x_FQ"><a name="x_FQ"></a>Until you've been working with Haskell for a substantial
+      amount of time, spend a few minutes searching for library
+      functions before you write small functions.  This applies
+      particularly to ubiquitous types like lists, <span class="type">Maybe</span>,
+      and <span class="type">Either</span>.  If the standard libraries don't
+      already provide exactly what you need, you might be able to
+      combine a few functions to obtain the result you desire.</p><p id="x_GQ"><a name="x_GQ"></a>Long pipelines of composed functions are hard to
+      read, where “<span class="quote">long</span>” means a series of more than
+      three or four elements. If you have such a pipeline, use a <code class="literal">let</code>
+      or <code class="literal">where</code> block to break it into smaller parts.  Give each one
+      of these pipeline elements a meaningful name, then glue them
+      back together.  If you can't think of a meaningful name for an
+      element, ask yourself if you can even describe what it does.  If
+      the answer is “<span class="quote">no</span>”, simplify your code.</p><p id="x_HQ"><a name="x_HQ"></a>Even though it's easy to resize a text editor
+      window far beyond 80 columns, this width is still very common.
+      Wider lines are wrapped or truncated in 80-column text editor
+      windows, which severely hurts readability.  Treating lines as no
+      more than 80 characters long limits the amount of code you can
+      cram onto a single line.  This helps to keep individual lines
+      less complicated, therefore easier to understand.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id624278">Common layout styles</h3></div></div></div><p id="x_IQ"><a name="x_IQ"></a>A Haskell implementation won't make a fuss about
+	indentation as long as your code follows the layout rules and
+	can hence be parsed unambiguously.  That said, some layout
+	patterns are widely used.</p><p id="x_JQ"><a name="x_JQ"></a>The <code class="literal">in</code> keyword is usually aligned directly
+	under the <code class="literal">let</code> keyword, with the expression immediately
+	following it.</p><a name="Style.hs:goodLet"></a><pre id="Style.hs:goodLet" class="programlisting">-- file: ch09/Style.hs
+tidyLet = let foo = undefined
+              bar = foo * 2
+          in undefined</pre><p id="x_KQ"><a name="x_KQ"></a>While it's <span class="emphasis"><em>legal</em></span> to indent
+	the <code class="literal">in</code> differently, or to let it “<span class="quote">dangle</span>” at
+	the end of a series of equations, the following would
+	generally be considered odd.</p><a name="Style.hs:badLet"></a><pre id="Style.hs:badLet" class="programlisting">-- file: ch09/Style.hs
+weirdLet = let foo = undefined
+               bar = foo * 2
+    in undefined
+
+strangeLet = let foo = undefined
+                 bar = foo * 2 in
+    undefined</pre><p id="x_LQ"><a name="x_LQ"></a>In contrast, it's usual to let a <code class="literal">do</code> dangle at
+	the end of a line, rather than sit at the beginning of a
+	line.</p><a name="Style.hs:do"></a><pre id="Style.hs:do" class="programlisting">-- file: ch09/Style.hs
+commonDo = do
+  something &lt;- undefined
+  return ()
+
+-- not seen very often
+rareDo =
+  do something &lt;- undefined
+     return ()</pre><p id="x_MQ"><a name="x_MQ"></a>Curly braces and semicolons, though legal, are
+	almost never used.  There's nothing wrong with them; they just
+	make code look strange due to their rarity.  They're really
+	intended to let programs generate Haskell code without having
+	to implement the layout rules, not for human use.</p><a name="Style.hs:punctuation"></a><pre id="Style.hs:punctuation" class="programlisting">-- file: ch09/Style.hs
+unusualPunctuation =
+    [ (x,y) | x &lt;- [1..a], y &lt;- [1..b] ] where {
+                                           b = 7;
+ a = 6 }
+
+preferredLayout = [ (x,y) | x &lt;- [1..a], y &lt;- [1..b] ]
+    where b = 7
+          a = 6</pre><p id="x_NQ"><a name="x_NQ"></a>If the right hand side of an equation starts on
+	a new line, it's usually indented a small number of spaces
+	relative to the name of the variable or function that it's
+	defining.</p><a name="Style.hs:indent"></a><pre id="Style.hs:indent" class="programlisting">-- file: ch09/Style.hs
+normalIndent =
+    undefined
+
+strangeIndent =
+                           undefined</pre><p id="x_OQ"><a name="x_OQ"></a>The actual number of spaces used to indent
+	varies, sometimes within a single file.  Depths of two, three,
+	and four spaces are about equally common.  A single space is
+	legal, but not very visually distinctive, so it's easy to
+	misread.</p><p id="x_PQ"><a name="x_PQ"></a>When indenting a <code class="literal">where</code> clause, it's best to
+	make it visually distinctive.</p><a name="Style.hs:where"></a><pre id="Style.hs:where" class="programlisting">-- file: ch09/Style.hs
+goodWhere = take 5 lambdas
+    where lambdas = []
+
+alsoGood =
+    take 5 lambdas
+  where
+    lambdas = []
+
+badWhere =           -- legal, but ugly and hard to read
+    take 5 lambdas
+    where
+    lambdas = []</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id624455">Exercises</h2></div></div></div><p id="x_pQ"><a name="x_pQ"></a>Although the file finding code we described in this chapter
+      is a good vehicle for learning, it's not ideal for real systems
+      programming tasks, because Haskell's portable I/O
+      libraries don't expose enough information to let us write
+      interesting and complicated queries.</p><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id624475"></a><a name="id624477"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_qQ"><a name="x_qQ"></a>Port the code from this chapter to your platform's
+	    native API, either <code class="code">System.Posix</code> or
+	    <code class="code">System.Win32</code>.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id624496"></a><a name="id624498"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_rQ"><a name="x_rQ"></a>Add the ability to find out who owns a directory entry
+	    to your code.  Make this information available to
+	    predicates.</p></td></tr></tbody></table></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="efficient-file-processing-regular-expressions-and-file-name-matching.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="code-case-study-parsing-a-binary-data-format.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 8. Efficient file processing, regular expressions, and file name matching </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 10. Code case study: parsing a binary data format</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

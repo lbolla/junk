@@ -1,0 +1,710 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 18. Monad transformers</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="interfacing-with-c-the-ffi.html" title="Chapter 17. Interfacing with C: the FFI"><link rel="next" href="error-handling.html" title="Chapter 19. Error handling"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 18. Monad transformers</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="interfacing-with-c-the-ffi.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="error-handling.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="monadtrans"><div class="titlepage"><div><div><h2 class="title">Chapter 18. Monad transformers</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="monad-transformers.html#id656888">Motivation: boilerplate avoidance</a></span></dt><dt><span class="sect1"><a href="monad-transformers.html#id657034">A simple monad transformer example</a></span></dt><dt><span class="sect1"><a href="monad-transformers.html#id657356">Common patterns in monads and monad transformers</a></span></dt><dt><span class="sect1"><a href="monad-transformers.html#id657557">Stacking multiple monad transformers</a></span></dt><dd><dl><dt><span class="sect2"><a href="monad-transformers.html#id657944">Hiding our work</a></span></dt><dt><span class="sect2"><a href="monad-transformers.html#id658064">Exercises</a></span></dt></dl></dd><dt><span class="sect1"><a href="monad-transformers.html#id658162">Moving down the stack</a></span></dt><dd><dl><dt><span class="sect2"><a href="monad-transformers.html#id658511">When explicit lifting is necessary</a></span></dt></dl></dd><dt><span class="sect1"><a href="monad-transformers.html#monadtrans.maybet">Understanding monad transformers by building one</a></span></dt><dd><dl><dt><span class="sect2"><a href="monad-transformers.html#id658976">Creating a monad transformer</a></span></dt><dt><span class="sect2"><a href="monad-transformers.html#id659032">More typeclass instances</a></span></dt><dt><span class="sect2"><a href="monad-transformers.html#id659118">Replacing the Parse type with a monad stack</a></span></dt><dt><span class="sect2"><a href="monad-transformers.html#id659161">Exercises</a></span></dt></dl></dd><dt><span class="sect1"><a href="monad-transformers.html#id659259">Transformer stacking order is important</a></span></dt><dt><span class="sect1"><a href="monad-transformers.html#id659474">Putting monads and monad transformers into
+      perspective</a></span></dt><dd><dl><dt><span class="sect2"><a href="monad-transformers.html#id659488">Interference with pure code</a></span></dt><dt><span class="sect2"><a href="monad-transformers.html#id659632">Overdetermined ordering</a></span></dt><dt><span class="sect2"><a href="monad-transformers.html#id659676">Runtime overhead</a></span></dt><dt><span class="sect2"><a href="monad-transformers.html#id659760">Unwieldy interfaces</a></span></dt><dt><span class="sect2"><a href="monad-transformers.html#id659884">Pulling it all together</a></span></dt></dl></dd></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id656888">Motivation: boilerplate avoidance</h2></div></div></div><p id="x_Ct"><a name="x_Ct"></a>Monads provide a powerful way to build
+      computations with effects.  Each of the standard monads is
+      specialised to do exactly one thing.  In real code, we
+      often need to be able to use several effects at once.</p><p id="x_Dt"><a name="x_Dt"></a>Recall the <span class="type">Parse</span> type that we
+      developed in
+      <a class="xref" href="code-case-study-parsing-a-binary-data-format.html" title="Chapter 10. Code case study: parsing a binary data format">Chapter 10, <i>Code case study: parsing a binary data format</i></a>, for instance.  When we introduced
+      monads, we mentioned that this type was a state monad in
+      disguise. Our monad is more complex than the standard
+      <span class="type">State</span> monad, because it uses the
+      <span class="type">Either</span> type to allow the possibility of a parsing
+      failure.  In our case, if a parse fails early on, we want to
+      stop parsing, not continue in some broken state.  Our monad
+      combines the effect of carrying state around with the effect of
+      early exit.</p><p id="x_Et"><a name="x_Et"></a>The normal <span class="type">State</span> monad doesn't let us
+      escape in this way; it only carries state.  It uses the default
+      implementation of <code class="function">fail</code>: this calls
+      <code class="function">error</code>, which throws an exception that we
+      can't catch in pure code.  The <span class="type">State</span> monad thus
+      <span class="emphasis"><em>appears</em></span> to allow for failure, without that
+      capability actually being any use.  (Once again, we recommend
+      that you almost always avoid using
+      <code class="function">fail</code>!)</p><p id="x_Ft"><a name="x_Ft"></a>It would be ideal if we could somehow take the
+      standard <span class="type">State</span> monad and add failure handling to
+      it, without resorting to the wholesale construction of custom
+      monads by hand. The standard monads in the <code class="code">mtl</code>
+      library don't allow us to combine them.  Instead, the library
+      provides a set of <span class="emphasis"><em>monad
+	transformers</em></span><sup>[<a name="id656986" href="#ftn.id656986" class="footnote">37</a>]</sup> to achieve the same
+      result.</p><p id="x_Ht"><a name="x_Ht"></a>A monad transformer is similar to a regular monad, but it's
+      not a standalone entity: instead, it modifies the behaviour of
+      an underlying monad.  Most of the monads in the <code class="code">mtl</code>
+      library have transformer equivalents.  By convention, the
+      transformer version of a monad has the same name, with a
+      <code class="code">T</code> stuck on the end.  For example, the transformer
+      equivalent of <span class="type">State</span> is <span class="type">StateT</span>; it adds
+      mutable state to an underlying monad.  The <span class="type">WriterT</span>
+      monad transformer makes it possible to write data when stacked
+      on top of another monad.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id657034">A simple monad transformer example</h2></div></div></div><p id="x_It"><a name="x_It"></a>Before we introduce monad transformers, let's look
+      at a function written using techniques we are already familiar
+      with.  The function below recurses into a directory tree, and
+      returns a list of the number of entries it finds at each level
+      of the tree.</p><a name="CountEntries.hs:countEntriesTrad"></a><pre id="CountEntries.hs:countEntriesTrad" class="programlisting">-- file: ch18/CountEntries.hs
+module CountEntries (listDirectory, countEntriesTrad) where
+
+import System.Directory (doesDirectoryExist, getDirectoryContents)
+import System.FilePath ((&lt;/&gt;))
+import Control.Monad (forM, liftM)
+
+listDirectory :: FilePath -&gt; IO [String]
+listDirectory = liftM (filter notDots) . getDirectoryContents
+    where notDots p = p /= "." &amp;&amp; p /= ".."
+
+countEntriesTrad :: FilePath -&gt; IO [(FilePath, Int)]
+countEntriesTrad path = do
+  contents &lt;- listDirectory path
+  rest &lt;- forM contents $ \name -&gt; do
+            let newName = path &lt;/&gt; name
+            isDir &lt;- doesDirectoryExist newName
+            if isDir
+              then countEntriesTrad newName
+              else return []
+  return $ (path, length contents) : concat rest</pre><p id="x_Jt"><a name="x_Jt"></a>We'll now look at using the writer monad to
+      achieve the same goal.  Since this monad lets us record a value
+      wherever we want, we don't need to explicitly build up a
+      result.</p><p id="x_Kt"><a name="x_Kt"></a>As our function must execute in the
+      <span class="type">IO</span> monad so that it can traverse directories, we
+      can't use the <span class="type">Writer</span> monad directly.  Instead, we
+      use <span class="type">WriterT</span> to add the recording capability to
+      <span class="type">IO</span>.  We will find the going easier if we look at
+      the types involved.</p><p id="x_Lt"><a name="x_Lt"></a>The normal <span class="type">Writer</span> monad has two type
+      parameters, so it's more properly written <span class="type">Writer w
+	a</span>.  The first parameter <code class="varname">w</code> is the type of the values to be
+      recorded, and <code class="varname">a</code> is the usual
+      type that the <span class="type">Monad</span> typeclass requires. Thus
+      <span class="type">Writer [(FilePath, Int)] a</span> is a writer monad that
+      records a list of directory names and sizes.</p><p id="x_Mt"><a name="x_Mt"></a>The <span class="type">WriterT</span> transformer has a similar
+      structure, but it adds another type parameter <code class="varname">m</code>: this is the underlying monad whose
+      behaviour we are augmenting. The full signature of
+      <span class="type">WriterT</span> is <span class="type">WriterT w m a</span>.</p><p id="x_Nt"><a name="x_Nt"></a>Because we need to traverse directories, which requires
+      access to the <span class="type">IO</span> monad, we'll stack our writer on
+      top of the <span class="type">IO</span> monad.  Our combination of monad
+      transformer and underlying monad will thus have the type
+      <span class="type">WriterT [(FilePath, Int)] IO a</span>.  This stack of
+      monad transformer and monad is itself a monad.</p><a name="CountEntriesT.hs:countEntries"></a><pre id="CountEntriesT.hs:countEntries" class="programlisting">-- file: ch18/CountEntriesT.hs
+module CountEntriesT (listDirectory, countEntries) where
+
+import CountEntries (listDirectory)
+import System.Directory (doesDirectoryExist)
+import System.FilePath ((&lt;/&gt;))
+import Control.Monad (forM_, when)
+import Control.Monad.Trans (liftIO)
+import Control.Monad.Writer (WriterT, tell)
+
+countEntries :: FilePath -&gt; WriterT [(FilePath, Int)] IO ()
+countEntries path = do
+  contents &lt;- liftIO . listDirectory $ path
+  tell [(path, length contents)]
+  forM_ contents $ \name -&gt; do
+    let newName = path &lt;/&gt; name
+    isDir &lt;- liftIO . doesDirectoryExist $ newName
+    when isDir $ countEntries newName</pre><p id="x_Ot"><a name="x_Ot"></a>This code is not terribly different from our earlier
+      version. We use <code class="function">liftIO</code> to expose the
+      <span class="type">IO</span> monad where necessary, and
+      <code class="function">tell</code> to record a visit to a
+      directory.</p><p id="x_Pt"><a name="x_Pt"></a>To run our code, we must use one of <span class="type">WriterT</span>'s
+      execution functions.</p><a name="countEntries.ghci:runWriterT"></a><pre id="countEntries.ghci:runWriterT" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type runWriterT</code></strong>
+runWriterT :: WriterT w m a -&gt; m (a, w)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type execWriterT</code></strong>
+execWriterT :: (Monad m) =&gt; WriterT w m a -&gt; m w
+</pre><p id="x_Qt"><a name="x_Qt"></a>These functions execute the action, then remove the
+      <span class="type">WriterT</span> wrapper and give a result that is wrapped
+      in the underlying monad.  The <code class="function">runWriterT</code>
+      function gives both the result of the action and whatever was
+      recorded as it ran, while <code class="function">execWriterT</code>
+      throws away the result and just gives us what was
+      recorded.</p><a name="countEntries.ghci:countEntries"></a><pre id="countEntries.ghci:countEntries" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type countEntries ".."</code></strong>
+countEntries ".." :: WriterT [(FilePath, Int)] IO ()
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type execWriterT (countEntries "..")</code></strong>
+execWriterT (countEntries "..") :: IO [(FilePath, Int)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>take 4 `liftM` execWriterT (countEntries "..")</code></strong>
+[("..",30),("../ch15",23),("../ch07",26),("../ch01",3)]
+</pre><p id="x_RJ1"><a name="x_RJ1"></a>We use a <span class="type">WriterT</span> on top of <span class="type">IO</span>
+      because there is no <span class="type">IOT</span> monad transformer.
+      Whenever we use the <span class="type">IO</span> monad with one or more monad
+      transformers, <span class="type">IO</span> will always be at the bottom of
+      the stack.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id657356">Common patterns in monads and monad transformers</h2></div></div></div><p id="x_Rt"><a name="x_Rt"></a>Most of the monads and monad transformers in the
+      <code class="code">mtl</code> library follow a few common patterns around
+      naming and typeclasses.</p><p id="x_St"><a name="x_St"></a>To illustrate these rules, we will focus on a
+      single straightforward monad: the reader monad.  The reader
+      monad's API is detailed by the <span class="type">MonadReader</span>
+      typeclass.  Most <code class="code">mtl</code> monads have similarly named
+      typeclasses: <span class="type">MonadWriter</span> defines the API of the
+      writer monad, and so on.</p><a name="Reader.hs:class"></a><pre id="Reader.hs:class" class="programlisting">-- file: ch18/Reader.hs
+class (Monad m) =&gt; MonadReader r m | m -&gt; r where
+    ask   :: m r
+    local :: (r -&gt; r) -&gt; m a -&gt; m a</pre><p id="x_Ut"><a name="x_Ut"></a>The type variable <code class="varname">r</code>
+      represents the immutable state that the reader monad carries
+      around.  The <span class="type">Reader r</span> monad is an instance of the
+      <span class="type">MonadReader</span> class, as is the <span class="type">ReaderT r
+	m</span> monad transformer.  Again, this pattern is repeated
+      by other <span class="type">mtl</span> monads: there usually exist both a
+      concrete monad and a transformer, each of which are instances of
+      the typeclass that defines the monad's API.</p><p id="x_Vt"><a name="x_Vt"></a>Returning to the specifics of the reader monad, we haven't
+      touched upon the <code class="function">local</code> function before.  It
+      temporarily modifies the current environment using the <span class="type">r
+	-&gt; r</span> function, and executes its action in the
+      modified environment.  To make this idea more concrete, here is
+      a simple example.</p><a name="LocalReader.hs:localExample"></a><pre id="LocalReader.hs:localExample" class="programlisting">-- file: ch18/LocalReader.hs
+import Control.Monad.Reader
+
+myName step = do
+  name &lt;- ask
+  return (step ++ ", I am " ++ name)
+
+localExample :: Reader String (String, String, String)
+localExample = do
+  a &lt;- myName "First"
+  b &lt;- local (++"dy") (myName "Second")
+  c &lt;- myName "Third"
+  return (a, b, c)</pre><p id="x_Wt"><a name="x_Wt"></a>If we execute the <code class="function">localExample</code> action
+      in <span class="command"><strong>ghci</strong></span>, we can see that the effect of modifying the
+      environment is confined to one place.</p><a name="localReader.ghci:localExample"></a><pre id="localReader.ghci:localExample" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>runReader localExample "Fred"</code></strong>
+Loading package mtl-1.1.0.0 ... linking ... done.
+("First, I am Fred","Second, I am Freddy","Third, I am Fred")
+</pre><p id="x_Xt"><a name="x_Xt"></a>When the underlying monad <code class="varname">m</code>
+      is an instance of <span class="type">MonadIO</span>, the <code class="code">mtl</code>
+      library provides an instance for <span class="type">ReaderT r m</span>, and
+      also for a number of other typeclasses.  Here are a few.</p><a name="Reader.hs:instances"></a><pre id="Reader.hs:instances" class="programlisting">-- file: ch18/Reader.hs
+instance (Monad m) =&gt; Functor (ReaderT r m) where
+    ...
+
+instance (MonadIO m) =&gt; MonadIO (ReaderT r m) where
+    ...
+
+instance (MonadPlus m) =&gt; MonadPlus (ReaderT r m) where
+    ...</pre><p id="x_Yt"><a name="x_Yt"></a>Once again, most <code class="code">mtl</code> monad transformers define
+      instances like these, to make it easier for us to work with
+      them.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id657557">Stacking multiple monad transformers</h2></div></div></div><p id="x_Zt"><a name="x_Zt"></a>As we have already mentioned, when we stack a monad
+      transformer on a normal monad, the result is another monad. This
+      suggests the possibility that we can again stack a monad
+      transformer on top of our combined monad, to give a new monad,
+      and in fact this is a common thing to do.  Under what
+      circumstances might we want to create such a stack?</p><div class="itemizedlist"><ul type="disc"><li><p id="x_at"><a name="x_at"></a>If we need to talk to the outside world, we'll
+	  have <span class="type">IO</span> at the base of the stack. Otherwise, we
+	  will have some normal monad.</p></li><li><p id="x_bt"><a name="x_bt"></a>If we add a <span class="type">ReaderT</span> layer, we give
+	  ourselves access to read-only configuration
+	  information.</p></li><li><p id="x_ct"><a name="x_ct"></a>Add a <span class="type">StateT</span> layer, and we gain global
+	  state that we can modify.</p></li><li><p id="x_dt"><a name="x_dt"></a>Should we need the ability to log events, we can add a
+	  <span class="type">WriterT</span> layer.</p></li></ul></div><p id="x_et"><a name="x_et"></a>The power of this approach is that we can customise the
+      stack to our exact needs, specifying which kinds of effects we
+      want to support.</p><p id="x_ft"><a name="x_ft"></a>As a small example of stacked monad transformers in action,
+      here is a reworking of the <code class="function">countEntries</code>
+      function we developed earlier.  We will modify it to recurse no
+      deeper into a directory tree than a given amount, and to record
+      the maximum depth it reaches.</p><a name="UglyStack.hs:AppData"></a><pre id="UglyStack.hs:AppData" class="programlisting">-- file: ch18/UglyStack.hs
+import System.Directory
+import System.FilePath
+import Control.Monad.Reader
+import Control.Monad.State
+
+data AppConfig = AppConfig {
+      cfgMaxDepth :: Int
+    } deriving (Show)
+
+data AppState = AppState {
+      stDeepestReached :: Int
+    } deriving (Show)</pre><p id="x_gt"><a name="x_gt"></a>We use <span class="type">ReaderT</span> to store configuration data, in
+      the form of the maximum depth of recursion we will perform.  We
+      also use <span class="type">StateT</span> to record the maximum depth we
+      reach during an actual traversal.</p><a name="UglyStack.hs:App"></a><pre id="UglyStack.hs:App" class="programlisting">-- file: ch18/UglyStack.hs
+type App = ReaderT AppConfig (StateT AppState IO)</pre><p id="x_ht"><a name="x_ht"></a>Our transformer stack has <span class="type">IO</span> on the bottom,
+      then <span class="type">StateT</span>, with <span class="type">ReaderT</span> on top.  In
+      this particular case, it doesn't matter whether we have
+      <span class="type">ReaderT</span> or <span class="type">WriterT</span> on top, but
+      <span class="type">IO</span> must be on the bottom.</p><p id="x_SJ1"><a name="x_SJ1"></a>Even a small stack of monad transformers quickly develops an
+      unwieldy type name.  We can use a <code class="literal">type</code> alias to reduce the lengths
+      of the type signatures that we write.</p><div class="note"><table border="0" summary="Note: Where's the missing type parameter?"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Where's the missing type parameter?</th></tr><tr><td align="left" valign="top"><p id="x_it"><a name="x_it"></a>You might have noticed that our <code class="literal">type</code> synonym doesn't
+	have the usual type parameter <code class="varname">a</code> that we
+	associate with a monadic type:</p><a name="UglyStack.hs:App2"></a><pre id="UglyStack.hs:App2" class="programlisting">-- file: ch18/UglyStack.hs
+type App2 a = ReaderT AppConfig (StateT AppState IO) a</pre><p id="x_jt"><a name="x_jt"></a>Both <span class="type">App</span> and <span class="type">App2</span> work fine in
+	normal type signatures.  The difference arises when we try to
+	construct another type from one of these.  Say we want to add
+	another monad transformer to the stack: the compiler will
+	allow <span class="type">WriterT [String] App a</span>, but reject
+	<span class="type">WriterT [String] App2 a</span>.</p><p id="x_kt"><a name="x_kt"></a>The reason for this is that Haskell does not allow us to
+	partially apply a type synonym.  The synonym <span class="type">App</span>
+	doesn't take a type parameter, so it doesn't pose a problem.
+	However, because <span class="type">App2</span> takes a type parameter, we
+	must supply some type for that parameter if we want to use
+	<span class="type">App2</span> to create another type.</p><p id="x_lt"><a name="x_lt"></a>This restriction is limited to type synonyms.  When we
+	create a monad transformer stack, we usually wrap it with a
+	<code class="code">newtype</code> (as we will see below).  As a result, we will rarely
+	run into this problem in practice.</p></td></tr></table></div><p id="x_mt"><a name="x_mt"></a>The execution function for our monad stack is simple.</p><a name="UglyStack.hs:runApp"></a><pre id="UglyStack.hs:runApp" class="programlisting">-- file: ch18/UglyStack.hs
+runApp :: App a -&gt; Int -&gt; IO (a, AppState)
+runApp k maxDepth =
+    let config = AppConfig maxDepth
+        state = AppState 0
+    in runStateT (runReaderT k config) state</pre><p id="x_nt"><a name="x_nt"></a>Our application of <code class="function">runReaderT</code> removes
+      the <span class="type">ReaderT</span> transformer wrapper, while
+      <code class="function">runStateT</code> removes the <span class="type">StateT</span>
+      wrapper, leaving us with a result in the <span class="type">IO</span>
+      monad.</p><p id="x_ot"><a name="x_ot"></a>Compared to earlier versions, the only complications we have
+      added to  our traversal function are slight: we track our
+      current depth, and record the maximum depth we reach.</p><a name="UglyStack.hs:constrainedCount"></a><pre id="UglyStack.hs:constrainedCount" class="programlisting">-- file: ch18/UglyStack.hs
+constrainedCount :: Int -&gt; FilePath -&gt; App [(FilePath, Int)]
+constrainedCount curDepth path = do
+  contents &lt;- liftIO . listDirectory $ path
+  cfg &lt;- ask
+  rest &lt;- forM contents $ \name -&gt; do
+            let newPath = path &lt;/&gt; name
+            isDir &lt;- liftIO $ doesDirectoryExist newPath
+            if isDir &amp;&amp; curDepth &lt; cfgMaxDepth cfg
+              then do
+                let newDepth = curDepth + 1
+                st &lt;- get
+                when (stDeepestReached st &lt; newDepth) $
+                  put st { stDeepestReached = newDepth }
+                constrainedCount newDepth newPath
+              else return []
+  return $ (path, length contents) : concat rest</pre><p id="x_pt"><a name="x_pt"></a>Our use of monad transformers here is admittedly a little
+      contrived.  Because we're writing a single straightforward
+      function, we're not really winning anything.  What's useful
+      about this approach, though, is that it
+      <span class="emphasis"><em>scales</em></span> to bigger programs.</p><p id="x_qt"><a name="x_qt"></a>We can write most of an application's imperative-style code
+      in a monad stack similar to our <span class="type">App</span> monad.  In a
+      real program, we'd carry around more complex configuration data,
+      but we'd still use <span class="type">ReaderT</span> to keep it read-only
+      and hidden except when needed.  We'd have more mutable state to
+      manage, but we'd still use <span class="type">StateT</span> to encapsulate
+      it.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id657944">Hiding our work</h3></div></div></div><p id="x_rt"><a name="x_rt"></a>We can use the usual <code class="code">newtype</code> technique to erect a solid
+	barrier between the implementation of our custom monad and its
+	interface.</p><a name="UglyStack.hs:MyApp"></a><pre id="UglyStack.hs:MyApp" class="programlisting">-- file: ch18/UglyStack.hs
+newtype MyApp a = MyA {
+      runA :: ReaderT AppConfig (StateT AppState IO) a
+    } deriving (Monad, MonadIO, MonadReader AppConfig,
+                MonadState AppState)
+
+runMyApp :: MyApp a -&gt; Int -&gt; IO (a, AppState)
+runMyApp k maxDepth =
+    let config = AppConfig maxDepth
+        state = AppState 0
+    in runStateT (runReaderT (runA k) config) state</pre><p id="x_st"><a name="x_st"></a>If we export the <span class="type">MyApp</span> type constructor and
+	the <code class="function">runMyApp</code> execution function from a
+	module, client code will not be able to tell that the
+	internals of our monad is a stack of monad
+	transformers.</p><p id="x_tt"><a name="x_tt"></a>The large <code class="code">deriving</code> clause requires the
+	<code class="code">GeneralizedNewtypeDeriving</code> language pragma.  It
+	seems somehow magical that the compiler can derive all of
+	these instances for us.  How does this work?</p><p id="x_ut"><a name="x_ut"></a>Earlier, we mentioned that the <code class="code">mtl</code> library
+	provides instances of a number of typeclasses for each monad
+	transformer.  For example, the <span class="type">IO</span> monad
+	implements <span class="type">MonadIO</span>.  If the underlying monad is
+	an instance of <span class="type">MonadIO</span>, <code class="code">mtl</code> makes
+	<span class="type">StateT</span> an instance, too, and likewise for
+	<span class="type">ReaderT</span>.</p><p id="x_vt"><a name="x_vt"></a>There is thus no magic going on: the top-level monad
+	transformer in the stack is an instance of all of the type
+	classes that we're rederiving with our <code class="code">deriving</code>
+	clause. This is a consequence of <code class="code">mtl</code> providing a
+	carefully coordinated set of typeclasses and instances that
+	fit together well.  There is nothing more going on than the
+	usual automatic derivation that we can perform with <code class="code">newtype</code>
+	declarations.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id658064">Exercises</h3></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id658074"></a><a name="id658076"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_TJ1"><a name="x_TJ1"></a>Modify the <span class="type">App</span> type synonym to swap the
+	      order of <span class="type">ReaderT</span> and <span class="type">WriterT</span>.
+	      What effect does this have on the
+	      <code class="function">runApp</code> execution function?</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id658105"></a><a name="id658107"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_UJ1"><a name="x_UJ1"></a>Add the <span class="type">WriterT</span> transformer to the
+	      <span class="type">App</span> monad transformer stack.  Modify
+	      <code class="function">runApp</code> to work with this new
+	      setup.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id658132"></a><a name="id658135"></a><p><b>3.</b></p></td><td align="left" valign="top"><p id="x_VJ1"><a name="x_VJ1"></a>Rewrite the <code class="function">constrainedCount</code>
+	      function to record results using the
+	      <span class="type">WriterT</span> transformer in your new
+	      <span class="type">App</span> stack.</p></td></tr></tbody></table></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id658162">Moving down the stack</h2></div></div></div><p id="x_wt"><a name="x_wt"></a>So far, our uses of monad transformers have been simple, and
+      the plumbing of the <code class="code">mtl</code> library has allowed us to
+      avoid the details of how a stack of monads is constructed.
+      Indeed, we already know enough about monad transformers to
+      simplify many common programming tasks.</p><p id="x_xt"><a name="x_xt"></a>There are a few useful ways in which we can depart from
+      the comfort of <code class="code">mtl</code>.  Most often, a custom monad
+      sits at the bottom of the stack, or a custom monad transformer
+      lies somewhere within the stack.  To understand the potential
+      difficulty, let's look at an example.</p><p id="x_yt"><a name="x_yt"></a>Suppose we have a custom monad transformer,
+      <span class="type">CustomT</span>.</p><a name="CustomT.hs:CustomT"></a><pre id="CustomT.hs:CustomT" class="programlisting">-- file: ch18/CustomT.hs
+newtype CustomT m a = ...</pre><p id="x_zt"><a name="x_zt"></a>In the framework that <code class="code">mtl</code> provides, each monad
+      transformer in the stack makes the API of a lower level
+      available by providing instances of a host of typeclasses.  We
+      could follow this pattern, and write a number of boilerplate
+      instances.</p><a name="CustomT.hs:mtl"></a><pre id="CustomT.hs:mtl" class="programlisting">-- file: ch18/CustomT.hs
+instance MonadReader r m =&gt; MonadReader r (CustomT m) where
+    ...
+
+instance MonadIO m =&gt; MonadIO (CustomT m) where
+    ...</pre><p id="x_Au"><a name="x_Au"></a>If the underlying monad was an instance of
+      <span class="type">MonadReader</span>, we would write a
+      <span class="type">MonadReader</span> instance for <span class="type">CustomT</span> in
+      which each function in the API passes through to the
+      corresponding function in the underlying instance.  This would
+      allow higher level code to only care that the stack as a whole
+      is an instance of <span class="type">MonadReader</span>, without knowing or
+      caring about which layer provides the <span class="emphasis"><em>real</em></span>
+      implementation.</p><p id="x_Bu"><a name="x_Bu"></a>Instead of relying on all of these typeclass instances to
+      work for us behind the scenes, we can be explicit. The
+      <span class="type">MonadTrans</span> typeclass defines a useful function
+      named <code class="function">lift</code>.</p><a name="monadTrans.ghci:MonadTrans"></a><pre id="monadTrans.ghci:MonadTrans" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m +Control.Monad.Trans</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:info MonadTrans</code></strong>
+class MonadTrans t where lift :: (Monad m) =&gt; m a -&gt; t m a
+  	-- Defined in Control.Monad.Trans
+</pre><p id="x_Cu"><a name="x_Cu"></a>This function takes a monadic action from one layer down the
+      stack, and turns it—in other words,
+      <span class="emphasis"><em>lifts</em></span> it—into an action in the
+      current monad transformer. Every monad transformer is an
+      instance of <span class="type">MonadTrans</span>.</p><p id="x_Du"><a name="x_Du"></a>We use the name <code class="function">lift</code> based on its
+      similarity of purpose to <code class="function">fmap</code> and
+      <code class="function">liftM</code>. In each case, we hoist something
+      from a lower level of the type system to the level we're
+      currently working in.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_Eu"><a name="x_Eu"></a><code class="function">fmap</code> elevates a pure function to
+	  the level of functors;</p></li><li><p id="x_Fu"><a name="x_Fu"></a><code class="function">liftM</code> takes a pure function to the
+	  level of monads;</p></li><li><p id="x_Gu"><a name="x_Gu"></a>and <code class="function">lift</code> raises a monadic action
+	  from one level beneath in the transformer stack to the
+	  current one.</p></li></ul></div><p id="x_Hu"><a name="x_Hu"></a>Let's revisit the <span class="type">App</span> monad stack we defined
+      earlier (before we wrapped it with a <code class="code">newtype</code>).</p><pre id="id658428" class="programlisting">-- file: ch18/UglyStack.hs
+type App = ReaderT AppConfig (StateT AppState IO)</pre><p id="x_Iu"><a name="x_Iu"></a>If we want to access the <span class="type">AppState</span> carried by
+      the <span class="type">StateT</span>, we would usually rely on
+      <code class="code">mtl</code>'s typeclasses and instances to handle the
+      plumbing for us.</p><a name="UglyStack.hs:implicitGet"></a><pre id="UglyStack.hs:implicitGet" class="programlisting">-- file: ch18/UglyStack.hs
+implicitGet :: App AppState
+implicitGet = get</pre><p id="x_Ju"><a name="x_Ju"></a>The <code class="function">lift</code> function lets us achieve the
+      same effect, by lifting <code class="function">get</code> from
+      <span class="type">StateT</span> into <span class="type">ReaderT</span>.</p><a name="UglyStack.hs:explicitGet"></a><pre id="UglyStack.hs:explicitGet" class="programlisting">-- file: ch18/UglyStack.hs
+explicitGet :: App AppState
+explicitGet = lift get</pre><p id="x_Ku"><a name="x_Ku"></a>Obviously, when we can let <code class="code">mtl</code> do this work for
+      us, we end up with cleaner code, but this is not always
+      possible.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id658511">When explicit lifting is necessary</h3></div></div></div><p id="x_Lu"><a name="x_Lu"></a>One case in which we <span class="emphasis"><em>must</em></span> use
+	<code class="function">lift</code> is when we create a monad
+	transformer stack in which instances of the same typeclass
+	appear at multiple levels.</p><a name="StackStack.hs:Foo"></a><pre id="StackStack.hs:Foo" class="programlisting">-- file: ch18/StackStack.hs
+type Foo = StateT Int (State String)</pre><p id="x_Mu"><a name="x_Mu"></a>If we try to use the <code class="function">put</code>
+	action of the <span class="type">MonadState</span> typeclass, the instance
+	we will get is that of <span class="type">StateT Int</span>, because it's
+	at the top of the stack.</p><a name="StackStack.hs:outerPut"></a><pre id="StackStack.hs:outerPut" class="programlisting">-- file: ch18/StackStack.hs
+outerPut :: Int -&gt; Foo ()
+outerPut = put</pre><p id="x_Nu"><a name="x_Nu"></a>In this case, the only way we can access the
+	underlying <span class="type">State</span> monad's <code class="function">put</code>
+	is through use of <code class="function">lift</code>.</p><a name="StackStack.hs:innerPut"></a><pre id="StackStack.hs:innerPut" class="programlisting">-- file: ch18/StackStack.hs
+innerPut :: String -&gt; Foo ()
+innerPut = lift . put</pre><p id="x_Ou"><a name="x_Ou"></a>Sometimes, we need to access a monad more than one level
+	down the stack, in which case we must compose calls to
+	<code class="function">lift</code>.  Each composed use of
+	<code class="function">lift</code> gives us access to one deeper
+	level.</p><a name="StackStack.hs:Bar"></a><pre id="StackStack.hs:Bar" class="programlisting">-- file: ch18/StackStack.hs
+type Bar = ReaderT Bool Foo
+
+barPut :: String -&gt; Bar ()
+barPut = lift . lift . put</pre><p id="x_Pu"><a name="x_Pu"></a>When we need to use <code class="function">lift</code>,
+	it can be good style to write wrapper functions that do the
+	lifting for us, as above, and to use those.  The alternative
+	of sprinkling explicit uses of <code class="function">lift</code>
+	throughout our code tends to look messy.  Worse, it hard-wires
+	the details of the layout of our monad stack into our code,
+	which will complicate any subsequent modifications.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="monadtrans.maybet">Understanding monad transformers by building one</h2></div></div></div><p id="x_Qu"><a name="x_Qu"></a>To give ourselves some insight into how monad
+      transformers in general work, we will create one and describe
+      its machinery as we go.  Our target is simple and useful.
+      Surprisingly, though, it is missing from the <code class="code">mtl</code>
+      library: <span class="type">MaybeT</span>.</p><p id="x_Ru"><a name="x_Ru"></a>This monad transformer modifies the behaviour of an
+      underlying monad <span class="type">m a</span> by wrapping its type parameter
+      with <span class="type">Maybe</span>, to give <span class="type">m (Maybe a)</span>.   As
+      with the <span class="type">Maybe</span> monad, if we call
+      <code class="function">fail</code> in the <span class="type">MaybeT</span> monad
+      transformer, execution terminates early.</p><p id="x_Su"><a name="x_Su"></a>In order to turn <span class="type">m (Maybe a)</span> into a
+      <span class="type">Monad</span> instance, we must make it a distinct type,
+      via a <code class="code">newtype</code> declaration.</p><a name="MaybeT.hs:newtype"></a><pre id="MaybeT.hs:newtype" class="programlisting">-- file: ch18/MaybeT.hs
+newtype MaybeT m a = MaybeT {
+      runMaybeT :: m (Maybe a)
+    }</pre><p id="x_Tu"><a name="x_Tu"></a>We now need to define the three standard monad functions.
+      The most complex is <code class="function">(&gt;&gt;=)</code>, and its innards shed the most light
+      on what we are actually doing.  Before we delve into its
+      operation, let us first take a look at its type.</p><a name="MaybeT.hs:bindMT.type"></a><pre id="MaybeT.hs:bindMT.type" class="programlisting">-- file: ch18/MaybeT.hs
+bindMT :: (Monad m) =&gt; MaybeT m a -&gt; (a -&gt; MaybeT m b) -&gt; MaybeT m b</pre><p id="x_Uu"><a name="x_Uu"></a>To understand this type signature, hark back to our
+      discussion of multi-parameter typeclasses in <a class="xref" href="programming-with-monads.html#monadcase.mptc" title="Multi-parameter typeclasses">the section called “Multi-parameter typeclasses”</a>.  The thing that we intend to make
+      a <span class="type">Monad</span> instance is the <span class="emphasis"><em>partial
+	type</em></span> <span class="type">MaybeT m</span>: this has the usual
+      single type parameter, <code class="varname">a</code>, that satisfies the
+      requirements of the <span class="type">Monad</span> typeclass.</p><p id="x_Vu"><a name="x_Vu"></a>The trick to understanding the body of our <code class="function">(&gt;&gt;=)</code>
+      implementation is that everything inside the <code class="literal">do</code> block executes
+      in the <span class="emphasis"><em>underlying</em></span> monad <span class="type">m</span>,
+      whatever that is.</p><a name="MaybeT.hs:bindMT"></a><pre id="MaybeT.hs:bindMT" class="programlisting">-- file: ch18/MaybeT.hs
+x `bindMT` f = MaybeT $ do
+                 unwrapped &lt;- runMaybeT x
+                 case unwrapped of
+                   Nothing -&gt; return Nothing
+                   Just y -&gt; runMaybeT (f y)</pre><p id="x_Wu"><a name="x_Wu"></a>Our <code class="function">runMaybeT</code> function unwraps the
+      result contained in <code class="varname">x</code>.  Next, recall that the
+      <code class="code">&lt;-</code> symbol desugars to <code class="function">(&gt;&gt;=)</code>: a monad
+      transformer's <code class="function">(&gt;&gt;=)</code> must use the underlying monad's <code class="function">(&gt;&gt;=)</code>. The
+      final bit of case analysis determines whether we short circuit
+      or chain our computation.  Finally, look back at the top of the
+      body: here, we must wrap the result with the <span class="type">MaybeT</span>
+      constructor, to once again hide the underlying monad.</p><p id="x_Xu"><a name="x_Xu"></a>The <code class="literal">do</code> notation above might be pleasant to read, but it
+      hides the fact that we are relying on the underlying monad's
+      <code class="function">(&gt;&gt;=)</code> implementation.  Here is a more idiomatic version of
+      <code class="function">(&gt;&gt;=)</code> for <span class="type">MaybeT</span> that makes this clearer.</p><a name="MaybeT.hs:altBindMT"></a><pre id="MaybeT.hs:altBindMT" class="programlisting">-- file: ch18/MaybeT.hs
+x `altBindMT` f =
+    MaybeT $ runMaybeT x &gt;&gt;= maybe (return Nothing) (runMaybeT . f)</pre><p id="x_Yu"><a name="x_Yu"></a>Now that we understand what <code class="function">(&gt;&gt;=)</code> is doing, our
+      implementations of <code class="function">return</code> and
+      <code class="function">fail</code> need no explanation, and neither does
+      our <span class="type">Monad</span> instance.</p><a name="MaybeT.hs:Monad"></a><pre id="MaybeT.hs:Monad" class="programlisting">-- file: ch18/MaybeT.hs
+returnMT :: (Monad m) =&gt; a -&gt; MaybeT m a
+returnMT a = MaybeT $ return (Just a)
+
+failMT :: (Monad m) =&gt; t -&gt; MaybeT m a
+failMT _ = MaybeT $ return Nothing
+ 
+instance (Monad m) =&gt; Monad (MaybeT m) where
+  return = returnMT
+  (&gt;&gt;=) = bindMT
+  fail = failMT</pre><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id658976">Creating a monad transformer</h3></div></div></div><p id="x_Zu"><a name="x_Zu"></a>To turn our type into a monad transformer, we must provide
+	an instance of the <span class="type">MonadTrans</span> class, so that a
+	user can access the underlying monad.</p><a name="MaybeT.hs:MonadTrans"></a><pre id="MaybeT.hs:MonadTrans" class="programlisting">-- file: ch18/MaybeT.hs
+instance MonadTrans MaybeT where
+    lift m = MaybeT (Just `liftM` m)</pre><p id="x_au"><a name="x_au"></a>The underlying monad starts out with a type parameter of
+	<span class="type">a</span>: we “<span class="quote">inject</span>” the <code class="code">Just</code>
+	constructor so it will acquire the type that we need,
+	<span class="type">Maybe a</span>.  We then hide the monad with our
+	<span class="type">MaybeT</span> constructor.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id659032">More typeclass instances</h3></div></div></div><p id="x_bu"><a name="x_bu"></a>Once we have an instance for <span class="type">MonadTrans</span>
+	defined, we can use it to define instances for the umpteen
+	other <code class="code">mtl</code> typeclasses.</p><a name="MaybeT.hs:mtl"></a><pre id="MaybeT.hs:mtl" class="programlisting">-- file: ch18/MaybeT.hs
+instance (MonadIO m) =&gt; MonadIO (MaybeT m) where
+  liftIO m = lift (liftIO m)
+
+instance (MonadState s m) =&gt; MonadState s (MaybeT m) where
+  get = lift get
+  put k = lift (put k)
+
+-- ... and so on for MonadReader, MonadWriter, etc ...</pre><p id="x_cu"><a name="x_cu"></a>Because several of the <code class="code">mtl</code> typeclasses use
+	functional dependencies, some of our instance declarations
+	require us to considerably relax <span class="application">GHC</span>'s usual strict type
+	checking rules. (If we were to forget any of these directives,
+	the compiler would helpfully advise us which ones we needed in
+	its error messages.)</p><a name="MaybeT.hs:LANGUAGE"></a><pre id="MaybeT.hs:LANGUAGE" class="programlisting">-- file: ch18/MaybeT.hs
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses,
+             UndecidableInstances #-}</pre><p id="x_du"><a name="x_du"></a>Is it better to use <code class="function">lift</code>
+	explicitly, or to spend time writing these boilerplate
+	instances?  That depends on what we expect to do with our
+	monad transformer. If we're going to use it in just a few
+	restricted situations, we can get away with providing an
+	instance for <span class="type">MonadTrans</span> alone.  In this case, a
+	few more instances might still make sense, such as
+	<span class="type">MonadIO</span>.  On the other hand, if our transformer
+	is going to pop up in diverse situations throughout a body of
+	code, spending a dull hour to write those instances might be a
+	good investment.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id659118">Replacing the Parse type with a monad stack</h3></div></div></div><p id="x_eu"><a name="x_eu"></a>Now that we have developed a monad transformer that can
+	exit early, we can use it to bail if, for example, a parse
+	fails partway through. We could thus replace the
+	<span class="type">Parse</span> type that we developed in <a class="xref" href="code-case-study-parsing-a-binary-data-format.html#binary.implicit" title="Implicit state">the section called “Implicit state”</a> with a monad customised to our
+	needs.</p><a name="MaybeTParse.hs:Parse"></a><pre id="MaybeTParse.hs:Parse" class="programlisting">-- file: ch18/MaybeTParse.hs
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+module MaybeTParse
+    (
+      Parse
+    , evalParse
+    ) where
+
+import MaybeT
+import Control.Monad.State
+import Data.Int (Int64)
+import qualified Data.ByteString.Lazy as L
+
+data ParseState = ParseState {
+      string :: L.ByteString
+    , offset :: Int64
+    } deriving (Show)
+
+newtype Parse a = P {
+      runP :: MaybeT (State ParseState) a
+    } deriving (Monad, MonadState ParseState)
+
+evalParse :: Parse a -&gt; L.ByteString -&gt; Maybe a
+evalParse m s = evalState (runMaybeT (runP m)) (ParseState s 0)</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id659161">Exercises</h3></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id659169"></a><a name="id659171"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_fu"><a name="x_fu"></a>Our <span class="type">Parse</span> monad is not a perfect
+	      replacement for its earlier counterpart.  Because we are
+	      using <span class="type">Maybe</span> instead of <span class="type">Either</span>
+	      to represent a result, we can't report any useful
+	      information if a parse fails.</p><p id="x_gu"><a name="x_gu"></a>Create an <span class="type">EitherT sometype</span> monad
+	      transformer, and use it to implement a more capable
+	      <span class="type">Parse</span> monad that can report an error
+	      message if parsing fails.</p><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_hu"><a name="x_hu"></a>If you like to explore the Haskell
+		libraries for fun, you may have run across an existing
+		<span class="type">Monad</span> instance for the
+		<span class="type">Either</span> type in the
+		<code class="code">Control.Monad.Error</code> module.  We suggest
+		that you do not use that as a guide. Its design is
+		too restrictive: it turns <span class="type">Either String</span>
+		into a monad, when you could use a type parameter
+		instead of <span class="type">String</span>.</p><p id="x_T11"><a name="x_T11"></a><span class="emphasis"><em>Hint</em></span>: If you
+		follow this suggestion, you'll probably need to use
+		the <code class="code">FlexibleInstances</code> language extension
+		in your definition.</p></td></tr></table></div></td></tr></tbody></table></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id659259">Transformer stacking order is important</h2></div></div></div><p id="x_iu"><a name="x_iu"></a>From our early examples using monad transformers like
+      <span class="type">ReaderT</span> and <span class="type">StateT</span>, it might be easy
+      to conclude that the order in which we stack monad transformers
+      doesn't matter.</p><p id="x_ju"><a name="x_ju"></a>When we stack <span class="type">StateT</span> on top of
+      <span class="type">State</span>, it should be clearer that order can indeed
+      make a difference.  The types <span class="type">StateT Int (State
+	String)</span> and <span class="type">StateT String (State Int)</span>
+      might carry around the same information, but we can't use them
+      interchangeably.  The ordering determines when we need to use
+      <code class="function">lift</code> to get at one or the other piece of
+      state.</p><p id="x_ku"><a name="x_ku"></a>Here's a case that more dramatically demonstrates the
+      importance of ordering.  Suppose we have a computation that
+      might fail, and we want to log the circumstances under which it
+      does so.</p><a name="MTComposition.hs:problem"></a><pre id="MTComposition.hs:problem" class="programlisting">-- file: ch18/MTComposition.hs
+{-# LANGUAGE FlexibleContexts #-}
+import Control.Monad.Writer
+import MaybeT
+
+problem :: MonadWriter [String] m =&gt; m ()
+problem = do
+  tell ["this is where i fail"]
+  fail "oops"</pre><p id="x_lu"><a name="x_lu"></a>Which of these monad stacks will give us the information we
+      need?</p><a name="MTComposition.hs:types"></a><pre id="MTComposition.hs:types" class="programlisting">-- file: ch18/MTComposition.hs
+type A = WriterT [String] Maybe
+
+type B = MaybeT (Writer [String])
+
+a :: A ()
+a = problem
+
+b :: B ()
+b = problem</pre><p id="x_mu"><a name="x_mu"></a>Let's try the alternatives in <span class="command"><strong>ghci</strong></span>.</p><a name="mtComposition.ghci:problem"></a><pre id="mtComposition.ghci:problem" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>runWriterT a</code></strong>
+Loading package mtl-1.1.0.0 ... linking ... done.
+Nothing
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runWriter $ runMaybeT b</code></strong>
+(Nothing,["this is where i fail"])
+</pre><p id="x_nu"><a name="x_nu"></a>This difference in results should not come as a surprise:
+      just look at the signatures of the execution functions.</p><a name="mtComposition.ghci:runWriterT"></a><pre id="mtComposition.ghci:runWriterT" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t runWriterT</code></strong>
+runWriterT :: WriterT w m a -&gt; m (a, w)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t runWriter . runMaybeT</code></strong>
+runWriter . runMaybeT :: MaybeT (Writer w) a -&gt; (Maybe a, w)
+</pre><p id="x_ou"><a name="x_ou"></a>Our <span class="type">WriterT</span>-on-<span class="type">Maybe</span> stack has
+      <span class="type">Maybe</span> as the underlying monad, so
+      <code class="function">runWriterT</code> must give us back a result of
+      type <span class="type">Maybe</span>.  In our test case, we only get to see
+      the log of what happened if nothing actually went wrong!</p><p id="x_pu"><a name="x_pu"></a>Stacking monad transformers is analogous to
+      composing functions.  If we change the order in which we apply
+      functions, and we then get different results, we are not
+      surprised.  So it is with monad transformers, too.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id659474">Putting monads and monad transformers into
+      perspective</h2></div></div></div><p id="x_qu"><a name="x_qu"></a>It's useful to step back from details for a few moments, and
+      look at the weaknesses and strengths of programming with monads
+      and monad transformers.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id659488">Interference with pure code</h3></div></div></div><p id="x_ru"><a name="x_ru"></a>Probably the biggest practical irritation of working with
+	monads is that a monad's type constructor often gets in our
+	way when we'd like to use pure code.  Many useful pure
+	functions need monadic counterparts, simply to tack on a
+	placeholder parameter <code class="varname">m</code> for some monadic
+	type constructor.</p><a name="monadProblems.ghci:filter"></a><pre id="monadProblems.ghci:filter" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t filter</code></strong>
+filter :: (a -&gt; Bool) -&gt; [a] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:i filterM</code></strong>
+filterM :: (Monad m) =&gt; (a -&gt; m Bool) -&gt; [a] -&gt; m [a]
+  	-- Defined in Control.Monad
+</pre><p id="x_su"><a name="x_su"></a>However, the coverage is incomplete: the standard
+	libraries don't always provide monadic versions of pure
+	functions.</p><p id="x_tu"><a name="x_tu"></a>The reason for this lies in history.  Eugenio
+	Moggi introduced the idea of using monads for programming in
+	1988, around the time the Haskell 1.0 standard was being
+	developed. Many of the functions in today's
+	<code class="code">Prelude</code> date back to Haskell 1.0, which was
+	released in 1990.  In 1991, Philip Wadler started writing for
+	a wider functional programming audience about the potential of
+	monads, at which point they began to see some use.</p><p id="x_uu"><a name="x_uu"></a>Not until 1996, and the release of Haskell 1.3, did the
+	standard acquire support for monads.  By this time, the
+	language designers were already constrained by backwards
+	compatibility: they couldn't change the signatures of
+	functions in the <code class="code">Prelude</code>, because it would have
+	broken existing code.</p><p id="x_vu"><a name="x_vu"></a>Since then, the Haskell community has learned a lot about
+	creating suitable abstractions, so that we can write code that
+	is less affected by the pure/monadic divide. You can find
+	modern distillations of these ideas in the
+	<code class="code">Data.Traversable</code> and <code class="code">Data.Foldable</code>
+	modules.  As appealing as those modules are, we do not cover
+	them in this book. This is in part for want of space, but also
+	because if you're still following our book at this point, you
+	won't have trouble figuring them out for yourself.</p><p id="x_wu"><a name="x_wu"></a>In an ideal world, would we make a break from the past,
+	and switch over <code class="code">Prelude</code> to use
+	<span class="type">Traversable</span> and <span class="type">Foldable</span> types?
+	Probably not.  Learning Haskell is already a stimulating
+	enough adventure for newcomers.  The <span class="type">Foldable</span> and
+	<span class="type">Traversable</span> abstractions are easy to pick up when
+	we already understand functors and monads, but they would put
+	early learners on too pure a diet of abstraction.  For
+	teaching the language, it's <span class="emphasis"><em>good</em></span> that
+	<code class="function">map</code> operates on lists, not on
+	functors.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id659632">Overdetermined ordering</h3></div></div></div><p id="x_xu"><a name="x_xu"></a>One of the principal reasons that we use monads is that
+	they let us specify an ordering for effects.  Look again at a
+	small snippet of code we wrote earlier.</p><pre id="id659646" class="programlisting">-- file: ch18/MTComposition.hs
+{-# LANGUAGE FlexibleContexts #-}
+import Control.Monad.Writer
+import MaybeT
+
+problem :: MonadWriter [String] m =&gt; m ()
+problem = do
+  tell ["this is where i fail"]
+  fail "oops"</pre><p id="x_yu"><a name="x_yu"></a>Because we are executing in a monad, we are guaranteed
+	that the effect of the <code class="function">tell</code> will occur
+	before the effect of <code class="function">fail</code>.  The problem
+	is that we get this guarantee of ordering even when we don't
+	necessarily want it: the compiler is not free to rearrange
+	monadic code, even if doing so would make it more
+	efficient.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id659676">Runtime overhead</h3></div></div></div><p id="x_zu"><a name="x_zu"></a>Finally, when we use monads and monad transformers, we
+	can pay an efficiency tax.  For instance, the <span class="type">State</span>
+	monad carries its state around in a closure.  Closures might
+	be cheap in a Haskell implementation, but they're not
+	free.</p><p id="x_Av"><a name="x_Av"></a>A monad transformer adds its own overhead to that of
+	whatever is underneath.   Our <span class="type">MaybeT</span> transformer
+	has to wrap and unwrap <span class="type">Maybe</span> values every time we
+	use <code class="function">(&gt;&gt;=)</code>. A stack of <span class="type">MaybeT</span> on top of
+	<span class="type">StateT</span> over <span class="type">ReaderT</span> thus has a lot
+	of book-keeping to do for each <code class="function">(&gt;&gt;=)</code>.</p><p id="x_Bv"><a name="x_Bv"></a>A sufficiently smart compiler might make some or all of
+	these costs vanish, but that degree of sophistication is not
+	yet widely available.</p><p id="x_WJ1"><a name="x_WJ1"></a>There are relatively simple techniques to avoid some of
+	these costs, though we lack space to do more than mention them
+	by name. For instance, by using a continuation monad, we can
+	avoid the constant wrapping and unwrapping in <code class="function">(&gt;&gt;=)</code>, only
+	paying for effects when we use them.  Much of the complexity
+	of this approach has already been packaged up in libraries.
+	This area of work is still under lively development as we
+	write.   If you want to make your use of monad transformers
+	more efficient, we recommend looking on Hackage, or asking for
+	directions on a mailing list or IRC.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id659760">Unwieldy interfaces</h3></div></div></div><p id="x_Cv"><a name="x_Cv"></a>If we use the <code class="code">mtl</code> library as a black box, all
+	of its components mesh quite nicely.  However, once we start
+	developing our own monads and monad transformers, and using
+	them with those provided by <code class="code">mtl</code>, some
+	deficiencies start to show.</p><p id="x_Dv"><a name="x_Dv"></a>For example, if we create a new monad transformer
+	<span class="type">FooT</span> and want to follow the same pattern as
+	<code class="code">mtl</code>, we'll have it implement a typeclass
+	<span class="type">MonadFoo</span>.  If we really want to integrate it
+	cleanly into the <code class="code">mtl</code>, we'll have to provide
+	instances for each of the dozen or so <code class="code">mtl</code> type
+	classes.</p><p id="x_Ev"><a name="x_Ev"></a>On top of that, we'll have to declare instances of
+	<span class="type">MonadFoo</span> for each of the
+	<code class="code">mtl</code> transformers.  Most of those instances will
+	be almost identical, and quite dull to write.  If we
+	want to keep integrating new monad transformers into the
+	<code class="code">mtl</code> framework, the number of moving parts we must
+	deal with increases with the <span class="emphasis"><em>square</em></span> of
+	the number of new transformers!</p><p id="x_Fv"><a name="x_Fv"></a>In fairness, this problem only matters to a tiny number of
+	people.  Most users of <code class="code">mtl</code> don't need to develop
+	new transformers at all, so they are not affected.</p><p id="x_Gv"><a name="x_Gv"></a>This weakness of <code class="code">mtl</code>'s design lies with the
+	fact that it was the first library of monad transformers that
+	was developed.  Given that its designers were plunging into
+	the unknown, they did a remarkable job of producing a powerful
+	library that is easy for most users to understand and work
+	with.</p><p id="x_Hv"><a name="x_Hv"></a>A newer library of monads and transformers,
+	<code class="code">monadLib</code>, corrects many of the design flaws in
+	<code class="code">mtl</code>.  If at some point you turn into a hard core
+	hacker of monad transformers, it is well worth looking
+	at.</p><p id="x_XJ1"><a name="x_XJ1"></a>The quadratic instances definition is actually a problem
+	with the approach of using monad transformers. There have been
+	many other approaches put forward for composing monads that
+	don't have this problem, but none of them seem as convenient
+	to the end user as monad transformers.  Fortunately, there
+	simply aren't that many foundational, generically useful monad
+	transformers.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id659884">Pulling it all together</h3></div></div></div><p id="x_Iv"><a name="x_Iv"></a>Monads are not by any means the end of the road when it
+	comes to working with effects and types.  What they are is the
+	most practical resting point we have reached so far.  Language
+	researchers are always working on systems that try to provide
+	similar advantages, without the same compromises.</p><p id="x_Jv"><a name="x_Jv"></a>Although we must make compromises when we use them, monads
+	and monad transformers still offer a degree of flexibility and
+	control that has no precedent in an imperative language.  With
+	just a few declarations, we can rewire something as fundamental
+	as the semicolon to give it a new meaning.</p></div></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id656986" href="#id656986" class="para">37</a>] </sup>The name
+	  <code class="code">mtl</code> stands for “<span class="quote">monad transformer
+	    library</span>”.</p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="interfacing-with-c-the-ffi.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="error-handling.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 17. Interfacing with C: the FFI </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 19. Error handling</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

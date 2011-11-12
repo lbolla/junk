@@ -1,0 +1,1208 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 3. Defining Types, Streamlining Functions</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="types-and-functions.html" title="Chapter 2. Types and Functions"><link rel="next" href="functional-programming.html" title="Chapter 4. Functional programming"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 3. Defining Types, Streamlining Functions</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="types-and-functions.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="functional-programming.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="deftypes"><div class="titlepage"><div><div><h2 class="title">Chapter 3. Defining Types, Streamlining Functions</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.data">Defining a new data type</a></span></dt><dd><dl><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#id582783">Naming types and values</a></span></dt></dl></dd><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.alias">Type synonyms</a></span></dt><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.adt">Algebraic data types</a></span></dt><dd><dl><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#id583233">Tuples, algebraic data types, and when to use
+	each</a></span></dt><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#deftypes.adt.comp">Analogues to algebraic data types in other
+	languages</a></span></dt><dd><dl><dt><span class="sect3"><a href="defining-types-streamlining-functions.html#id583523">The structure</a></span></dt><dt><span class="sect3"><a href="defining-types-streamlining-functions.html#id583611">The enumeration</a></span></dt><dt><span class="sect3"><a href="defining-types-streamlining-functions.html#id583781">The discriminated union</a></span></dt></dl></dd></dl></dd><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.pattern">Pattern matching</a></span></dt><dd><dl><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#id584277">Construction and deconstruction</a></span></dt><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#id584453">Further adventures</a></span></dt><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#id584746">Variable naming in patterns</a></span></dt><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#deftypes.wildcard">The wild card pattern</a></span></dt><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#deftypes.patterns.nonexhaustive">Exhaustive patterns and wild cards</a></span></dt></dl></dd><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.record">Record syntax</a></span></dt><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.paramtypes">Parameterised types</a></span></dt><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.recursive">Recursive types</a></span></dt><dd><dl><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#id585938">Exercises</a></span></dt></dl></dd><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.error">Reporting errors</a></span></dt><dd><dl><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#deftypes.morecontrolled">A more controlled approach</a></span></dt></dl></dd><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.locals">Introducing local variables</a></span></dt><dd><dl><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#id586544">Shadowing</a></span></dt><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#id586728">The where clause</a></span></dt><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#deftypes.locals.functions">Local functions, global variables</a></span></dt></dl></dd><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.offside">The offside rule and white space in an expression</a></span></dt><dd><dl><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#deftypes.tabs">A note about tabs versus spaces</a></span></dt><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#deftypes.block">The offside rule is not mandatory</a></span></dt></dl></dd><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.case">The case expression</a></span></dt><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.pattern.limits">Common beginner mistakes with patterns</a></span></dt><dd><dl><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#id587485">Incorrectly matching against a variable</a></span></dt><dt><span class="sect2"><a href="defining-types-streamlining-functions.html#id587613">Incorrectly trying to compare for equality</a></span></dt></dl></dd><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#deftypes.guard">Conditional evaluation with guards</a></span></dt><dt><span class="sect1"><a href="defining-types-streamlining-functions.html#id587860">Exercises</a></span></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.data">Defining a new data type</h2></div></div></div><p id="x_C4"><a name="x_C4"></a>Although lists and tuples are useful, we'll often
+      want to construct new data types of our own.  This allows us to
+      add structure to the values in our programs.  Instead of using
+      an anonymous tuple, we can give a collection of related values a
+      name and a distinct type.  Defining our own types also improves
+      the type safety of our code: Haskell will not allow us to
+      accidentally mix values of two types that are structurally
+      similar but have different names.</p><p id="x_Cf"><a name="x_Cf"></a>For motivation, we'll consider a few kinds of data that a
+      small online bookstore might need to manage.  We won't make any
+      attempt at complete or realistic data definitions, but at least
+      we're tying them to the real world.</p><p id="x_Df"><a name="x_Df"></a>We define a new data type using the <code class="code">data</code>
+      keyword.</p><a name="BookStore.hs:BookInfo"></a><pre id="BookStore.hs:BookInfo" class="programlisting">-- file: ch03/BookStore.hs
+data BookInfo = Book Int String [String]
+                deriving (Show)</pre><p id="x_D4"><a name="x_D4"></a>The <span class="type">BookInfo</span> after the
+      <code class="code">data</code> keyword is the name of our new type. We call
+      <span class="type">BookInfo</span> a <span class="emphasis"><em>type constructor</em></span>.
+      Once we have defined a type, we will use its type
+      constructor to refer to it.
+      As we've already mentioned, a type name, and hence a type
+      constructor, must start with a capital letter.</p><p id="x_pB1"><a name="x_pB1"></a>The <code class="code">Book</code> that follows is the name of the
+      <span class="emphasis"><em>value constructor</em></span> (sometimes called a data
+      constructor).  We use this to create a value of the
+      <span class="type">BookInfo</span> type.  A value constructor's name must
+      also start with a capital letter.</p><p id="x_Ef"><a name="x_Ef"></a>After <code class="code">Book</code>, the <span class="type">Int</span>,
+      <span class="type">String</span>, and <span class="type">[String]</span> that follow are
+      the <span class="emphasis"><em>components</em></span> of the type.  A component
+      serves the same purpose in Haskell as a field in a structure or
+      class would in another language: it's a “<span class="quote">slot</span>”
+      where we keep a value.  (We'll often refer to components as
+      fields.)</p><p id="x_Ff"><a name="x_Ff"></a>In this example, the <span class="type">Int</span> represents a book's
+      identifier (e.g. in a stock database), <span class="type">String</span> its
+      title, and <span class="type">[String]</span> the names of its authors.</p><p id="x_Gf"><a name="x_Gf"></a>To make the link to a concept we've already seen, the
+      <span class="type">BookInfo</span> type contains the same components as a
+      3-tuple of type <span class="type">(Int, String, [String])</span>, but it has
+      a distinct type.  We can't accidentally (or deliberately) use
+      one in a context where the other is expected.  For instance, a
+      bookstore is also likely to carry magazines.</p><a name="BookStore.hs:MagazineInfo"></a><pre id="BookStore.hs:MagazineInfo" class="programlisting">-- file: ch03/BookStore.hs
+data MagazineInfo = Magazine Int String [String]
+                    deriving (Show)</pre><p id="x_qB1"><a name="x_qB1"></a>Even though this <span class="type">MagazineInfo</span> type has the same
+      structure as our <span class="type">BookInfo</span> type, Haskell treats the
+      types as distinct because their type and value constructors have
+      different names.</p><div class="note"><table border="0" summary="Note: Deriving what?"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Deriving what?</th></tr><tr><td align="left" valign="top"><p id="x_E4"><a name="x_E4"></a>We'll explain the full meaning of <code class="code">deriving
+	  (Show)</code> later, in
+	<a class="xref" href="using-typeclasses.html#typeclasses.wellknown.show" title="Show">the section called “Show”</a>.  For now, it's
+	enough to know that we need to tack this onto a type
+	declaration so that <span class="command"><strong>ghci</strong></span> will automatically know how to
+	print a value of this type.</p></td></tr></table></div><p id="x_F4"><a name="x_F4"></a>We can create a new value of type
+      <span class="type">BookInfo</span> by treating <code class="function">Book</code> as a
+      function, and applying it with arguments of types
+      <span class="type">Int</span>, <span class="type">String</span>, and
+      <span class="type">[String]</span>.</p><a name="BookStore.hs:myInfo"></a><pre id="BookStore.hs:myInfo" class="programlisting">-- file: ch03/BookStore.hs
+myInfo = Book 9780135072455 "Algebra of Programming"
+         ["Richard Bird", "Oege de Moor"]</pre><p id="x_G4"><a name="x_G4"></a>Once we have defined a type, we can experiment
+      with it in <span class="command"><strong>ghci</strong></span>.  We begin by using the
+      <span class="command"><strong>:load</strong></span> command to load our source file.</p><a name="bookstore.ghci:load"></a><pre id="bookstore.ghci:load" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load BookStore</code></strong>
+[1 of 1] Compiling Main             ( BookStore.hs, interpreted )
+Ok, modules loaded: Main.
+</pre><p id="x_H4"><a name="x_H4"></a>Remember the <code class="code">myInfo</code> variable we
+      defined in our source file?  Here it is.</p><a name="bookstore.ghci:myInfo"></a><pre id="bookstore.ghci:myInfo" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>myInfo</code></strong>
+Book 9780135072455 "Algebra of Programming" ["Richard Bird","Oege de Moor"]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type myInfo</code></strong>
+myInfo :: BookInfo
+</pre><p id="x_I4"><a name="x_I4"></a>We can construct new values interactively in
+      <span class="command"><strong>ghci</strong></span>, too.</p><a name="bookstore.ghci:newValue"></a><pre id="bookstore.ghci:newValue" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>Book 0 "The Book of Imaginary Beings" ["Jorge Luis Borges"]</code></strong>
+Book 0 "The Book of Imaginary Beings" ["Jorge Luis Borges"]
+</pre><p id="x_AL"><a name="x_AL"></a>The <span class="command"><strong>ghci</strong></span> command <span class="command"><strong>:type</strong></span> lets
+      us see what the type of an expression is.</p><a name="bookstore.ghci:valueType"></a><pre id="bookstore.ghci:valueType" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type Book 1 "Cosmicomics" ["Italo Calvino"]</code></strong>
+Book 1 "Cosmicomics" ["Italo Calvino"] :: BookInfo
+</pre><p id="x_rB1"><a name="x_rB1"></a>Remember that if we want to define a new variable inside
+      <span class="command"><strong>ghci</strong></span>, the syntax is slightly different from that of a Haskell
+      source file: we need to put a <code class="literal">let</code> in front.</p><a name="bookstore.ghci:newVar"></a><pre id="bookstore.ghci:newVar" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let cities = Book 173 "Use of Weapons" ["Iain M. Banks"]</code></strong>
+</pre><p id="x_J4"><a name="x_J4"></a>To find out more about a type, we can use some of
+      <span class="command"><strong>ghci</strong></span>'s browsing capabilities.  The <span class="command"><strong>:info</strong></span>
+      command gets <span class="command"><strong>ghci</strong></span> to tell us everything it knows about a
+      name.</p><a name="bookstore.ghci:info"></a><pre id="bookstore.ghci:info" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:info BookInfo</code></strong>
+data BookInfo = Book Int String [String]
+  	-- Defined at BookStore.hs:4:5-12
+instance Show BookInfo -- Defined at BookStore.hs:4:5-12
+</pre><p id="x_K4"><a name="x_K4"></a>We can also find out why we use
+      <code class="function">Book</code> to construct a new value of type
+      <span class="type">BookStore</span>.</p><a name="bookstore.ghci:type"></a><pre id="bookstore.ghci:type" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type Book</code></strong>
+Book :: Int -&gt; String -&gt; [String] -&gt; BookInfo
+</pre><p id="x_L4"><a name="x_L4"></a>We can treat a value constructor as just another
+      function, one that happens to create and return a new value of
+      the type we desire.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id582783">Naming types and values</h3></div></div></div><p id="x_Hf"><a name="x_Hf"></a>When we introduced the type <span class="type">BookStore</span>, we
+	deliberately chose to give the type constructor
+	<span class="type">BookStore</span> a different name from the value
+	constructor <code class="code">Book</code>, purely to make it obvious which
+	was which.</p><p id="x_If"><a name="x_If"></a>However, in Haskell, the names of types and
+	values are independent of each other.  We only use a type
+	constructor (i.e. the type's name) in a type declaration or a
+	type signature.  We only use a value constructor in actual
+	code.  Because these uses are distinct, there is no ambiguity
+	if we give a type constructor and a value constructor the same
+	name.  If we are writing a type signature, we must be
+	referring to a type constructor.  If we are writing an
+	expression, we must be using the value constructor.</p><a name="BookStore.hs:BookReview"></a><pre id="BookStore.hs:BookReview" class="programlisting">-- file: ch03/BookStore.hs
+-- We will introduce the CustomerID type shortly.
+
+data BookReview = BookReview BookInfo CustomerID String</pre><p id="x_Kf"><a name="x_Kf"></a>This definition says that the type named
+	<span class="type">BookReview</span> has a value constructor that is also
+	named <code class="code">BookReview</code>.</p><p id="x_Lf"><a name="x_Lf"></a>Not only is it <span class="emphasis"><em>legal</em></span> for a
+	value constructor to have the same name as its type
+	constructor, it's <span class="emphasis"><em>normal</em></span>: you'll see this
+	all the time in regular Haskell code.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.alias">Type synonyms</h2></div></div></div><p id="x_Mf"><a name="x_Mf"></a>We can introduce a <span class="emphasis"><em>synonym</em></span> for an
+      existing type at any time, to give a type a more
+      descriptive name.  For example, the <span class="type">String</span> in our
+      <span class="type">BookReview</span> type doesn't tell us what the string is
+      for, but we can clarify this.</p><a name="BookStore.hs:BetterReview"></a><pre id="BookStore.hs:BetterReview" class="programlisting">-- file: ch03/BookStore.hs
+type CustomerID = Int
+type ReviewBody = String
+
+data BetterReview = BetterReview BookInfo CustomerID ReviewBody</pre><p id="x_Nf"><a name="x_Nf"></a>The <code class="literal">type</code> keyword introduces a type synonym.  The new name
+      is on the left of the <code class="code">=</code>, with the existing name on
+      the right.  The two names identify the same type, so type
+      synonyms are <span class="emphasis"><em>purely</em></span> for making code more
+      readable.</p><p id="x_Of"><a name="x_Of"></a>We can also use a type synonym to create a shorter name for
+      a verbose type.</p><a name="BookStore.hs:BookRecord"></a><pre id="BookStore.hs:BookRecord" class="programlisting">-- file: ch03/BookStore.hs
+type BookRecord = (BookInfo, BookReview)</pre><p id="x_Pf"><a name="x_Pf"></a>This states that we can use
+      <span class="type">BookRecord</span> as a synonym for the tuple
+      <span class="type">(BookInfo, BookReview)</span>.  A type synonym only
+      creates a new name that refers to an existing type<sup>[<a name="id582956" href="#ftn.id582956" class="footnote">7</a>]</sup>.  We still use the same value constructors to create
+      a value of the type.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.adt">Algebraic data types</h2></div></div></div><p id="x_M4"><a name="x_M4"></a>The familiar <span class="type">Bool</span> is the simplest
+      common example of a category of type called an
+      <span class="emphasis"><em>algebraic data type</em></span>. An algebraic data type
+      can have more than one value constructor.</p><a name="Bool.hs:Bool"></a><pre id="Bool.hs:Bool" class="programlisting">-- file: ch03/Bool.hs
+data Bool = False | True</pre><p id="x_N4"><a name="x_N4"></a>The <span class="type">Bool</span> type has two value
+      constructors, <code class="code">True</code> and <code class="code">False</code>. Each
+      value constructor is separated in the definition by a
+      <code class="literal">|</code> character, which we can read as
+      “<span class="quote">or</span>”: we can construct a <span class="type">Bool</span> that has
+      the value <code class="code">True</code>, or the value <code class="code">False</code>.
+      When a type has more than one value constructor, they are
+      usually referred to as <span class="emphasis"><em>alternatives</em></span> or
+      <span class="emphasis"><em>cases</em></span>.  We can use any one of the
+      alternatives to create a value of that type.</p><div class="note"><table border="0" summary="Note: A note about naming"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">A note about naming</th></tr><tr><td align="left" valign="top"><p id="x_Qf"><a name="x_Qf"></a>Although the phrase “<span class="quote">algebraic data
+	  type</span>” is long, we're being careful to avoid using the
+	acronym “<span class="quote">ADT</span>”.  That acronym is already widely
+	understood to stand for “<span class="quote"><span class="emphasis"><em>abstract</em></span>
+	  data type</span>”.  Since Haskell supports both algebraic
+	and abstract data types, we'll be explicit and avoid the
+	acronym entirely.</p></td></tr></table></div><p id="x_O4"><a name="x_O4"></a>Each of an algebraic data type's value
+      constructors can take zero or more arguments.  As an example,
+      here's one way we might represent billing information.</p><a name="BookStore.hs:BillingInfo"></a><pre id="BookStore.hs:BillingInfo" class="programlisting">-- file: ch03/BookStore.hs
+type CardHolder = String
+type CardNumber = String
+type Address = [String]
+
+data BillingInfo = CreditCard CardNumber CardHolder Address
+                 | CashOnDelivery
+                 | Invoice CustomerID
+                   deriving (Show)</pre><p id="x_P4"><a name="x_P4"></a>Here, we're saying that we support three ways to
+      bill our customers.  If they want to pay by credit card, they
+      must supply a card number, the holder's name, and the holder's
+      billing address as arguments to the <code class="code">CreditCard</code>
+      value constructor.  Alternatively, they can pay the person who
+      delivers their shipment.  Since we don't need to store any extra
+      information about this, we specify no arguments for the
+      <code class="code">CashOnDelivery</code> constructor. Finally, we can send an
+      invoice to the specified customer, in which case we need their
+      <span class="type">CustomerID</span> as an argument to the
+      <code class="code">Invoice</code> constructor.</p><p id="x_Rf"><a name="x_Rf"></a>When we use a value constructor to create a
+      value of type <span class="type">BillingInfo</span>, we must supply the
+      arguments that it requires.</p><a name="bookstore.ghci:billingInfo"></a><pre id="bookstore.ghci:billingInfo" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type CreditCard</code></strong>
+CreditCard :: CardNumber -&gt; CardHolder -&gt; Address -&gt; BillingInfo
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>CreditCard "2901650221064486" "Thomas Gradgrind" ["Dickens", "England"]</code></strong>
+CreditCard "2901650221064486" "Thomas Gradgrind" ["Dickens","England"]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type it</code></strong>
+it :: BillingInfo
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>Invoice</code></strong>
+
+&lt;interactive&gt;:1:0:
+    No instance for (Show (CustomerID -&gt; BillingInfo))
+      arising from a use of `print' at &lt;interactive&gt;:1:0-6
+    Possible fix:
+      add an instance declaration for (Show (CustomerID -&gt; BillingInfo))
+    In the expression: print it
+    In a 'do' expression: print it
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type it</code></strong>
+it :: BillingInfo
+</pre><p id="x_bO1"><a name="x_bO1"></a>The <code class="code">No instance</code> error message arose because we
+      did not supply an argument to the <code class="code">Invoice</code>
+      constructor.  As a result, we were trying to print the
+      <code class="code">Invoice</code> constructor itself.  That constructor
+      requires an argument and returns a value, so it is a function.
+      We cannot print functions in Haskell, which is ultimately why
+      the interpreter complained.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id583233">Tuples, algebraic data types, and when to use
+	each</h3></div></div></div><p id="x_Sf"><a name="x_Sf"></a>There is some overlap between tuples and user-defined
+	algebraic data types.  If we wanted to, we could represent our
+	<span class="type">BookInfo</span> type from earlier as an <span class="type">(Int,
+	  String, [String])</span> tuple.</p><a name="bookstore.ghci:tuple"></a><pre id="bookstore.ghci:tuple" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>Book 2 "The Wealth of Networks" ["Yochai Benkler"]</code></strong>
+Book 2 "The Wealth of Networks" ["Yochai Benkler"]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(2, "The Wealth of Networks", ["Yochai Benkler"])</code></strong>
+(2,"The Wealth of Networks",["Yochai Benkler"])
+</pre><p id="x_Tf"><a name="x_Tf"></a>Algebraic data types allow us to distinguish
+      between otherwise identical pieces of information.
+	Two tuples with elements of the same type are structurally
+	identical, so they have the same type.</p><a name="Distinction.hs:tuples"></a><pre id="Distinction.hs:tuples" class="programlisting">-- file: ch03/Distinction.hs
+a = ("Porpoise", "Grey")
+b = ("Table", "Oak")</pre><p id="x_tB1"><a name="x_tB1"></a>Since they have different names, two algebraic data types
+	have distinct types, even if they are otherwise structurally
+	equivalent.</p><a name="Distinction.hs:data"></a><pre id="Distinction.hs:data" class="programlisting">-- file: ch03/Distinction.hs
+data Cetacean = Cetacean String String
+data Furniture = Furniture String String
+
+c = Cetacean "Porpoise" "Grey"
+d = Furniture "Table" "Oak"</pre><p id="x_uB1"><a name="x_uB1"></a>This lets us bring the type system to bear in writing
+	programs with fewer bugs.  With the tuples we defined above,
+	we could conveivably pass a description of a whale to a
+	function expecting a chair, and the type system could not help
+	us.  With the algebraic data types, there is no such
+	possibility of confusion.</p><p id="x_vB1"><a name="x_vB1"></a>Here is a more subtle example.  Consider the following
+	representations of a two-dimensional vector.</p><a name="AlgebraicVector.hs:types"></a><pre id="AlgebraicVector.hs:types" class="programlisting">-- file: ch03/AlgebraicVector.hs
+-- x and y coordinates or lengths.
+data Cartesian2D = Cartesian2D Double Double
+                   deriving (Eq, Show)
+
+-- Angle and distance (magnitude).
+data Polar2D = Polar2D Double Double
+               deriving (Eq, Show)</pre><p id="x_Uf"><a name="x_Uf"></a>The Cartesian and polar forms use the same types
+	for their two elements.  However, the
+	<span class="emphasis"><em>meanings</em></span> of the elements are different.
+	Because <span class="type">Cartesian2D</span> and <span class="type">Polar2D</span> are
+	distinct types, the type system will not let us accidentally
+	use a <span class="type">Cartesian2D</span> value where a
+	<span class="type">Polar2D</span> is expected, or vice versa.</p><a name="algebraicvector.ghci:typed"></a><pre id="algebraicvector.ghci:typed" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>Cartesian2D (sqrt 2) (sqrt 2) == Polar2D (pi / 4) 2</code></strong>
+
+&lt;interactive&gt;:1:33:
+    Couldn't match expected type `Cartesian2D'
+           against inferred type `Polar2D'
+    In the second argument of `(==)', namely `Polar2D (pi / 4) 2'
+    In the expression:
+          Cartesian2D (sqrt 2) (sqrt 2) == Polar2D (pi / 4) 2
+    In the definition of `it':
+        it = Cartesian2D (sqrt 2) (sqrt 2) == Polar2D (pi / 4) 2
+</pre><p id="x_Vf"><a name="x_Vf"></a>The <code class="function">(==)</code> operator requires its
+	arguments to have the same type.</p><div class="tip"><table border="0" summary="Tip: Comparing for equality"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Comparing for equality</th></tr><tr><td align="left" valign="top"><p id="x_cf"><a name="x_cf"></a>Notice that in the <code class="code">deriving</code>
+	  clause for our vector types, we added another word,
+	  <code class="code">Eq</code>.  This causes the Haskell implementation to
+	  generate code that lets us compare the values for
+	  equality.</p></td></tr></table></div><p id="x_Wf"><a name="x_Wf"></a>If we used tuples to represent these values, we could
+	quickly land ourselves in hot water by mixing the two
+	representations inappropriately.</p><a name="algebraicvector.ghci:tupled"></a><pre id="algebraicvector.ghci:tupled" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>(1, 2) == (1, 2)</code></strong>
+True
+</pre><p id="x_Xf"><a name="x_Xf"></a>The type system can't rescue us here: as far as
+	it's concerned, we're comparing two <span class="type">(Double,
+	  Double)</span> pairs, which is a perfectly valid thing to
+	do.  Indeed, we cannot tell by inspection which of these
+	values is supposed to be polar or Cartesian, but
+	<code class="code">(1,2)</code> has a different meaning in each
+	representation.</p><p id="x_Yf"><a name="x_Yf"></a>There is no hard and fast rule for deciding when
+	it's better to use a tuple or a distinct data type, but here's
+	a rule of thumb to follow. If you're using compound values
+	widely in your code (as almost all non-trivial programs do),
+	adding <code class="literal">data</code> declarations will benefit you in both type
+	safety and readability. For smaller, localised uses, a tuple
+	is usually fine.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="deftypes.adt.comp">Analogues to algebraic data types in other
+	languages</h3></div></div></div><p id="x_Q4"><a name="x_Q4"></a>Algebraic data types provide a single powerful
+	way to describe data types.  Other languages often need
+	several different features to achieve the same degree of
+	expressiveness.  Here are some analogues from C and C++, which
+	might make it clearer what we can do with algebraic data
+	types, and how they relate to concepts that might be more
+	familiar.</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="id583523">The structure</h4></div></div></div><p id="x_R4"><a name="x_R4"></a>With just one constructor, an algebraic data
+	  type is similar to a tuple: it groups related values
+	  together into a compound value. It corresponds to a
+	  <code class="code">struct</code> in C or C++, and its components
+	  correspond to the fields of a <code class="code">struct</code>. Here's a
+	  C equivalent of the <span class="type">BookInfo</span> type that we
+	  defined earlier.</p><a name="types.c:book_info"></a><pre id="types.c:book_info" class="programlisting">struct book_info {
+    int id;
+    char *name;
+    char **authors;
+};</pre><p id="x_Zf"><a name="x_Zf"></a>The main difference between the two is that the fields
+	  in the Haskell type are anonymous and positional.</p><pre id="id583567" class="programlisting">-- file: ch03/BookStore.hs
+data BookInfo = Book Int String [String]
+                deriving (Show)</pre><p id="x_af"><a name="x_af"></a>By <span class="emphasis"><em>positional</em></span>, we mean that the
+	  section number is in the first field of the Haskell type,
+	  and the title is in the second.  We refer to them by
+	  location, not by name.</p><p id="x_bf"><a name="x_bf"></a>In <a class="xref" href="defining-types-streamlining-functions.html#deftypes.pattern" title="Pattern matching">the section called “Pattern matching”</a>, we'll see how to access the
+	  fields of a <span class="type">BookStore</span> value.  In <a class="xref" href="defining-types-streamlining-functions.html#deftypes.record" title="Record syntax">the section called “Record syntax”</a>, we'll introduce an alternate
+	  syntax for defining data types that looks a little more
+	  C-like.</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="id583611">The enumeration</h4></div></div></div><p id="x_U4"><a name="x_U4"></a>Algebraic data types also serve where we'd use
+	  an <code class="code">enum</code> in C or C++, to represent a range of
+	  symbolic values. Such algebraic data types are sometimes
+	  referred to as enumeration types.  Here's an example from
+	  C.</p><a name="types.c:roygbiv"></a><pre id="types.c:roygbiv" class="programlisting">enum roygbiv {
+    red,
+    orange,
+    yellow,
+    green,
+    blue,
+    indigo,
+    violet,
+};</pre><p id="x_EL"><a name="x_EL"></a>And here's a Haskell equivalent.</p><a name="Roygbiv.hs:Roygbiv"></a><pre id="Roygbiv.hs:Roygbiv" class="programlisting">-- file: ch03/Roygbiv.hs
+
+data Roygbiv = Red
+             | Orange
+             | Yellow
+             | Green
+             | Blue
+             | Indigo
+             | Violet
+               deriving (Eq, Show)</pre><p id="x_wB1"><a name="x_wB1"></a>We can try these out in <span class="command"><strong>ghci</strong></span>.</p><a name="roygbiv.ghci:using"></a><pre id="roygbiv.ghci:using" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type Yellow</code></strong>
+Yellow :: Roygbiv
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type Red</code></strong>
+Red :: Roygbiv
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>Red == Yellow</code></strong>
+False
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>Green == Green</code></strong>
+True
+</pre><p id="x_df"><a name="x_df"></a>In C, the elements of an <code class="code">enum</code> are integers.
+	  We can use an integer in a context where an
+	  <code class="code">enum</code> is expected, and vice versa: a C compiler
+	  will automatically convert values between the two types.
+	  This can be a source of nasty bugs.  In Haskell, this kind
+	  of problem does not occur.  For example, we cannot use a
+	  <span class="type">Roygbiv</span> value where an <code class="code">Int</code> is
+	  expected.</p><a name="roygbiv.ghci:types"></a><pre id="roygbiv.ghci:types" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>take 3 "foobar"</code></strong>
+"foo"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>take Red "foobar"</code></strong>
+
+&lt;interactive&gt;:1:5:
+    Couldn't match expected type `Int' against inferred type `Roygbiv'
+    In the first argument of `take', namely `Red'
+    In the expression: take Red "foobar"
+    In the definition of `it': it = take Red "foobar"
+</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="id583781">The discriminated union</h4></div></div></div><p id="x_S4"><a name="x_S4"></a>If an algebraic data type has multiple
+	  alternatives, we can think of it as similar to a
+	  <code class="code">union</code> in C or C++.  A big difference between
+	  the two is that a union doesn't tell us which alternative is
+	  actually present; we have to explicitly and manually track
+	  which alternative we're using, usually in another field of
+	  an enclosing struct.  This means that unions can be sources
+	  of nasty bugs, where our notion of which alternative we
+	  should be using is incorrect.</p><a name="types.c:shape"></a><pre id="types.c:shape" class="programlisting">enum shape_type {
+    shape_circle,
+    shape_poly,
+};
+
+struct circle {
+    struct vector centre;
+    float radius;
+};
+
+struct poly {
+    size_t num_vertices;
+    struct vector *vertices;
+};
+
+struct shape 
+{
+    enum shape_type type;
+    union {
+	struct circle circle;
+	struct poly poly;
+    } shape;
+};</pre><p id="x_ef"><a name="x_ef"></a>In the example above, the <code class="code">union</code> can contain
+	  valid data for either a <code class="code">struct circle</code> or a
+	  <code class="code">struct poly</code>. We have to use the <code class="code">enum
+	    shape_type</code> by hand to indicate which kind of value
+	  is currently stored in the <code class="code">union</code>.</p><p id="x_ff"><a name="x_ff"></a>The Haskell version of this code is both dramatically
+	  shorter and safer than the C equivalent.</p><a name="ShapeUnion.hs:Shape"></a><pre id="ShapeUnion.hs:Shape" class="programlisting">-- file: ch03/ShapeUnion.hs
+type Vector = (Double, Double)
+
+data Shape = Circle Vector Double
+           | Poly [Vector]</pre><p id="x_T4"><a name="x_T4"></a>If we create a <span class="type">Shape</span> value using
+	  the <code class="code">Circle</code> constructor, the fact that we
+	  created a <code class="code">Circle</code> is stored.  When we later use
+	  a <code class="code">Circle</code>, we can't accidentally treat it as a
+	  <code class="code">Square</code>.  We will see why in <a class="xref" href="defining-types-streamlining-functions.html#deftypes.pattern" title="Pattern matching">the section called “Pattern matching”</a></p><div class="tip"><table border="0" summary="Tip: A few notes"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">A few notes</th></tr><tr><td align="left" valign="top"><p id="x_V4"><a name="x_V4"></a>From reading the preceding sections, it should
+	  now be clear that <span class="emphasis"><em>all</em></span> of the data types
+	  that we define with the <code class="code">data</code> keyword are
+	  algebraic data types. Some may have just one alternative,
+	  while others have several, but they're all using the same
+	  machinery.</p></td></tr></table></div></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.pattern">Pattern matching</h2></div></div></div><p id="x_Z5"><a name="x_Z5"></a>Now that we've seen how to construct values with
+      algebraic data types, let's discuss how we work with these
+      values.  If we have a value of some type, there are two things
+      we would like to be able to do.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_gf"><a name="x_gf"></a>If the type has more than one value constructor, we need
+	  to be able to tell which value constructor was used to
+	  create the value.</p></li><li><p id="x_hf"><a name="x_hf"></a>If the value constructor has data components, we need to
+	  be able to extract those values.</p></li></ul></div><p id="x_if"><a name="x_if"></a>Haskell has a simple, but tremendously useful,
+      <span class="emphasis"><em>pattern matching</em></span> facility that lets us do
+      both of these things.</p><p id="x_a5"><a name="x_a5"></a>A pattern lets us look inside a value and bind
+      variables to the data it contains.  Here's an example of pattern
+      matching in action on a <span class="type">Bool</span> value: we're going to
+      reproduce the <code class="function">not</code> function.</p><a name="add.hs:myNot"></a><pre id="add.hs:myNot" class="programlisting">-- file: ch03/add.hs
+myNot True  = False
+myNot False = True</pre><p id="x_e5"><a name="x_e5"></a>It might seem that we have two functions named
+      <code class="function">myNot</code> here, but Haskell lets us define a
+      function as a <span class="emphasis"><em>series of equations</em></span>: these
+      two clauses are defining the behavior of the same function for
+      different patterns of input.  On each line, the patterns are the
+      items following the function name, up until the <code class="code">=</code>
+      sign.</p><p id="x_jf"><a name="x_jf"></a>To understand how pattern matching works, let's step through
+      an example, say <code class="code">myNot False</code>.</p><p id="x_kf"><a name="x_kf"></a>When we apply <code class="function">myNot</code>, the
+      Haskell runtime checks the value we supply against the value
+      constructor in the first pattern.  This does not match, so it
+      tries against the second pattern.  That match succeeds, so it
+      uses the right hand side of that equation as the result of the
+      function application.</p><p id="x_xB1"><a name="x_xB1"></a>Here is a slightly more extended example.  This function
+      adds together the elements of a list.</p><a name="add.hs:sumList"></a><pre id="add.hs:sumList" class="programlisting">-- file: ch03/add.hs
+sumList (x:xs) = x + sumList xs
+sumList []     = 0</pre><p id="x_yB1"><a name="x_yB1"></a>Let us step through the evaluation of <code class="code">sumList
+	[1,2]</code>. The list notation <code class="code">[1,2]</code> is
+      shorthand for the expression <code class="code">(1:(2:[]))</code>. We begin
+      by trying to match the pattern in the first equation of the
+      definition of <code class="code">sumList</code>.   In the <code class="code">(x:xs)</code>
+      pattern, the “<span class="quote"><code class="code">:</code></span>” is the familiar list
+      constructor, <code class="function">(:)</code>. We are now using it to
+      match against a value, not to construct one. The value
+      <code class="code">(1:(2:[]))</code> was constructed with <code class="code">(:)</code>,
+      so the constructor in the value matches the constructor in the
+      pattern.  We say that the pattern <span class="emphasis"><em>matches</em></span>,
+      or that the match <span class="emphasis"><em>succeeds</em></span>.</p><p id="x_zB1"><a name="x_zB1"></a>The variables <code class="varname">x</code> and <code class="varname">xs</code>
+      are now “<span class="quote">bound to</span>” the constructor's arguments, so
+      <code class="varname">x</code> is given the value <code class="code">1</code>, and
+      <code class="code">xs</code> the value <code class="code">2:[]</code>.</p><p id="x_lf"><a name="x_lf"></a>The expression we are now evaluating is <code class="code">1 +
+	sumList (2:[])</code>.  We must now recursively apply
+      <code class="function">sumList</code> to the value <code class="code">2:[]</code>.
+      Once again, this was constructed using <code class="code">(:)</code>, so the
+      match succeeds.  In our recursive application of
+      <code class="function">sumList</code>, <code class="varname">x</code> is now bound
+      to <code class="code">2</code>, and <code class="varname">xs</code> to
+      <code class="code">[]</code>.</p><p id="x_d5"><a name="x_d5"></a>We are now evaluating <code class="code">1 + (2 + sumList
+	[])</code>.  In this recursive application of
+      <code class="function">sumList</code>, the value we are matching against
+      is <code class="code">[]</code>.  The value's constructor does not match the
+      constructor in the first pattern, so we skip this equation.
+      Instead, we “<span class="quote">fall through</span>” to the next pattern,
+      which matches.  The right hand side of this equation is thus
+      chosen as the result of this application.</p><p id="x_mf"><a name="x_mf"></a>The result of <code class="code">sumList [1,2]</code> is thus
+      <code class="code">1 + (2 + (0))</code>, or <code class="code">3</code>.</p><div class="note"><table border="0" summary="Note: Ordering is important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Ordering is important</th></tr><tr><td align="left" valign="top"><p id="x_m5"><a name="x_m5"></a>As we have already mentioned, a Haskell
+	implementation checks patterns for matches in the order in
+	which we specify them in our equations. Matching proceeds from
+	top to bottom, and stops at the first success.  Equations
+	below a successful match have no effect.</p></td></tr></table></div><p id="x_nf"><a name="x_nf"></a>As a final note, there already exists a standard function,
+      <code class="function">sum</code>, that performs this sum-of-a-list
+      for us.  Our <code class="function">sumList</code> is purely for
+      illustration.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id584277">Construction and deconstruction</h3></div></div></div><p id="x_of"><a name="x_of"></a>Let's step back and take a look at the relationship
+	between constructing a value and pattern matching on
+	it.</p><p id="x_pf"><a name="x_pf"></a>We apply a value constructor to build a value.
+	The expression <code class="code">Book 9 "Close Calls" ["John Long"]</code>
+	applies the <code class="function">Book</code> constructor to the
+	values <code class="code">9</code>, <code class="code">"Close Calls"</code>, and
+	<code class="code">["John Long"]</code> to produce a new value of type
+	<span class="type">BookInfo</span>.</p><p id="x_qf"><a name="x_qf"></a>When we pattern match against the
+	<code class="function">Book</code> constructor, we
+	<span class="emphasis"><em>reverse</em></span> the construction process.  First
+	of all, we check to see if the value was created using that
+	constructor. If it was, we inspect it to obtain the individual
+	values that we originally supplied to the constructor when we
+	created the value.</p><p id="x_rf"><a name="x_rf"></a>Let's consider what happens if we match the pattern
+	<code class="code">(Book id name authors)</code> against our example
+	expression.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_sf"><a name="x_sf"></a>The match will succeed, because the constructor in the
+	    value matches the one in our pattern.</p></li><li><p id="x_tf"><a name="x_tf"></a>The variable <code class="varname">id</code> will be bound to
+	    <code class="code">9</code>.</p></li><li><p id="x_uf"><a name="x_uf"></a>The variable <code class="varname">name</code> will be bound to
+	    <code class="code">"Close Calls"</code>.</p></li><li><p id="x_vf"><a name="x_vf"></a>The variable <code class="varname">authors</code> will be bound
+	    to <code class="code">["John Long"]</code>.</p></li></ul></div><p id="x_wf"><a name="x_wf"></a>Because pattern matching acts as the inverse of
+	construction, it's sometimes referred to as
+	<span class="emphasis"><em>de</em></span>construction.</p><div class="note"><table border="0" summary="Note: Deconstruction doesn't destroy anything"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Deconstruction doesn't destroy anything</th></tr><tr><td align="left" valign="top"><p id="x_xf"><a name="x_xf"></a>If you're steeped in object oriented programming jargon,
+	  don't confuse deconstruction with destruction! Matching a
+	  pattern has no effect on the value we're examining: it just
+	  lets us “<span class="quote">look inside</span>” it.</p></td></tr></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id584453">Further adventures</h3></div></div></div><p id="x_f5"><a name="x_f5"></a>The syntax for pattern matching on a tuple is
+	similar to the syntax for constructing a tuple.  Here's a
+	function that returns the last element of a 3-tuple.</p><a name="Tuple.hs:third"></a><pre id="Tuple.hs:third" class="programlisting">-- file: ch03/Tuple.hs
+third (a, b, c) = c</pre><p id="x_g5"><a name="x_g5"></a>There's no limit on how “<span class="quote">deep</span>”
+	within a value a pattern can look.  This definition looks both
+	inside a tuple and inside a list within that tuple.</p><a name="Tuple.hs:complicated"></a><pre id="Tuple.hs:complicated" class="programlisting">-- file: ch03/Tuple.hs
+complicated (True, a, x:xs, 5) = (a, xs)</pre><p id="x_h5"><a name="x_h5"></a>We can try this out interactively.</p><a name="tuple.ghci:complicated"></a><pre id="tuple.ghci:complicated" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load Tuple.hs</code></strong>
+[1 of 1] Compiling Main             ( Tuple.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>complicated (True, 1, [1,2,3], 5)</code></strong>
+(1,[2,3])
+</pre><p id="x_i5"><a name="x_i5"></a>Wherever a literal value is present in a pattern
+	(<code class="literal">True</code> and <code class="literal">5</code> in the tuple
+	pattern above), that value must match exactly for the pattern
+	match to succeed.  If every pattern within a series of
+	equations fails to match, we get a runtime error.</p><a name="tuple.ghci:nomatch"></a><pre id="tuple.ghci:nomatch" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>complicated (False, 1, [1,2,3], 5)</code></strong>
+*** Exception: Tuple.hs:10:0-39: Non-exhaustive patterns in function complicated
+
+</pre><p id="x_yf"><a name="x_yf"></a>For an explanation of this error message, skip forward a
+	little, to <a class="xref" href="defining-types-streamlining-functions.html#deftypes.patterns.nonexhaustive" title="Exhaustive patterns and wild cards">the section called “Exhaustive patterns and wild cards”</a>.</p><p id="x_j5"><a name="x_j5"></a>We can pattern match on an algebraic data type
+	using its value constructors.  Recall the
+	<span class="type">BookInfo</span> type we defined earlier: we
+	can extract the values from a <span class="type">BookInfo</span> as follows.</p><a name="BookStore.hs:accessors"></a><pre id="BookStore.hs:accessors" class="programlisting">-- file: ch03/BookStore.hs
+bookID      (Book id title authors) = id
+bookTitle   (Book id title authors) = title
+bookAuthors (Book id title authors) = authors</pre><p id="x_k5"><a name="x_k5"></a>Let's see it in action.</p><a name="bookstore.ghci:unwrap"></a><pre id="bookstore.ghci:unwrap" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>bookID (Book 3 "Probability Theory" ["E.T.H. Jaynes"])</code></strong>
+3
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>bookTitle (Book 3 "Probability Theory" ["E.T.H. Jaynes"])</code></strong>
+"Probability Theory"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>bookAuthors (Book 3 "Probability Theory" ["E.T.H. Jaynes"])</code></strong>
+["E.T.H. Jaynes"]
+</pre><p id="x_l5"><a name="x_l5"></a>The compiler can infer the types of the accessor
+	functions based on the constructor we're using in our
+	pattern.</p><a name="bookstore.ghci:unwrap.types"></a><pre id="bookstore.ghci:unwrap.types" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type bookID</code></strong>
+bookID :: BookInfo -&gt; Int
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type bookTitle</code></strong>
+bookTitle :: BookInfo -&gt; String
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type bookAuthors</code></strong>
+bookAuthors :: BookInfo -&gt; [String]
+</pre><p id="x_IL"><a name="x_IL"></a>If we use a literal value in a pattern, the
+	corresponding part of the value we're matching against must contain
+	an identical value. For instance, the pattern <code class="code">(3:xs)</code> first of all
+	checks that a value is a non-empty list, by matching against
+	the <code class="function">(:)</code> constructor. It also ensures that
+	the head of the list has the exact value
+	<code class="literal">3</code>.  If both of these conditions hold, the
+	tail of the list will be bound to the variable
+	<code class="varname">xs</code>.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id584746">Variable naming in patterns</h3></div></div></div><p id="x_zf"><a name="x_zf"></a>As you read functions that match on lists, you'll
+	frequently find that the names of the variables inside a
+	pattern resemble <code class="code">(x:xs)</code> or <code class="code">(d:ds)</code>.
+	This is a popular naming convention. The idea is that the name
+	<code class="varname">xs</code> has an “<span class="quote"><code class="code">s</code></span>” on
+	the end of its name as if it's the “<span class="quote">plural</span>” of
+	<code class="varname">x</code>, because <code class="varname">x</code> contains
+	the head of the list, and <code class="varname">xs</code> the remaining
+	elements.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="deftypes.wildcard">The wild card pattern</h3></div></div></div><p id="x_o5"><a name="x_o5"></a>We can indicate that we don't care what  is
+	present in part of a pattern. The notation for this is the
+	underscore character “<span class="quote"><code class="code">_</code></span>”, which we
+	call a <span class="emphasis"><em>wild card</em></span>.  We use it as
+	follows.</p><a name="BookStore.hs:niceAccessors"></a><pre id="BookStore.hs:niceAccessors" class="programlisting">-- file: ch03/BookStore.hs
+nicerID      (Book id _     _      ) = id
+nicerTitle   (Book _  title _      ) = title
+nicerAuthors (Book _  _     authors) = authors</pre><p id="x_p5"><a name="x_p5"></a>Here, we have tidier versions of the
+	accessor functions we introduced earlier.  Now, there's no
+	question about which element we're using in each
+	function.</p><p id="x_KL"><a name="x_KL"></a>In a pattern, a wild card acts similarly to a
+	variable, but it doesn't bind a new variable.  As the examples
+	above indicate, we can use more than one wild card in a single
+	pattern.</p><p id="x_LL"><a name="x_LL"></a>Another advantage of wild cards is that a
+	Haskell compiler can warn us if we introduce a variable name
+	in a pattern, but do not use it in a function's body. Defining
+	a variable, but forgetting to use it, can often indicate the
+	presence of a bug, so this is a helpful feature. If we use a
+	wild card instead of a variable that we do not intend to use,
+	the compiler won't complain.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="deftypes.patterns.nonexhaustive">Exhaustive patterns and wild cards</h3></div></div></div><p id="x_Ag"><a name="x_Ag"></a>When writing a series of patterns, it's important to cover
+	all of a type's constructors.  For example, if we're
+	inspecting a list, we should have one equation that matches
+	the non-empty constructor <code class="function">(:)</code>, and one
+	that matches the empty-list constructor
+	<code class="function">[]</code>.</p><p id="x_Bg"><a name="x_Bg"></a>Let's see what happens if we fail to cover all
+	the cases. Here, we deliberately omit a check for the
+	<code class="function">[]</code> constructor.</p><a name="BadPattern.hs:badExample"></a><pre id="BadPattern.hs:badExample" class="programlisting">-- file: ch03/BadPattern.hs
+badExample (x:xs) = x + badExample xs</pre><p id="x_Cg"><a name="x_Cg"></a>If we apply this to a value that it cannot match, we'll
+	get an error at runtime: our software has a bug!</p><a name="badpattern.ghci:error"></a><pre id="badpattern.ghci:error" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>badExample []</code></strong>
+*** Exception: BadPattern.hs:4:0-36: Non-exhaustive patterns in function badExample
+
+</pre><p id="x_Dg"><a name="x_Dg"></a>In this example, no equation in the function's
+	definition matches the value <code class="code">[]</code>.</p><div class="tip"><table border="0" summary="Tip: Warning about incomplete patterns"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Warning about incomplete patterns</th></tr><tr><td align="left" valign="top"><p id="x_Eg"><a name="x_Eg"></a><span class="application">GHC</span> provides a helpful compilation option,
+	  <code class="option">-fwarn-incomplete-patterns</code>, that will cause
+	  it to print a warning during compilation if a sequence of
+	  patterns don't match all of a type's value constructors.</p></td></tr></table></div><p id="x_Fg"><a name="x_Fg"></a>If we need to provide a default behavior in cases where
+	we don't care about specific constructors, we can use a wild
+	card pattern.</p><a name="BadPattern.hs:goodExample"></a><pre id="BadPattern.hs:goodExample" class="programlisting">-- file: ch03/BadPattern.hs
+goodExample (x:xs) = x + goodExample xs
+goodExample _      = 0</pre><p id="x_Gg"><a name="x_Gg"></a>The wild card above will match the <code class="code">[]</code>
+	constructor, so applying this function does not lead to a
+	crash.</p><a name="badpattern.ghci:ok"></a><pre id="badpattern.ghci:ok" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>goodExample []</code></strong>
+0
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>goodExample [1,2]</code></strong>
+3
+</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.record">Record syntax</h2></div></div></div><p id="x_Hg"><a name="x_Hg"></a>Writing accessor functions for each of a data type's
+      components can be repetitive and tedious.</p><pre id="id585051" class="programlisting">-- file: ch03/BookStore.hs
+nicerID      (Book id _     _      ) = id
+nicerTitle   (Book _  title _      ) = title
+nicerAuthors (Book _  _     authors) = authors</pre><p id="x_Ig"><a name="x_Ig"></a>We call this kind of code <span class="emphasis"><em>boilerplate</em></span>:
+      necessary, but bulky and irksome.  Haskell programmers don't
+      like boilerplate.  Fortunately, the language addresses this
+      particular boilerplate problem: we can define a data type, and
+      accessors for each of its components, simultaneously.  (The
+      positions of the commas here is a matter of preference.  If you
+      like, put them at the end of a line instead of the beginning.)</p><a name="BookStore.hs:Customer"></a><pre id="BookStore.hs:Customer" class="programlisting">-- file: ch03/BookStore.hs
+data Customer = Customer {
+      customerID      :: CustomerID
+    , customerName    :: String
+    , customerAddress :: Address
+    } deriving (Show)</pre><p id="x_Jg"><a name="x_Jg"></a>This is almost exactly identical in meaning to the
+      following, more familiar form.</p><a name="AltCustomer.hs:Customer"></a><pre id="AltCustomer.hs:Customer" class="programlisting">-- file: ch03/AltCustomer.hs
+data Customer = Customer Int String [String]
+                deriving (Show)
+
+customerID :: Customer -&gt; Int
+customerID (Customer id _ _) = id
+
+customerName :: Customer -&gt; String
+customerName (Customer _ name _) = name
+
+customerAddress :: Customer -&gt; [String]
+customerAddress (Customer _ _ address) = address</pre><p id="x_Kg"><a name="x_Kg"></a>For each of the fields that we name in our type definition,
+      Haskell creates an accessor function of that name.</p><a name="bookstore.ghci:accessor.type"></a><pre id="bookstore.ghci:accessor.type" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type customerID</code></strong>
+customerID :: Customer -&gt; CustomerID
+</pre><p id="x_Lg"><a name="x_Lg"></a>We can still use the usual application syntax to create a
+      value of this type.</p><a name="BookStore.hs:customer1"></a><pre id="BookStore.hs:customer1" class="programlisting">-- file: ch03/BookStore.hs
+customer1 = Customer 271828 "J.R. Hacker"
+            ["255 Syntax Ct",
+             "Milpitas, CA 95134",
+             "USA"]</pre><p id="x_Mg"><a name="x_Mg"></a>Record syntax adds a more verbose notation for creating a
+      value.  This can sometimes make code more readable.</p><a name="BookStore.hs:customer2"></a><pre id="BookStore.hs:customer2" class="programlisting">-- file: ch03/BookStore.hs
+customer2 = Customer {
+              customerID = 271828
+            , customerAddress = ["1048576 Disk Drive",
+                                 "Milpitas, CA 95134",
+                                 "USA"]
+            , customerName = "Jane Q. Citizen"
+            }</pre><p id="x_AC1"><a name="x_AC1"></a>If we use this form, we can vary the order in which we list
+      fields.  Here, we have moved the name and address fields
+      from their positions in the declaration of the type.</p><p id="x_Ng"><a name="x_Ng"></a>When we define a type using record syntax, it also
+      changes the way the type's values are printed.</p><a name="bookstore.ghci:customer1"></a><pre id="bookstore.ghci:customer1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>customer1</code></strong>
+Customer {customerID = 271828, customerName = "J.R. Hacker", customerAddress = ["255 Syntax Ct","Milpitas, CA 95134","USA"]}
+</pre><p id="x_Og"><a name="x_Og"></a>For comparison, let's look at a
+      <span class="type">BookInfo</span> value; we defined this type without record
+      syntax.</p><a name="bookstore.ghci:cities"></a><pre id="bookstore.ghci:cities" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>cities</code></strong>
+Book 173 "Use of Weapons" ["Iain M. Banks"]
+</pre><p id="x_Pg"><a name="x_Pg"></a>The accessor functions that we get “<span class="quote">for free</span>”
+      when we use record syntax really are normal Haskell
+      functions.</p><a name="bookstore.ghci:accessor"></a><pre id="bookstore.ghci:accessor" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type customerName</code></strong>
+customerName :: Customer -&gt; String
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>customerName customer1</code></strong>
+"J.R. Hacker"
+</pre><p id="x_Bn"><a name="x_Bn"></a>
+      The standard <code class="literal">System.Time</code> module makes good
+      use of record syntax.  Here's a type defined in that module:
+    </p><pre id="id585295" class="programlisting">
+data CalendarTime = CalendarTime {
+  ctYear                      :: Int,
+  ctMonth                     :: Month,
+  ctDay, ctHour, ctMin, ctSec :: Int,
+  ctPicosec                   :: Integer,
+  ctWDay                      :: Day,
+  ctYDay                      :: Int,
+  ctTZName                    :: String,
+  ctTZ                        :: Int,
+  ctIsDST                     :: Bool
+}
+    </pre><p id="x_Cn"><a name="x_Cn"></a>
+      In the absence of record syntax, it would be painful
+      to extract specific fields from a type like this.  The notation
+      makes it easier to work with large structures.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.paramtypes">Parameterised types</h2></div></div></div><p id="x_Z4"><a name="x_Z4"></a>We've repeatedly mentioned that the list type is
+      polymorphic: the elements of a list can be of any type.  We can
+      also add polymorphism to our own types. To do this, we introduce
+      type variables into a type declaration.  The Prelude defines a
+      type named <span class="type">Maybe</span>: we can use this to represent a
+      value that could be either present or missing, e.g. a field in a
+      database row that could be null.</p><a name="Nullable.hs:Nullable"></a><pre id="Nullable.hs:Nullable" class="programlisting">-- file: ch03/Nullable.hs
+data Maybe a = Just a
+             | Nothing</pre><p id="x_a4"><a name="x_a4"></a>Here, the variable <code class="varname">a</code> is not a regular variable: it's a type
+      variable.  It indicates that the <span class="type">Maybe</span> type takes
+      another type as its parameter.  This lets us use
+      <span class="type">Maybe</span> on values of any type.</p><a name="Nullable.hs:wrappedTypes"></a><pre id="Nullable.hs:wrappedTypes" class="programlisting">-- file: ch03/Nullable.hs
+someBool = Just True
+
+someString = Just "something"</pre><p id="x_b4"><a name="x_b4"></a>As usual, we can experiment with this type in
+      <span class="command"><strong>ghci</strong></span>.</p><a name="nullable.ghci:experiment"></a><pre id="nullable.ghci:experiment" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>Just 1.5</code></strong>
+Just 1.5
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>Nothing</code></strong>
+Nothing
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type Just "invisible bike"</code></strong>
+Just "invisible bike" :: Maybe [Char]
+</pre><p id="x_c4"><a name="x_c4"></a><span class="type">Maybe</span> is a polymorphic, or generic,
+      type.  We give the <span class="type">Maybe</span> type constructor a
+      parameter to create a specific type, such as <span class="type">Maybe
+	Int</span> or <span class="type">Maybe [Bool]</span>.  As we might expect,
+      these types are distinct.</p><p id="x_e4"><a name="x_e4"></a>We can nest uses of parameterised types inside
+      each other, but when we do, we may need to use parentheses to
+      tell the Haskell compiler how to parse our expression.</p><a name="Nullable.hs:parens"></a><pre id="Nullable.hs:parens" class="programlisting">-- file: ch03/Nullable.hs
+wrapped = Just (Just "wrapped")</pre><p id="x_d4"><a name="x_d4"></a>To once again extend an analogy to more familiar
+      languages, parameterised types bear some resemblance to
+      templates in C++, and to generics in Java. Just be aware that
+      this is a shallow analogy.  Templates and generics were added to
+      their respective languages long after the languages were
+      initially defined, and have an awkward feel. Haskell's
+      parameterised types are simpler and easier to use, as the
+      language was designed with them from the beginning.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.recursive">Recursive types</h2></div></div></div><p id="x_Rg"><a name="x_Rg"></a>The familiar list type is <span class="emphasis"><em>recursive</em></span>:
+      it's defined in terms of itself.  To understand this,
+      let's create our own list-like type.  We'll use
+      <code class="code">Cons</code> in place of the <code class="function">(:)</code>
+      constructor, and <code class="code">Nil</code> in place of
+      <code class="code">[]</code>.</p><a name="ListADT.hs:List"></a><pre id="ListADT.hs:List" class="programlisting">-- file: ch03/ListADT.hs
+data List a = Cons a (List a)
+            | Nil
+              deriving (Show)</pre><p id="x_Sg"><a name="x_Sg"></a>Because <span class="type">List a</span> appears on both the
+      left and the right of the <code class="code">=</code> sign, the type's
+      definition refers to itself.  If we want to use the
+      <code class="code">Cons</code> constructor to create a new value, we must
+      supply one value of type <code class="varname">a</code>, and
+      another of type <code class="varname">List a</code>. Let's see
+      where this leads us in practice.</p><p id="x_Tg"><a name="x_Tg"></a>The simplest value of type <span class="type">List a</span>
+      that we can create is <code class="code">Nil</code>.  Save the type
+      definition in a file, then load it into <span class="command"><strong>ghci</strong></span>.</p><a name="listadt.ghci:empty"></a><pre id="listadt.ghci:empty" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>Nil</code></strong>
+Nil
+</pre><p id="x_Ug"><a name="x_Ug"></a>Because <code class="code">Nil</code> has a <span class="type">List</span>
+      type, we can use it as a parameter to <code class="code">Cons</code>.</p><a name="listadt.ghci:tiny"></a><pre id="listadt.ghci:tiny" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>Cons 0 Nil</code></strong>
+Cons 0 Nil
+</pre><p id="x_Vg"><a name="x_Vg"></a>And because <code class="code">Cons 0 Nil</code> has the type <span class="type">List
+	a</span>, we can use this as a parameter to
+      <code class="code">Cons</code>.</p><a name="listadt.ghci:two"></a><pre id="listadt.ghci:two" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>Cons 1 it</code></strong>
+Cons 1 (Cons 0 Nil)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>Cons 2 it</code></strong>
+Cons 2 (Cons 1 (Cons 0 Nil))
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>Cons 3 it</code></strong>
+Cons 3 (Cons 2 (Cons 1 (Cons 0 Nil)))
+</pre><p id="x_Wg"><a name="x_Wg"></a>We could continue in this fashion indefinitely,
+      creating ever longer <code class="code">Cons</code> chains, each with a
+      single <code class="code">Nil</code> at the end.</p><div class="tip"><table border="0" summary="Tip: Is List an acceptable list?"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Is List an acceptable list?</th></tr><tr><td align="left" valign="top"><p id="x_Xg"><a name="x_Xg"></a>We can easily prove to ourselves that our <span class="type">List
+	  a</span> type has the same shape as the built-in list type
+	<span class="type">[a]</span>.  To do this, we write a function that
+	takes any value of type <span class="type">[a]</span>, and produces a
+	value of type <span class="type">List a</span>.</p><a name="ListADT.hs:fromList"></a><pre id="ListADT.hs:fromList" class="programlisting">-- file: ch03/ListADT.hs
+fromList (x:xs) = Cons x (fromList xs)
+fromList []     = Nil</pre><p id="x_Yg"><a name="x_Yg"></a>By inspection, this clearly substitutes a
+	<code class="code">Cons</code> for every <code class="function">(:)</code>, and a
+	<code class="code">Nil</code> for each <code class="code">[]</code>.  This covers both
+	of the built-in list type's constructors.  The two types are
+	<span class="emphasis"><em>isomorphic</em></span>; they have the same
+	shape.</p><a name="listadt.ghci:fromList"></a><pre id="listadt.ghci:fromList" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>fromList "durian"</code></strong>
+Cons 'd' (Cons 'u' (Cons 'r' (Cons 'i' (Cons 'a' (Cons 'n' Nil)))))
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>fromList [Just True, Nothing, Just False]</code></strong>
+Cons (Just True) (Cons Nothing (Cons (Just False) Nil))
+</pre></td></tr></table></div><p id="x_K5"><a name="x_K5"></a>For a third example of what a recursive type
+      is, here is a definition of a binary tree type.</p><a name="Tree.hs:Tree"></a><pre id="Tree.hs:Tree" class="programlisting">-- file: ch03/Tree.hs
+data Tree a = Node a (Tree a) (Tree a)
+            | Empty
+              deriving (Show)</pre><p id="x_BC1"><a name="x_BC1"></a>A binary tree is either a node with two children, which are
+      themselves binary trees, or an empty value.</p><p id="x_Zg"><a name="x_Zg"></a>This time, let's search for insight by comparing our
+      definition with one from a more familiar language.  Here's a
+      similar class definition in Java.</p><a name="Tree.java:Tree"></a><pre id="Tree.java:Tree" class="programlisting">class Tree&lt;A&gt;
+{
+    A value;
+    Tree&lt;A&gt; left;
+    Tree&lt;A&gt; right;
+
+    public Tree(A v, Tree&lt;A&gt; l, Tree&lt;A&gt; r)
+    {
+	value = v;
+	left = l;
+	right = r;
+    }
+}</pre><p id="x_ag"><a name="x_ag"></a>The one significant difference is that Java lets us use the
+      special value <code class="code">null</code> anywhere to indicate
+      “<span class="quote">nothing</span>”, so we can use <code class="code">null</code> to
+      indicate that a node is missing a left or right child.  Here's a
+      small function that constructs a tree with two leaves (a leaf,
+      by convention, has no children).</p><a name="Tree.java:Example"></a><pre id="Tree.java:Example" class="programlisting">class Example 
+{
+    static Tree&lt;String&gt; simpleTree()
+    {
+	return new Tree&lt;String&gt;(
+            "parent",
+	    new Tree&lt;String&gt;("left leaf", null, null),
+	    new Tree&lt;String&gt;("right leaf", null, null));
+    }
+}</pre><p id="x_bg"><a name="x_bg"></a>In Haskell, we don't have an equivalent of
+      <code class="code">null</code>. We could use the <span class="type">Maybe</span> type to
+      provide a similar effect, but that bloats the pattern matching.
+      Instead, we've decided to use a no-argument <code class="code">Empty</code>
+      constructor.  Where the Java example provides <code class="code">null</code>
+      to the <span class="type">Tree</span> constructor, we supply
+      <code class="code">Empty</code> in Haskell.</p><a name="Tree.hs:simpleTree"></a><pre id="Tree.hs:simpleTree" class="programlisting">-- file: ch03/Tree.hs
+simpleTree = Node "parent" (Node "left child" Empty Empty)
+                           (Node "right child" Empty Empty)</pre><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id585938">Exercises</h3></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id585948"></a><a name="id585950"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_cg"><a name="x_cg"></a>Write the converse of <code class="function">fromList</code>
+	      for the <span class="type">List</span> type: a function that takes a
+	      <span class="type">List a</span> and generates a
+	      <span class="type">[a]</span>.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id585978"></a><a name="id585980"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_dg"><a name="x_dg"></a>Define a tree type that has only one constructor,
+	      like our Java example.  Instead of the
+	      <code class="code">Empty</code> constructor, use the
+	      <span class="type">Maybe</span> type to refer to a node's
+	      children.</p></td></tr></tbody></table></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.error">Reporting errors</h2></div></div></div><p id="x_w3"><a name="x_w3"></a>Haskell provides a standard function,
+      <code class="function">error :: String -&gt; a</code>, that we can call
+      when something has gone terribly wrong in our code.  We give it
+      a string parameter, which is the error message to display. Its
+      type signature looks peculiar: how can it produce a value of any
+      type <code class="varname">a</code> given only a string?</p><p id="x_x3"><a name="x_x3"></a>It has a result type of <code class="varname">a</code> so that we can call it anywhere and it
+      will always have the right type.   However, it does not return a
+      value like a normal function: instead, it <span class="emphasis"><em>immediately
+	aborts evaluation</em></span>, and prints the error message we
+      give it.</p><p id="x_eg"><a name="x_eg"></a>The <code class="function">mySecond</code> function returns
+      the second element of its input list, but fails if its input
+      list isn't long enough.</p><a name="MySecond.hs:mySecond"></a><pre id="MySecond.hs:mySecond" class="programlisting">-- file: ch03/MySecond.hs
+mySecond :: [a] -&gt; a
+
+mySecond xs = if null (tail xs)
+              then error "list too short"
+              else head (tail xs)</pre><p id="x_y3"><a name="x_y3"></a>As usual, we can see how this works in practice in
+      <span class="command"><strong>ghci</strong></span>.</p><a name="error.ghci:mySecond"></a><pre id="error.ghci:mySecond" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>mySecond "xi"</code></strong>
+'i'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>mySecond [2]</code></strong>
+*** Exception: list too short
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>head (mySecond [[9]])</code></strong>
+*** Exception: list too short
+</pre><p id="x_z3"><a name="x_z3"></a>Notice the third case above, where we
+      try to use the result of the call to
+      <code class="function">mySecond</code> as the argument to another
+      function.  Evaluation still terminates and drops us back to the
+      <span class="command"><strong>ghci</strong></span> prompt.  This is the major weakness of using
+      <code class="function">error</code>: it doesn't let our caller
+      distinguish between a recoverable error and a problem so severe
+      that it really should terminate our program.</p><p id="x_CC1"><a name="x_CC1"></a>As we have already seen, a pattern matching failure causes a
+      similar unrecoverable error.</p><a name="error.ghci:myError"></a><pre id="error.ghci:myError" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>mySecond []</code></strong>
+*** Exception: Prelude.tail: empty list
+</pre><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="deftypes.morecontrolled">A more controlled approach</h3></div></div></div><p id="x_fg"><a name="x_fg"></a>We can use the <span class="type">Maybe</span> type
+	to represent the possibility of an error.</p><p id="x_gg"><a name="x_gg"></a>If we want to indicate that an operation has
+	failed, we can use the <code class="function">Nothing</code>
+	constructor.  Otherwise, we wrap our value with the
+	<code class="function">Just</code> constructor.</p><p id="x_hg"><a name="x_hg"></a>Let's see how our <code class="function">mySecond</code> function
+	changes if we return a <span class="type">Maybe</span> value instead of
+	calling <code class="function">error</code>.</p><a name="MySecond.hs:safeSecond"></a><pre id="MySecond.hs:safeSecond" class="programlisting">-- file: ch03/MySecond.hs
+safeSecond :: [a] -&gt; Maybe a
+
+safeSecond [] = Nothing
+safeSecond xs = if null (tail xs)
+                then Nothing
+                else Just (head (tail xs))</pre><p id="x_ig"><a name="x_ig"></a>If the list we're passed is too short, we return
+	<code class="code">Nothing</code> to our caller. This lets them decide what
+	to do, where a call to <code class="function">error</code> would force
+	a crash.</p><a name="error.ghci:safeSecond"></a><pre id="error.ghci:safeSecond" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>safeSecond []</code></strong>
+Nothing
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>safeSecond [1]</code></strong>
+Nothing
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>safeSecond [1,2]</code></strong>
+Just 2
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>safeSecond [1,2,3]</code></strong>
+Just 2
+</pre><p id="x_jg"><a name="x_jg"></a>To return to an earlier topic, we can further
+	improve the readability of this function with pattern
+	matching.</p><a name="MySecond.hs:tidySecond"></a><pre id="MySecond.hs:tidySecond" class="programlisting">-- file: ch03/MySecond.hs
+tidySecond :: [a] -&gt; Maybe a
+
+tidySecond (_:x:_) = Just x
+tidySecond _       = Nothing</pre><p id="x_kg"><a name="x_kg"></a>The first pattern only matches if the list is at least two
+	elements long (it contains two list constructors), and it
+	binds the variable <code class="varname">x</code> to the list's second
+	element. The second pattern is matched if the first
+	fails.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.locals">Introducing local variables</h2></div></div></div><p id="x_f4"><a name="x_f4"></a>Within the body of a function, we can introduce
+      new local variables whenever we need them, using a <code class="literal">let</code>
+      expression.  Here is a simple function that determines whether
+      we should lend some money to a customer.  We meet a money
+      reserve of at least 100, we return our new balance after
+      subtracting the amount we have loaned.</p><a name="Lending.hs:lend"></a><pre id="Lending.hs:lend" class="programlisting">-- file: ch03/Lending.hs
+lend amount balance = let reserve    = 100
+                          newBalance = balance - amount
+                      in if balance &lt; reserve
+                         then Nothing
+                         else Just newBalance</pre><p id="x_g4"><a name="x_g4"></a>The keywords to look out for here are <code class="literal">let</code>, which
+      starts a block of variable declarations, and <code class="code">in</code>,
+      which ends it.  Each line introduces a new variable.  The name
+      is on the left of the <code class="literal">=</code>, and the expression
+      to which it is bound is on the right.</p><div class="note"><table border="0" summary="Note: Special notes"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Special notes</th></tr><tr><td align="left" valign="top"><p id="x_ng"><a name="x_ng"></a>Let us re-emphasise our wording: a name in a
+	<code class="literal">let</code> block is bound to an <span class="emphasis"><em>expression</em></span>,
+	not to a <span class="emphasis"><em>value</em></span>.  Because Haskell is a
+	lazy language, the expression associated with a name won't
+	actually be evaluated until it's needed.  In the above example,
+	we will not compute the value of <code class="varname">newBalance</code>
+	if we do not meet our reserve.</p><p id="x_og"><a name="x_og"></a>When we define a variable in a <code class="literal">let</code> block, we
+	refer to it as a <span class="emphasis"><em><code class="literal">let</code>-bound</em></span> variable.
+	This simply means what it says: we have bound the variable in
+	a <code class="literal">let</code> block.</p><p id="x_pg"><a name="x_pg"></a>Also, our use of white space here is important.
+	We'll talk in more detail about the layout rules in <a class="xref" href="defining-types-streamlining-functions.html#deftypes.offside" title="The offside rule and white space in an expression">the section called “The offside rule and white space in an expression”</a>.</p></td></tr></table></div><p id="x_qg"><a name="x_qg"></a>We can use the names of a variable in a <code class="literal">let</code>
+      block both within the block of declarations and in the
+      expression that follows the <code class="code">in</code> keyword.</p><p id="x_rg"><a name="x_rg"></a>In general, we'll refer to the places within our
+      code where we can use a name as the name's
+      <span class="emphasis"><em>scope</em></span>.  If we can use a name, it's
+      <span class="emphasis"><em>in scope</em></span>, otherwise it's <span class="emphasis"><em>out of
+	scope</em></span>.  If a name is visible throughout a source
+      file, we say it's at the <span class="emphasis"><em>top level</em></span>.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id586544">Shadowing</h3></div></div></div><p id="x_i4"><a name="x_i4"></a>We can “<span class="quote">nest</span>” multiple <code class="literal">let</code> blocks
+	inside each other in an expression.</p><a name="NestedLets.hs:foo"></a><pre id="NestedLets.hs:foo" class="programlisting">-- file: ch03/NestedLets.hs
+foo = let a = 1
+      in let b = 2
+         in a + b</pre><p id="x_yg"><a name="x_yg"></a>It's perfectly legal, but not exactly wise, to
+	repeat a variable name in a nested <code class="literal">let</code> expression.</p><a name="NestedLets.hs:bar"></a><pre id="NestedLets.hs:bar" class="programlisting">-- file: ch03/NestedLets.hs
+bar = let x = 1
+      in ((let x = "foo" in x), x)</pre><p id="x_zg"><a name="x_zg"></a>Here, the inner <code class="varname">x</code> is hiding,
+	or <span class="emphasis"><em>shadowing</em></span>, the outer
+	<code class="varname">x</code>.  It has the same name, but a different
+	type and value.</p><a name="nestedlets.ghci:bar"></a><pre id="nestedlets.ghci:bar" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>bar</code></strong>
+("foo",1)
+</pre><p id="x_Ah"><a name="x_Ah"></a>We can also shadow a function's parameters,
+	leading to even stranger results.  What is the type of this
+	function?</p><a name="NestedLets.hs:quux"></a><pre id="NestedLets.hs:quux" class="programlisting">-- file: ch03/NestedLets.hs
+quux a = let a = "foo"
+         in a ++ "eek!"</pre><p id="x_Bh"><a name="x_Bh"></a>Because the function's argument
+	<code class="varname">a</code> is never used in the body of the
+	function, due to being shadowed by the <code class="literal">let</code>-bound
+	<code class="varname">a</code>, the argument can have any type at
+	all.</p><a name="nestedlets.ghci:quux"></a><pre id="nestedlets.ghci:quux" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type quux</code></strong>
+quux :: t -&gt; [Char]
+</pre><div class="tip"><table border="0" summary="Tip: Compiler warnings are your friends"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Compiler warnings are your friends</th></tr><tr><td align="left" valign="top"><p id="x_Ch"><a name="x_Ch"></a>Shadowing can obviously lead to confusion and
+	  nasty bugs, so <span class="application">GHC</span> has a helpful
+	  <code class="option">-fwarn-name-shadowing</code> option.  When
+	  enabled, <span class="application">GHC</span> will print a warning message any time we
+	  shadow a name.</p></td></tr></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id586728">The where clause</h3></div></div></div><p id="x_Dh"><a name="x_Dh"></a>We can use another mechanism to
+	introduce local variables: the <code class="literal">where</code> clause. The
+	definitions in a <code class="literal">where</code> clause apply to the code that
+	<span class="emphasis"><em>precedes</em></span> it.  Here's a similar function
+	to <code class="function">lend</code>, using <code class="literal">where</code> instead of <code class="literal">let</code>.</p><a name="Lending.hs:lend2"></a><pre id="Lending.hs:lend2" class="programlisting">-- file: ch03/Lending.hs
+lend2 amount balance = if amount &lt; reserve * 0.5
+                       then Just newBalance
+                       else Nothing
+    where reserve    = 100
+          newBalance = balance - amount</pre><p id="x_Fh"><a name="x_Fh"></a>While a <code class="literal">where</code> clause may initially seem weird,
+	it offers a wonderful aid to readability.  It lets us direct
+	our reader's focus to the important details of an expression,
+	with the supporting definitions following afterwards.  After a
+	while, you may find yourself missing <code class="literal">where</code> clauses in
+	languages that lack them.</p><p id="x_l4"><a name="x_l4"></a>As with <code class="literal">let</code> expressions, white space is
+	significant in <code class="literal">where</code> clauses.  We will talk more about
+	the layout rules shortly, in <a class="xref" href="defining-types-streamlining-functions.html#deftypes.offside" title="The offside rule and white space in an expression">the section called “The offside rule and white space in an expression”</a>.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="deftypes.locals.functions">Local functions, global variables</h3></div></div></div><p id="x_FL"><a name="x_FL"></a>You'll have noticed that Haskell's syntax for
+	defining a variable looks very similar to its syntax for
+	defining a function.  This symmetry is preserved in <code class="literal">let</code> and
+	<code class="literal">where</code> blocks: we can define local
+	<span class="emphasis"><em>functions</em></span> just as easily as local
+	<span class="emphasis"><em>variables</em></span>.</p><a name="LocalFunction.hs:pluralise"></a><pre id="LocalFunction.hs:pluralise" class="programlisting">-- file: ch03/LocalFunction.hs
+pluralise :: String -&gt; [Int] -&gt; [String]
+pluralise word counts = map plural counts
+    where plural 0 = "no " ++ word ++ "s"
+          plural 1 = "one " ++ word
+          plural n = show n ++ " " ++ word ++ "s"</pre><p id="x_GL"><a name="x_GL"></a>We have defined a local function,
+	<code class="function">plural</code>, that consists of several
+	equations. Local functions can freely use variables from the
+	scopes that enclose them: here, we use <code class="varname">word</code>
+	from the definition of the outer function
+	<code class="function">pluralise</code>.  In the definition of
+	<code class="function">pluralise</code>, the <code class="function">map</code>
+	function (which we'll be revisiting in the next chapter)
+	applies the local function <code class="function">plural</code> to
+	every element of the <code class="varname">counts</code> list.</p><p id="x_Gh"><a name="x_Gh"></a>We can also define variables, as well as
+	functions, at the top level of a source file.</p><a name="GlobalVariable.hs:itemName"></a><pre id="GlobalVariable.hs:itemName" class="programlisting">-- file: ch03/GlobalVariable.hs
+itemName = "Weighted Companion Cube"</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.offside">The offside rule and white space in an expression</h2></div></div></div><p id="x_u4"><a name="x_u4"></a>In our definitions of <code class="function">lend</code>
+      and <code class="function">lend2</code>, the left margin of our text
+      wandered around quite a bit.  This was not an accident: in
+      Haskell, white space has meaning.</p><p id="x_v4"><a name="x_v4"></a>Haskell uses indentation as a cue to parse
+      sections of code. This use of layout to convey structure is
+      sometimes called the <span class="emphasis"><em>offside rule</em></span>. At the
+      beginning of a source file, the first top level declaration or definition
+      can start in any column, and the Haskell compiler or interpreter
+      remembers that indentation level.  Every subsequent top level
+      declaration must have the same indentation.</p><p id="x_w4"><a name="x_w4"></a>Here's an illustration of the top level
+      indentation rule. Our first file,
+      <code class="filename">GoodIndent.hs</code>, is well behaved.</p><a name="GoodIndent.hs:good"></a><pre id="GoodIndent.hs:good" class="programlisting">-- file: ch03/GoodIndent.hs
+-- This is the leftmost column.
+
+  -- It's fine for top-level declarations to start in any column...
+  firstGoodIndentation = 1
+
+  -- ...provided all subsequent declarations do, too!
+  secondGoodIndentation = 2</pre><p id="x_x4"><a name="x_x4"></a>Our second, <code class="filename">BadIndent.hs</code>, doesn't play
+      by the rules.</p><a name="BadIndent.hs:bad"></a><pre id="BadIndent.hs:bad" class="programlisting">-- file: ch03/BadIndent.hs
+-- This is the leftmost column.
+
+    -- Our first declaration is in column 4.
+    firstBadIndentation = 1
+
+  -- Our second is left of the first, which is illegal!
+  secondBadIndentation = 2</pre><p id="x_y4"><a name="x_y4"></a>Here's what happens when we try to load the two files into
+      <span class="command"><strong>ghci</strong></span>.</p><a name="indent.ghci:load"></a><pre id="indent.ghci:load" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load GoodIndent.hs</code></strong>
+[1 of 1] Compiling Main             ( GoodIndent.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load BadIndent.hs</code></strong>
+[1 of 1] Compiling Main             ( BadIndent.hs, interpreted )
+
+BadIndent.hs:8:2: parse error on input `secondBadIndentation'
+Failed, modules loaded: none.
+</pre><p id="x_z4"><a name="x_z4"></a>An empty following line is treated as a
+      continuation of the current item, as is a following line
+      indented further to the right.</p><p id="x_A5"><a name="x_A5"></a>The rules for <code class="literal">let</code> expressions and <code class="literal">where</code>
+      clauses are similar.  After a <code class="literal">let</code> or <code class="literal">where</code> keyword, the
+      Haskell compiler or interpreter remembers the indentation of the
+      next token it sees. If the line that follows is empty, or its
+      indentation is further to the right, it is considered to
+      continue the previous line. If the indentation is the same as
+      the start of the preceding item, this is treated as beginning a
+      new item in the same block.</p><a name="Indentation.hs:foo"></a><pre id="Indentation.hs:foo" class="programlisting">-- file: ch03/Indentation.hs
+foo = let firstDefinition = blah blah
+          -- a comment-only line is treated as empty
+                              continuation blah
+
+          -- we reduce the indentation, so this is a new definition
+          secondDefinition = yada yada
+
+                             continuation yada
+      in whatever</pre><p id="x_B5"><a name="x_B5"></a>Here are nested uses of <code class="literal">let</code> and
+      <code class="literal">where</code>.</p><a name="letwhere.hs:let"></a><pre id="letwhere.hs:let" class="programlisting">-- file: ch03/letwhere.hs
+bar = let b = 2
+          c = True
+      in let a = b
+         in (a, c)</pre><p id="x_C5"><a name="x_C5"></a>The name <code class="varname">a</code> is only visible
+      within the inner <code class="literal">let</code> expression.  It's not visible
+      in the outer <code class="literal">let</code>.  If we try to use the name
+      <code class="varname">a</code> there, we'll get a compilation
+      error.  The indentation gives both us and the compiler a visual
+      cue as to what is currently in scope.</p><a name="letwhere.hs:where"></a><pre id="letwhere.hs:where" class="programlisting">-- file: ch03/letwhere.hs
+foo = x
+    where x = y
+              where y = 2</pre><p id="x_D5"><a name="x_D5"></a>Similarly, the scope of the first <code class="literal">where</code> clause
+      is the definition of <code class="varname">foo</code>, but the scope of
+      the second is just the first <code class="literal">where</code> clause.</p><p id="x_E5"><a name="x_E5"></a>The indentation we use for the <code class="literal">let</code> and
+      <code class="literal">where</code> clauses makes our intentions easy to figure
+      out.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="deftypes.tabs">A note about tabs versus spaces</h3></div></div></div><p id="x_F5"><a name="x_F5"></a>If you use a Haskell-aware text editor (e.g. Emacs),
+	it is probably already configured to use space characters for
+	all white space when you edit Haskell source files.  If your editor is
+	<span class="emphasis"><em>not</em></span> Haskell-aware, you should configure
+	it to only use space characters.</p><p id="x_G5"><a name="x_G5"></a>The reason for this is portability.  In an editor
+	that uses a fixed-width font, tab stops are by convention placed
+	at different intervals on Unix-like systems (every eight
+	characters) than on Windows (every four characters). This
+	means that no matter what your personal beliefs are about
+	where tabs belong, you can't rely on someone else's editor
+	honouring your preferences.  Any indentation that uses tabs is
+	going to look broken under <span class="emphasis"><em>someone's</em></span>
+	configuration.  In fact, this could lead to compilation
+	problems, as the Haskell language standard requires
+	implementations to use the Unix tab width convention.
+	Using space characters avoids this problem
+	entirely.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="deftypes.block">The offside rule is not mandatory</h3></div></div></div><p id="x_H5"><a name="x_H5"></a>We can use explicit structuring instead of layout to
+	indicate what we mean.  To do so, we start a block of
+	equations with an opening curly brace; separate each item with
+	a semicolon; and finish the block with a closing curly brace.
+	The following two uses of <code class="literal">let</code> have the same
+	meanings.</p><a name="Braces.hs:braces"></a><pre id="Braces.hs:braces" class="programlisting">-- file: ch03/Braces.hs
+bar = let a = 1
+          b = 2
+          c = 3
+      in a + b + c
+
+foo = let { a = 1;  b = 2;
+        c = 3 }
+      in a + b + c</pre><p id="x_I5"><a name="x_I5"></a>When we use explicit structuring, the normal layout rules
+	don't apply, which is why we can get away with unusual
+	indentation in the second <code class="literal">let</code> expression.</p><p id="x_J5"><a name="x_J5"></a>We can use explicit structuring anywhere that we'd
+	normally use layout.  It's valid for <code class="literal">where</code>
+	clauses, and even top-level declarations.  Just remember that
+	although the facility exists, explicit structuring is hardly
+	ever actually <span class="emphasis"><em>used</em></span> in Haskell
+	programs.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.case">The case expression</h2></div></div></div><p id="x_q5"><a name="x_q5"></a>Function definitions are not the only place where
+      we can use pattern matching.  The <code class="literal">case</code> construct lets us match
+      patterns within an expression.  Here's what it looks like.  This
+      function (defined for us in <code class="code">Data.Maybe</code>) unwraps a
+      <span class="type">Maybe</span> value, using a default if the value is
+      <code class="code">Nothing</code>.</p><a name="Guard.hs:fromMaybe"></a><pre id="Guard.hs:fromMaybe" class="programlisting">-- file: ch03/Guard.hs
+fromMaybe defval wrapped =
+    case wrapped of
+      Nothing     -&gt; defval
+      Just value  -&gt; value</pre><p id="x_r5"><a name="x_r5"></a>The <code class="code">case</code> keyword is followed by an
+      arbitrary expression: the pattern match is performed against the
+      result of this expression. The <code class="code">of</code> keyword signifies
+      the end of the expression and the beginning of the block of
+      patterns and expressions.</p><p id="x_s5"><a name="x_s5"></a>Each item in the block consists of a pattern,
+      followed by an arrow <code class="code">-&gt;</code>, followed by an
+      expression to evaluate if that pattern matches.  These
+      expressions must all have the same type.  The result of the
+      <code class="code">case</code> expression is the result of the expression
+      associated with the first pattern to match.  Matches are
+      attempted from top to bottom.</p><p id="x_t5"><a name="x_t5"></a>To express “<span class="quote">here's the expression to
+	evaluate if none of the other patterns match</span>”, we just
+      use the wild card pattern <code class="code">_</code> as the last in our list
+      of patterns.  If a pattern match fails, we will get the same
+      kind of runtime error as we saw earlier.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.pattern.limits">Common beginner mistakes with patterns</h2></div></div></div><p id="x_NL"><a name="x_NL"></a>There are a few ways in which new Haskell
+      programmers can misunderstand or misuse patterns.  Here are some
+      attempts at pattern matching gone awry.  Depending on what you
+      expect one of these examples to do, it might contain a
+      surprise.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id587485">Incorrectly matching against a variable</h3></div></div></div><a name="BogusPattern.hs:whichFruit"></a><pre id="BogusPattern.hs:whichFruit" class="programlisting">-- file: ch03/BogusPattern.hs
+data Fruit = Apple | Orange
+
+apple = "apple"
+
+orange = "orange"        
+
+whichFruit :: String -&gt; Fruit
+
+whichFruit f = case f of
+                 apple  -&gt; Apple
+                 orange -&gt; Orange</pre><p id="x_w5"><a name="x_w5"></a>A naive glance suggests that this code is trying
+	to check the value <code class="function">f</code> to see whether it
+	matches the value <code class="varname">apple</code> or
+	<code class="varname">orange</code>.</p><p id="x_DC1"><a name="x_DC1"></a>It is easier to spot the mistake if we rewrite
+	the code in an equational style.</p><a name="BogusPattern.hs:equational"></a><pre id="BogusPattern.hs:equational" class="programlisting">-- file: ch03/BogusPattern.hs
+equational apple = Apple
+equational orange = Orange</pre><p id="x_EC1"><a name="x_EC1"></a>Now can you see the problem?  Here, it is more obvious
+	<code class="varname">apple</code> does not refer to the top level value
+	named <code class="varname">apple</code>: it is a local pattern
+	variable.</p><div class="note"><table border="0" summary="Note: Irrefutable patterns"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Irrefutable patterns</th></tr><tr><td align="left" valign="top"><p id="x_y5"><a name="x_y5"></a>We refer to a pattern that always succeeds as
+	  <span class="emphasis"><em>irrefutable</em></span>.  Plain variable names and
+	  the wild card <code class="code">_</code> are examples of irrefutable
+	  patterns.</p></td></tr></table></div><p id="x_Ih"><a name="x_Ih"></a>Here's a corrected version of this function.</p><a name="BogusPattern.hs:betterFruit"></a><pre id="BogusPattern.hs:betterFruit" class="programlisting">-- file: ch03/BogusPattern.hs
+betterFruit f = case f of
+                  "apple"  -&gt; Apple
+                  "orange" -&gt; Orange</pre><p id="x_Jh"><a name="x_Jh"></a>We fixed the problem by matching against the
+	literal values <code class="code">"apple"</code> and
+	<code class="code">"orange"</code>.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id587613">Incorrectly trying to compare for equality</h3></div></div></div><p id="x_Kh"><a name="x_Kh"></a>What if we want to compare the values stored in
+	two nodes of type <span class="type">Tree</span>, and return one of them if
+	they're equal?  Here's an attempt.</p><a name="BadTree.hs:bad_nodesAreSame"></a><pre id="BadTree.hs:bad_nodesAreSame" class="programlisting">-- file: ch03/BadTree.hs
+bad_nodesAreSame (Node a _ _) (Node a _ _) = Just a
+bad_nodesAreSame _            _            = Nothing</pre><p id="x_A6"><a name="x_A6"></a>A name can only appear once in a set of pattern
+	bindings. We cannot place a variable in multiple positions to
+	express the notion “<span class="quote">this value and that should be
+	  identical</span>”.  Instead, we'll solve this problem using
+	<span class="emphasis"><em>guards</em></span>, another invaluable Haskell
+	feature.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="deftypes.guard">Conditional evaluation with guards</h2></div></div></div><p id="x_C6"><a name="x_C6"></a>Pattern matching limites us to performing fixed
+      tests of a value's shape.  Although this is useful, we will
+      often want to make a more expressive check before evaluating a
+      function's body.  Haskell provides a feature,
+      <span class="emphasis"><em>guards</em></span>, that give us this ability.  We'll
+      introduce the idea with a modification of the function we wrote
+      to compare two nodes of a tree.</p><a name="BadTree.hs:nodesAreSame"></a><pre id="BadTree.hs:nodesAreSame" class="programlisting">-- file: ch03/BadTree.hs
+nodesAreSame (Node a _ _) (Node b _ _)
+    | a == b     = Just a
+nodesAreSame _ _ = Nothing</pre><p id="x_FC1"><a name="x_FC1"></a>In this example, we use pattern matching to ensure that we
+      are looking at values of the right shape, and a guard to compare
+      pieces of them.</p><p id="x_Lh"><a name="x_Lh"></a>A pattern can be followed by zero or more guards,
+      each an expression of type <span class="type">Bool</span>.  A guard is
+      introduced by a <code class="code">|</code> symbol.  This is followed by the
+      guard expression, then an <code class="code">=</code> symbol (or
+      <code class="code">-&gt;</code> if we're in a <code class="literal">case</code> expression), then the
+      body to use if the guard expression evaluates to
+      <code class="code">True</code>. If a pattern matches, each guard associated
+      with that pattern is evaluated, in the order in which they are
+      written.  If a guard succeeds, the body affiliated with it is
+      used as the result of the function.  If no guard succeeds,
+      pattern matching moves on to the next pattern.</p><p id="x_Mh"><a name="x_Mh"></a>When a guard expression is evaluated, all of the
+      variables mentioned in the pattern with which it is associated
+      are bound and can be used.</p><p id="x_GC1"><a name="x_GC1"></a>Here is a reworked version of our <code class="function">lend</code>
+      function that uses guards.</p><a name="Lending.hs:lend3"></a><pre id="Lending.hs:lend3" class="programlisting">-- file: ch03/Lending.hs
+lend3 amount balance
+     | amount &lt;= 0            = Nothing
+     | amount &gt; reserve * 0.5 = Nothing
+     | otherwise              = Just newBalance
+    where reserve    = 100
+          newBalance = balance - amount</pre><p id="x_HC1"><a name="x_HC1"></a>The special-looking guard expression
+      <code class="varname">otherwise</code> is simply a variable bound to the
+      value <code class="code">True</code>, to aid readability.</p><p id="x_F6"><a name="x_F6"></a>We can use guards anywhere that we can use
+      patterns.  Writing a function as a series of equations using
+      pattern matching and guards can make it much clearer. Remember
+      the <code class="function">myDrop</code> function we defined in
+      <a class="xref" href="types-and-functions.html#funcstypes.if" title="Conditional evaluation">the section called “Conditional evaluation”</a>?</p><a name="myDrop.hs:myDrop1"></a><pre id="myDrop.hs:myDrop1" class="programlisting">-- file: ch02/myDrop.hs
+myDrop n xs = if n &lt;= 0 || null xs
+              then xs
+              else myDrop (n - 1) (tail xs)</pre><p id="x_H6"><a name="x_H6"></a>Here is a reformulation that uses patterns and
+      guards.</p><a name="myDrop.hs:niceDrop"></a><pre id="myDrop.hs:niceDrop" class="programlisting">-- file: ch02/myDrop.hs
+niceDrop n xs | n &lt;= 0 = xs
+niceDrop _ []          = []
+niceDrop n (_:xs)      = niceDrop (n - 1) xs</pre><p id="x_Oh"><a name="x_Oh"></a>This change in style lets us enumerate <span class="emphasis"><em>up
+	front</em></span> the cases in which we expect a function to
+      behave differently. If we bury the decisions inside a function
+      as <code class="literal">if</code> expressions, the code becomes harder to read.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id587860">Exercises</h2></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id587870"></a><a name="id587873"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_IC1"><a name="x_IC1"></a>Write a function that computes the number of elements
+	    in a list.  To test it, ensure that it gives the same
+	    answers as the standard <code class="function">length</code>
+	    function.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id587891"></a><a name="id587893"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_JC1"><a name="x_JC1"></a>Add a type signature for your function to your source
+	    file.  To test it, load the source file into <span class="command"><strong>ghci</strong></span>
+	    again.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id587912"></a><a name="id587914"></a><p><b>3.</b></p></td><td align="left" valign="top"><p id="x_KC1"><a name="x_KC1"></a>Write a function that computes the mean of a list,
+	    i.e. the sum of all elements in the list divided by its
+	    length.  (You may need to use the
+	    <code class="function">fromIntegral</code> function to convert the
+	    length of the list from an integer into a floating point
+	    number.)</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id587933"></a><a name="id587936"></a><p><b>4.</b></p></td><td align="left" valign="top"><p id="x_LC1"><a name="x_LC1"></a>Turn a list into a palindrome, i.e. it should read the
+	    same both backwards and forwards.  For example, given the
+	    list <code class="code">[1,2,3]</code>, your function should return
+	    <code class="code">[1,2,3,3,2,1]</code>.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id587955"></a><a name="id587958"></a><p><b>5.</b></p></td><td align="left" valign="top"><p id="x_MC1"><a name="x_MC1"></a>Write a function that determines whether its input
+	    list is a palindrome.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id587970"></a><a name="id587972"></a><p><b>6.</b></p></td><td align="left" valign="top"><p id="x_NC1"><a name="x_NC1"></a>Create a function that sorts a list of lists based on
+	    the length of each sublist.  (You may want to look at the
+	    <code class="function">sortBy</code> function from the
+	    <code class="code">Data.List</code> module.)</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id587994"></a><a name="id587996"></a><p><b>7.</b></p></td><td align="left" valign="top"><p id="x_OC1"><a name="x_OC1"></a>Define a function that joins a list of lists together
+	    using a separator value.</p><a name="Intersperse.hs:intersperse"></a><pre id="Intersperse.hs:intersperse" class="programlisting">-- file: ch03/Intersperse.hs
+intersperse :: a -&gt; [[a]] -&gt; [a]</pre><p id="x_PC1"><a name="x_PC1"></a>The separator should appear between elements of the
+	    list, but should not follow the last element.  Your
+	    function should behave as follows.</p><a name="intersperse.ghci:intersperse"></a><pre id="intersperse.ghci:intersperse" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load Intersperse</code></strong>
+[1 of 1] Compiling Main             ( Intersperse.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>intersperse ',' []</code></strong>
+""
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>intersperse ',' ["foo"]</code></strong>
+"foo"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>intersperse ',' ["foo","bar","baz","quux"]</code></strong>
+"foo,bar,baz,quux"
+</pre></td></tr><tr class="question"><td align="left" valign="top"><a name="id588080"></a><a name="id588082"></a><p><b>8.</b></p></td><td align="left" valign="top"><p id="x_QC1"><a name="x_QC1"></a>Using the binary tree type that we defined earlier in
+	    this chapter, write a function that will determine the
+	    height of the tree.  The height is the largest number of
+	    hops from the root to an <code class="code">Empty</code>. For example,
+	    the tree <code class="code">Empty</code> has height zero; <code class="code">Node
+	      "x" Empty Empty</code> has height one; <code class="code">Node "x"
+	      Empty (Node "y" Empty Empty)</code> has height two; and
+	    so on.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id588110"></a><a name="id588112"></a><p><b>9.</b></p></td><td align="left" valign="top"><p id="x_RC1"><a name="x_RC1"></a>Consider three two-dimensional points
+	    <span class="emphasis"><em>a</em></span>, <span class="emphasis"><em>b</em></span>, and
+	    <span class="emphasis"><em>c</em></span>.  If we look at the angle formed by
+	    the line segment from <span class="emphasis"><em>a</em></span> to
+	    <span class="emphasis"><em>b</em></span> and the line segment from
+	    <span class="emphasis"><em>b</em></span> to <span class="emphasis"><em>c</em></span>, it
+	    either turns left, turns right, or forms a straight line.
+	    Define a <span class="type">Direction</span> data type that lets you
+	    represent these possibilities.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id588154"></a><a name="id588156"></a><p><b>10.</b></p></td><td align="left" valign="top"><p id="x_SC1"><a name="x_SC1"></a>Write a function that calculates the turn made by
+	    three 2D points and returns a <span class="type">Direction</span>.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id588171"></a><a name="id588174"></a><p><b>11.</b></p></td><td align="left" valign="top"><p id="x_TC1"><a name="x_TC1"></a>Define a function that takes a list of 2D points and
+	    computes the direction of each successive triple.  Given
+	    a list of points <code class="code">[a,b,c,d,e]</code>, it should begin
+	    by computing the turn made by <code class="code">[a,b,c]</code>, then
+	    the turn made by <code class="code">[b,c,d]</code>, then
+	    <code class="code">[c,d,e]</code>.  Your function should return a list
+	    of <span class="type">Direction</span>.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id588205"></a><a name="id588207"></a><p><b>12.</b></p></td><td align="left" valign="top"><p id="x_UC1"><a name="x_UC1"></a>Using the code from the preceding three exercises,
+	    implement Graham's scan algorithm for the convex hull of a
+	    set of 2D points. You can find good description of what a
+	    <a class="ulink" href="http://en.wikipedia.org/wiki/Convex_hull" target="_top">convex
+	      hull</a>. is, and how the <a class="ulink" href="http://en.wikipedia.org/wiki/Graham_scan" target="_top">Graham
+	      scan algorithm</a> should work, on <a class="ulink" href="http://en.wikipedia.org/" target="_top">Wikipedia</a>.</p></td></tr></tbody></table></div></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id582956" href="#id582956" class="para">7</a>] </sup>If you are familiar with C or C++, it is analogous to a
+	  <code class="code">typedef</code>.</p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="types-and-functions.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="functional-programming.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 2. Types and Functions </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 4. Functional programming</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

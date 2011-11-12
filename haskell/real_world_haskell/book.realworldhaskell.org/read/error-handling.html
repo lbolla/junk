@@ -1,0 +1,957 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 19. Error handling</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="monad-transformers.html" title="Chapter 18. Monad transformers"><link rel="next" href="systems-programming-in-haskell.html" title="Chapter 20. Systems Programming in Haskell"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 19. Error handling</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="monad-transformers.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="systems-programming-in-haskell.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="errors"><div class="titlepage"><div><div><h2 class="title">Chapter 19. Error handling</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="error-handling.html#errors.nonexception">Error Handling with Data Types</a></span></dt><dd><dl><dt><span class="sect2"><a href="error-handling.html#errors.maybe">Use of Maybe</a></span></dt><dd><dl><dt><span class="sect3"><a href="error-handling.html#errors.maybe.laziness">Loss and Preservation of Laziness</a></span></dt><dt><span class="sect3"><a href="error-handling.html#errors.maybe.monad">Usage of the Maybe Monad</a></span></dt></dl></dd><dt><span class="sect2"><a href="error-handling.html#errors.either">Use of Either</a></span></dt><dd><dl><dt><span class="sect3"><a href="error-handling.html#id661397">Custom Data Types for Errors</a></span></dt><dt><span class="sect3"><a href="error-handling.html#id661523">Monadic Use of Either</a></span></dt></dl></dd></dl></dd><dt><span class="sect1"><a href="error-handling.html#errors.exceptions">Exceptions</a></span></dt><dd><dl><dt><span class="sect2"><a href="error-handling.html#errors.exceptions.firststeps">First Steps with Exceptions</a></span></dt><dt><span class="sect2"><a href="error-handling.html#errors.exceptions.lazy">Laziness and Exception Handling</a></span></dt><dt><span class="sect2"><a href="error-handling.html#errors.exceptions.handle">Using handle</a></span></dt><dt><span class="sect2"><a href="error-handling.html#errors.exceptions.selective">Selective Handling of Exceptions</a></span></dt><dt><span class="sect2"><a href="error-handling.html#errors.exceptions.io">I/O Exceptions</a></span></dt><dt><span class="sect2"><a href="error-handling.html#errors.exceptions.raising">Throwing Exceptions</a></span></dt><dt><span class="sect2"><a href="error-handling.html#errors.exceptions.dynamic">Dynamic Exceptions</a></span></dt></dl></dd><dt><span class="sect1"><a href="error-handling.html#errors.exercises">Exercises</a></span></dt><dt><span class="sect1"><a href="error-handling.html#id663540">Error handling in monads</a></span></dt><dd><dl><dt><span class="sect2"><a href="error-handling.html#id663875">A tiny parsing framework</a></span></dt><dt><span class="sect2"><a href="error-handling.html#id664122">Exercises</a></span></dt></dl></dd></dl></div><p id="x_xy"><a name="x_xy"></a>
+    Error handling is one of the most important—and overlooked—topics for programmers, regardless of the language used.  In
+    Haskell, you will find two major types of error handling employed:
+    "pure" error handling and exceptions.
+  </p><p id="x_yy"><a name="x_yy"></a>
+    When we speak of "pure" error handling, we are referring to
+    algorithms that do not require anything from the <span class="type">IO</span> monad.
+    We can often implement error handling for them by simply using
+    Haskell's expressive data type system to our advantage.  Haskell
+    also has an exception system.  Due to the complexities of lazy
+    evaluation, exceptions in Haskell can be thrown anywhere, but only
+    caught within the <span class="type">IO</span> monad.  In this chapter, we'll consider
+    both.
+  </p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="errors.nonexception">Error Handling with Data Types</h2></div></div></div><p id="x_zy"><a name="x_zy"></a>
+      Let's begin our discussion of error handling with a very simple
+      function.  Let's say that we wish to perform division on a
+      series of numbers.  We have a constant numerator, but wish to
+      vary the denominator.  We might come up with a function like
+      this:
+    </p><a name="divby1.hs:all"></a><pre id="divby1.hs:all" class="programlisting">-- file: ch19/divby1.hs
+divBy :: Integral a =&gt; a -&gt; [a] -&gt; [a]
+divBy numerator = map (numerator `div`)</pre><p id="x_Az"><a name="x_Az"></a>
+      Very simple, right?  We can play around with this a bit in
+      <span class="command"><strong>ghci</strong></span>:
+    </p><a name="divby1.ghci:ex1"></a><pre id="divby1.ghci:ex1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,5,8,10]</code></strong>
+[50,25,10,6,5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>take 5 (divBy 100 [1..])</code></strong>
+[100,50,33,25,20]
+</pre><p id="x_Bz"><a name="x_Bz"></a>
+      This behaves as expected: <code class="literal">50 / 1</code> is
+      <code class="literal">50</code>, <code class="literal">50 / 2</code> is
+      <code class="literal">25</code>, and so forth.
+      <sup>[<a name="id660064" href="#ftn.id660064" class="footnote">38</a>]</sup>  This even worked with the infinite list
+      <code class="literal">[1..]</code>.
+      What happens if we sneak a
+      <code class="literal">0</code> into our list somewhere?
+    </p><a name="divby1.ghci:ex2"></a><pre id="divby1.ghci:ex2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,0,8,10]</code></strong>
+[50,25,*** Exception: divide by zero
+</pre><p id="x_Dz"><a name="x_Dz"></a>
+      Isn't that interesting?  <span class="command"><strong>ghci</strong></span> started displaying the output,
+      then stopped with an exception when it got to the zero.  That's
+      lazy evaluation at work—it calculated results as needed.
+    </p><p id="x_Ez"><a name="x_Ez"></a>
+      As we will see later in this chapter, in the absence of an
+      explicit exception handler, this exception will crash the
+      program.  That's obviously not desirable, so let's consider
+      better ways we could indicate an error in this pure function.
+    </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="errors.maybe">Use of Maybe</h3></div></div></div><p id="x_Fz"><a name="x_Fz"></a>
+        One immediately-recognizable easy way to indicate failure is
+        to use <code class="literal">Maybe</code>.<sup>[<a name="id660185" href="#ftn.id660185" class="footnote">39</a>]</sup>  Instead of just returning a list and throwing
+        an exception on failure, we can return <code class="literal">Nothing</code> if the input
+        list contained a zero anywhere, or <code class="literal">Just</code> with the results
+        otherwise.  Here's an implementation of such an algorithm:
+      </p><a name="divby2.hs:all"></a><pre id="divby2.hs:all" class="programlisting">-- file: ch19/divby2.hs
+divBy :: Integral a =&gt; a -&gt; [a] -&gt; Maybe [a]
+divBy _ [] = Just []
+divBy _ (0:_) = Nothing
+divBy numerator (denom:xs) =
+    case divBy numerator xs of
+      Nothing -&gt; Nothing
+      Just results -&gt; Just ((numerator `div` denom) : results)</pre><p id="x_Hz"><a name="x_Hz"></a>
+        If you try it out in <span class="command"><strong>ghci</strong></span>, you'll see that it works:
+      </p><a name="divby2.ghci:ex1"></a><pre id="divby2.ghci:ex1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,5,8,10]</code></strong>
+Just [50,25,10,6,5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,0,8,10]</code></strong>
+Nothing
+</pre><p id="x_Iz"><a name="x_Iz"></a>
+        The function that calls <code class="literal">divBy</code> can now use a
+        <code class="literal">case</code> statement to see if the call was
+        successful, just as <code class="literal">divBy</code> does when it
+        calls itself.
+      </p><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_YJ1"><a name="x_YJ1"></a>You may note that you could use a monadic
+        implementation of the above, like so:
+        </p><a name="divby2m.hs:all"></a><pre id="divby2m.hs:all" class="programlisting">-- file: ch19/divby2m.hs
+divBy :: Integral a =&gt; a -&gt; [a] -&gt; Maybe [a]
+divBy numerator denominators = 
+    mapM (numerator `safeDiv`) denominators
+    where safeDiv _ 0 = Nothing
+          safeDiv x y = x `div` y</pre><p id="x_ZJ1"><a name="x_ZJ1"></a>
+          We will be avoiding the monadic implementation in this
+          chapter for simplicity, but wanted to point out that it
+          exists.
+        </p></td></tr></table></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="errors.maybe.laziness">Loss and Preservation of Laziness</h4></div></div></div><p id="x_Jz"><a name="x_Jz"></a>
+          The use of <code class="literal">Maybe</code> was convenient, but has come at a cost.
+          <code class="literal">divBy</code> can no longer handle infinite lists
+          as input.  Since the result is <code class="literal">Maybe [a]</code>,
+          the entire input list must be examined before we can be sure
+          that we won't be returning <code class="literal">Nothing</code> due to a
+          zero somewhere in it.  You can verify this is the case by
+          attempting one of our earlier examples:
+        </p><a name="divby2.ghci:ex2"></a><pre id="divby2.ghci:ex2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 100 [1..] </code></strong>
+*** Exception: stack overflow
+</pre><p id="x_Kz"><a name="x_Kz"></a>
+          Note that you don't start seeing partial output here; you get
+          <span class="emphasis"><em>no</em></span> output.  Notice that at each step in
+          <code class="literal">divBy</code> (except for the case of an empty
+          input list or a zero at the start of the list), the results
+          from every subsequent element must be known before the results
+          from the current element can be known.  Thus this algorithm
+          can't work on infinite lists, and it is also not very
+          space-efficient for large finite lists.
+        </p><p id="x_Lz"><a name="x_Lz"></a>
+          Having said all that, <code class="literal">Maybe</code> is often a fine choice.  In this
+          particular case, we don't know whether there will be a problem
+          until we get into evaluating the entire input.  Sometimes we
+          know of a problem up front, for instance, that
+          <code class="literal">tail []</code> in <span class="command"><strong>ghci</strong></span> produces an exception.
+          We could easly write an infinite-capable <code class="literal">tail</code> that doesn't
+          have this problem:
+        </p><a name="safetail.hs:all"></a><pre id="safetail.hs:all" class="programlisting">-- file: ch19/safetail.hs
+safeTail :: [a] -&gt; Maybe [a]
+safeTail [] = Nothing
+safeTail (_:xs) = Just xs</pre><p id="x_Mz"><a name="x_Mz"></a>
+          This simply returns <code class="literal">Nothing</code> if given an empty input list,
+          or <code class="literal">Just</code> with the result for anything else.  Since we only
+          have to make sure the list is non-empty before knowing
+          whether or not we have an error, using <code class="literal">Maybe</code> here doesn't
+          reduce our laziness. We can test this out in <span class="command"><strong>ghci</strong></span> and see how it compares with
+          regular <code class="literal">tail</code>:
+        </p><a name="safetail.ghci:ex1"></a><pre id="safetail.ghci:ex1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>tail [1,2,3,4,5]</code></strong>
+[2,3,4,5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>safeTail [1,2,3,4,5]</code></strong>
+Just [2,3,4,5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>tail []</code></strong>
+*** Exception: Prelude.tail: empty list
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>safeTail []</code></strong>
+Nothing
+</pre><p id="x_Nz"><a name="x_Nz"></a>
+          Here, we can see our <code class="literal">safeTail</code> performed
+          as expected.  But what about infinite lists?  We don't want
+          to print out an infinite number of results, so we can test
+          with <code class="literal">take 5 (tail [1..])</code> and a similar
+          construction with <code class="literal">safeTail</code>:
+        </p><a name="safetail.ghci:ex2"></a><pre id="safetail.ghci:ex2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>take 5 (tail [1..])</code></strong>
+[2,3,4,5,6]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>case safeTail [1..] of {Nothing -&gt; Nothing; Just x -&gt; Just (take 5 x)}</code></strong>
+Just [2,3,4,5,6]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>take 5 (tail [])</code></strong>
+*** Exception: Prelude.tail: empty list
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>case safeTail [] of {Nothing -&gt; Nothing; Just x -&gt; Just (take 5 x)}</code></strong>
+Nothing
+</pre><p id="x_Oz"><a name="x_Oz"></a>
+          Here you can see that both <code class="literal">tail</code> and
+          <code class="literal">safeTail</code> handled infinite lists just
+          fine.  Note that we were able to deal better with an empty
+          input list; instead of throwing an exception, we decided to
+          return <code class="literal">Nothing</code> in that situation.  We were able to achieve
+          error handling at no expense to laziness.
+        </p><p id="x_Pz"><a name="x_Pz"></a>
+          But how do we apply this to our <code class="literal">divBy</code>
+          example?  Let's consider the situation there: failure is a
+          property of an individual bad input, not of the input list
+          itself.  How about making failure a property of an
+          individual output element, rather than the output list
+          itself?  That is, instead of a function of type <code class="literal">a
+          -&gt; [a] -&gt; Maybe [a]</code>, instead we will have
+          <code class="literal">a -&gt; [a] -&gt; [Maybe a]</code>.  This will have
+          the benefit of preserving laziness, plus the caller will be
+          able to determine exactly where in the list the problem was
+         —or even just filter out the problem results if desired.
+          Here's an implementation:
+        </p><a name="divby3.hs:all"></a><pre id="divby3.hs:all" class="programlisting">-- file: ch19/divby3.hs
+divBy :: Integral a =&gt; a -&gt; [a] -&gt; [Maybe a]
+divBy numerator denominators =
+    map worker denominators
+    where worker 0 = Nothing
+          worker x = Just (numerator `div` x)</pre><p id="x_Qz"><a name="x_Qz"></a>
+          Take a look at this function.  We're back to using <code class="literal">map</code>,
+          which is a good thing for both laziness and simplicity.  We
+          can try it out in <span class="command"><strong>ghci</strong></span> and see that it works for finite
+          and infinite lists just fine:
+        </p><a name="divby3.ghci:ex1"></a><pre id="divby3.ghci:ex1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,5,8,10]</code></strong>
+[Just 50,Just 25,Just 10,Just 6,Just 5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,0,8,10]</code></strong>
+[Just 50,Just 25,Nothing,Just 6,Just 5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>take 5 (divBy 100 [1..])</code></strong>
+[Just 100,Just 50,Just 33,Just 25,Just 20]
+</pre><p id="x_Rz"><a name="x_Rz"></a>
+          We hope that you can take from this discussion the point
+          that there is a distinction between the input not being
+          well-formed (as in the case of <code class="literal">safeTail</code>)
+          and the input potentially containing some bad data, as in
+          the case of <code class="literal">divBy</code>.  These two cases can
+          often justify different handling of the results.
+        </p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="errors.maybe.monad">Usage of the Maybe Monad</h4></div></div></div><p id="x_Sz"><a name="x_Sz"></a>
+          Back in <a class="xref" href="error-handling.html#errors.maybe" title="Use of Maybe">the section called “Use of Maybe”</a>, we had an example
+          program named <code class="literal">divby2.hs</code>.  This example
+          didn't preserve laziness, but returned a value of type
+          <code class="literal">Maybe [a]</code>.  The exact same algorithm
+          could be expressed using a monadic style.  For more
+          information and important background on monads, please refer
+          to <a class="xref" href="monads.html" title="Chapter 14. Monads">Chapter 14, <i>Monads</i></a>.  Here's our new monadic-style
+          algorithm:
+        </p><a name="divby4.hs:all"></a><pre id="divby4.hs:all" class="programlisting">-- file: ch19/divby4.hs
+divBy :: Integral a =&gt; a -&gt; [a] -&gt; Maybe [a]
+divBy _ [] = return []
+divBy _ (0:_) = fail "division by zero in divBy"
+divBy numerator (denom:xs) =
+    do next &lt;- divBy numerator xs
+       return ((numerator `div` denom) : next)</pre><p id="x_Tz"><a name="x_Tz"></a>
+          The <code class="literal">Maybe</code> monad has made the expression of this algorithm
+          look nicer.  For the <code class="literal">Maybe</code> monad, <code class="literal">return</code> is the same as
+          <code class="literal">Just</code>, and <code class="literal">fail _ = Nothing</code>, so our
+          error explanation string is never actually seen anywhere.
+          We can test this algorithm with the same tests we used
+          against <code class="literal">divby2.hs</code> if we want:
+        </p><a name="divby4.ghci:ex1"></a><pre id="divby4.ghci:ex1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,5,8,10]</code></strong>
+Just [50,25,10,6,5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,0,8,10]</code></strong>
+Nothing
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 100 [1..] </code></strong>
+*** Exception: stack overflow
+</pre><p id="x_Uz"><a name="x_Uz"></a>
+          The code we wrote actually isn't specific to the <code class="literal">Maybe</code>
+          monad.  By simply changing the type, we can make it work for
+          <span class="emphasis"><em>any</em></span> monad.  Let's try it:
+        </p><a name="divby5.hs:all"></a><pre id="divby5.hs:all" class="programlisting">-- file: ch19/divby5.hs
+divBy :: Integral a =&gt; a -&gt; [a] -&gt; Maybe [a]
+divBy = divByGeneric
+
+divByGeneric :: (Monad m, Integral a) =&gt; a -&gt; [a] -&gt; m [a]
+divByGeneric _ [] = return []
+divByGeneric _ (0:_) = fail "division by zero in divByGeneric"
+divByGeneric numerator (denom:xs) =
+    do next &lt;- divByGeneric numerator xs
+       return ((numerator `div` denom) : next)</pre><p id="x_Vz"><a name="x_Vz"></a>
+          The function <code class="literal">divByGeneric</code> contains the
+          same code as <code class="literal">divBy</code> did before; we just
+          gave it a more general type.  This is, in fact, the type
+          that <span class="command"><strong>ghci</strong></span> infers if no type would be given.  We also
+          defined a convenience function <code class="literal">divBy</code> with
+          a more specific type.
+        </p><p id="x_Wz"><a name="x_Wz"></a>
+          Let's try this out in <span class="command"><strong>ghci</strong></span>.
+        </p><a name="divby5.ghci:ex1"></a><pre id="divby5.ghci:ex1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l divby5.hs</code></strong>
+[1 of 1] Compiling Main             ( divby5.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,5,8,10]</code></strong>
+Just [50,25,10,6,5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(divByGeneric 50 [1,2,5,8,10])::(Integral a =&gt; Maybe [a])</code></strong>
+Just [50,25,10,6,5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>divByGeneric 50 [1,2,5,8,10]</code></strong>
+[50,25,10,6,5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>divByGeneric 50 [1,2,0,8,10]</code></strong>
+*** Exception: user error (division by zero in divByGeneric)
+</pre><p id="x_Xz"><a name="x_Xz"></a>
+          The first two examples both produce the same output we see
+          before.  Since <code class="literal">divByGeneric</code> doesn't have
+          a specific return type, we must either give one or let the
+          interpreter infer one from the environment.  If we don't
+          give a specific return type, <span class="command"><strong>ghci</strong></span> infers the <span class="type">IO</span> monad.
+          You can see that in the third and fourth examples.  The <span class="type">IO</span>
+          monad converts <code class="function">fail</code> into an exception, as you can see with
+          the fourth example.
+        </p><p id="x_Yz"><a name="x_Yz"></a>
+          The <code class="literal">Control.Monad.Error</code> module in the
+          <code class="literal">mtl</code> package makes <code class="literal">Either String</code> into a monad
+          as well.  If you use <code class="literal">Either</code>, you can get a pure result
+          that preserves the error message, like so:
+        </p><a name="divby5.ghci:ex2"></a><pre id="divby5.ghci:ex2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m +Control.Monad.Error</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(divByGeneric 50 [1,2,5,8,10])::(Integral a =&gt; Either String [a])</code></strong>
+Loading package mtl-1.1.0.0 ... linking ... done.
+Right [50,25,10,6,5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(divByGeneric 50 [1,2,0,8,10])::(Integral a =&gt; Either String [a])</code></strong>
+Left "division by zero in divByGeneric"
+</pre><p id="x_Zz"><a name="x_Zz"></a>
+          This leads us into our next topic of discussion: using
+          <code class="literal">Either</code> for returning error information.
+        </p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="errors.either">Use of Either</h3></div></div></div><p id="x_az"><a name="x_az"></a>
+        The <code class="literal">Either</code> type is similar to the <code class="literal">Maybe</code> type, with one key
+	difference: it can carry attached data both for an error and a
+	success (“<span class="quote">the <code class="code">Right</code> answer</span>”).
+	<sup>[<a name="id661243" href="#ftn.id661243" class="footnote">40</a>]</sup>  Although the language imposes no restrictions, by
+        convention, a function returning an <code class="literal">Either</code> uses a <code class="literal">Left</code>
+        return value to indicate an error, and <code class="literal">Right</code> to indicate
+        success.  If it helps you remember, you can think of getting
+    the <code class="literal">Right</code> answer.  We can start with our <code class="literal">divby2.hs</code>
+        example from the earlier section on <code class="literal">Maybe</code> and adapt it to
+        work with <code class="literal">Either</code>:
+      </p><a name="divby6.hs:all"></a><pre id="divby6.hs:all" class="programlisting">-- file: ch19/divby6.hs
+divBy :: Integral a =&gt; a -&gt; [a] -&gt; Either String [a]
+divBy _ [] = Right []
+divBy _ (0:_) = Left "divBy: division by 0"
+divBy numerator (denom:xs) =
+    case divBy numerator xs of
+      Left x -&gt; Left x
+      Right results -&gt; Right ((numerator `div` denom) : results)</pre><p id="x_cz"><a name="x_cz"></a> This code is almost
+	identical to the <code class="literal">Maybe</code> code; we've substituted <code class="literal">Right</code> for
+	every <code class="literal">Just</code>.  <code class="literal">Left</code> compares to <code class="literal">Nothing</code>, but now it can
+	carry a message.  Let's check it out in <span class="command"><strong>ghci</strong></span>: </p><a name="divby6.ghci:ex1"></a><pre id="divby6.ghci:ex1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,5,8,10]</code></strong>
+Right [50,25,10,6,5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,0,8,10]</code></strong>
+Left "divBy: division by 0"
+</pre><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="id661397">Custom Data Types for Errors</h4></div></div></div><p id="x_dz"><a name="x_dz"></a>
+          While a <code class="literal">String</code> indicating the cause of an error may be
+	  useful to humans down the road, it's often helpful to define
+	  a custom error type that we can use to programmatically
+	  decide on a course of action based upon exactly what the
+	  problem was.  For instance, let's say that for some reason,
+	  besides 0, we also don't want to divide by 10 or 20.  We
+	  could define a custom error type like so:
+        </p><a name="divby7.hs:all"></a><pre id="divby7.hs:all" class="programlisting">-- file: ch19/divby7.hs
+data DivByError a = DivBy0
+                 | ForbiddenDenominator a
+                   deriving (Eq, Read, Show)
+
+divBy :: Integral a =&gt; a -&gt; [a] -&gt; Either (DivByError a) [a]
+divBy _ [] = Right []
+divBy _ (0:_) = Left DivBy0
+divBy _ (10:_) = Left (ForbiddenDenominator 10)
+divBy _ (20:_) = Left (ForbiddenDenominator 20)
+divBy numerator (denom:xs) =
+    case divBy numerator xs of
+      Left x -&gt; Left x
+      Right results -&gt; Right ((numerator `div` denom) : results)</pre><p id="x_ez"><a name="x_ez"></a>
+          Now, in the event of an error, the <code class="literal">Left</code> data could be
+	  inspected to find the exact cause.  Or, it could simply be
+	  printed out with <code class="literal">show</code>, which will generate a reasonable
+	  idea of the problem as well.  Here's this function in
+	  action:
+        </p><a name="divby7.ghci:ex1"></a><pre id="divby7.ghci:ex1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,5,8]</code></strong>
+Right [50,25,10,6]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,5,8,10]</code></strong>
+Left (ForbiddenDenominator 10)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>divBy 50 [1,2,0,8,10]</code></strong>
+Left DivBy0
+</pre><div class="warning"><table border="0" summary="Warning"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="/support/figs/warning.png"></td><th align="left">Warning</th></tr><tr><td align="left" valign="top"><p id="x_fz"><a name="x_fz"></a>
+            All of these <code class="literal">Either</code> examples suffer from the lack of
+	    laziness that our early <code class="literal">Maybe</code> examples suffered from.
+	    We address that with an exercise question at the end of
+	    this chapter.
+          </p></td></tr></table></div></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="id661523">Monadic Use of Either</h4></div></div></div><p id="x_gz"><a name="x_gz"></a>
+          Back in <a class="xref" href="error-handling.html#errors.maybe.monad" title="Usage of the Maybe Monad">the section called “Usage of the Maybe Monad”</a>, we showed you
+	  how to use <code class="literal">Maybe</code> in a monad.  <code class="literal">Either</code> can be used in a
+	  monad too, but can be slightly more complicated.  The reason
+	  is that <code class="function">fail</code> is hard-coded to accept only a <code class="literal">String</code> as
+	  the failure code, so we have to have a way to map such a
+	  string into whatever type we used for <code class="literal">Left</code>.  As you saw
+	  earlier, <code class="literal">Control.Monad.Error</code> provides
+	  built-in support for <code class="literal">Either String a</code>,
+	  which involves no mapping for the argument to <code class="function">fail</code>. Here's
+	  how we can set up our example to work with <code class="literal">Either</code> in the
+	  monadic style:
+        </p><a name="divby8.hs:all"></a><pre id="divby8.hs:all" class="programlisting">-- file: ch19/divby8.hs
+{-# LANGUAGE FlexibleContexts #-}
+
+import Control.Monad.Error
+
+data Show a =&gt; 
+    DivByError a = DivBy0
+                  | ForbiddenDenominator a
+                  | OtherDivByError String
+                    deriving (Eq, Read, Show)
+
+instance Error (DivByError a) where
+    strMsg x = OtherDivByError x
+
+divBy :: Integral a =&gt; a -&gt; [a] -&gt; Either (DivByError a) [a]
+divBy = divByGeneric
+
+divByGeneric :: (Integral a, MonadError (DivByError a) m) =&gt;
+                 a -&gt; [a] -&gt; m [a]
+divByGeneric _ [] = return []
+divByGeneric _ (0:_) = throwError DivBy0
+divByGeneric _ (10:_) = throwError (ForbiddenDenominator 10)
+divByGeneric _ (20:_) = throwError (ForbiddenDenominator 20)
+divByGeneric numerator (denom:xs) =
+    do next &lt;- divByGeneric numerator xs
+       return ((numerator `div` denom) : next)</pre><p id="x_hz"><a name="x_hz"></a>
+          Here, we needed to turn on the
+	  <code class="literal">FlexibleContexts</code> language extension in
+	  order to provide the type signature for
+	  <code class="literal">divByGeneric</code>.  The
+	  <code class="literal">divBy</code> function works exactly the same as
+	  before.  For <code class="literal">divByGeneric</code>, we make
+	  <code class="literal">divByError</code> a member of the
+	  <code class="literal">Error</code> class, by defining what happens
+	  when someone calls <code class="literal">fail</code> (the
+	  <code class="literal">strMsg</code> function).  We also convert
+	  <code class="literal">Right</code> to <code class="literal">return</code> and <code class="literal">Left</code> to
+	  <code class="literal">throwError</code> to enable this to be generic.
+        </p></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="errors.exceptions">Exceptions</h2></div></div></div><p id="x_U11"><a name="x_U11"></a>
+      Exception handling is found in many programming languages,
+      including Haskell.  It can be useful because, when a problem
+      occurs, it can provide an easy way of handling it, even if it
+      occurred several layers down through a chain of function calls.
+      With exceptions, it's not necessary to check the return value of
+      every function call to check for errors, and take care to
+      produce a return value that reflects the error, as C programmers
+      must do.
+      In Haskell, thanks to monads and the <code class="literal">Either</code> and <code class="literal">Maybe</code> types,
+      you can often achieve the same effects in pure code without
+      the need to use exceptions and exception handling.  
+    </p><p id="x_V11"><a name="x_V11"></a>
+      Some problems—especially those involving I/O—call for
+      working with exceptions.  In Haskell, exceptions may be thrown
+      from any location in the program.  However, due to the
+    unspecified evaluation order, they can only be caught in the <span class="type">IO</span> monad.  Haskell
+      exception handling doesn't involve special syntax as it does in
+      Python or Java.  Rather, the mechanisms to catch and handle
+      exceptions are—surprise—functions.
+    </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="errors.exceptions.firststeps">First Steps with Exceptions</h3></div></div></div><p id="x_W11"><a name="x_W11"></a>
+        In the <code class="literal">Control.Exception</code> module, various
+        functions and types relating to exceptions are defined.  There
+        is an <code class="literal">Exception</code> type defined there; all exceptions are of
+        type <code class="literal">Exception</code>.  There are also functions for catching and
+        handling exceptions.  Let's start by looking at <code class="literal">try</code>, which
+        has type <code class="literal">IO a -&gt; IO (Either Exception
+        a)</code>.  This wraps an <span class="type">IO</span> action with exception
+        handling.  If an exception was thrown, it will return a <code class="literal">Left</code>
+        value with the exception; otherwise, a <code class="literal">Right</code> value with the
+        original result.  Let's try this out in <span class="command"><strong>ghci</strong></span>.  We'll first
+        trigger an unhandled exception, and then try to catch it.
+      </p><a name="exc.ghci:try1"></a><pre id="exc.ghci:try1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m Control.Exception</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let x = 5 `div` 0</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let y = 5 `div` 1</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>print x</code></strong>
+*** Exception: divide by zero
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>print y</code></strong>
+5
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>try (print x)</code></strong>
+Left divide by zero
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>try (print y)</code></strong>
+5
+Right ()
+</pre><p id="x_X11"><a name="x_X11"></a>
+        Notice that no exception was
+        thrown by the <code class="literal">let</code> statements.  That's to be expected due to
+        lazy evaluation; the division by zero won't be attempted until
+        it is demanded by the attempt to print out
+        <code class="literal">x</code>.  Also, notice that there were two lines
+        of output from <code class="literal">try (print y)</code>.  The first
+        line was produced by <code class="literal">print</code>, which displayed
+        the digit 5 on the terminal.  The second was produced by
+        <span class="command"><strong>ghci</strong></span>, which is showing you that <code class="literal">print y</code>
+        returned <code class="literal">()</code> and didn't throw an exception.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="errors.exceptions.lazy">Laziness and Exception Handling</h3></div></div></div><p id="x_Y11"><a name="x_Y11"></a>
+        Now that you know how <code class="literal">try</code> works, let's try another
+        experiment.  Let's say we want to catch the result of
+        <code class="literal">try</code> for future evaluation, so we can handle
+        the result of division.  Perhaps we
+        would do it like this:
+      </p><a name="exc.ghci:try2"></a><pre id="exc.ghci:try2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>result &lt;- try (return x)</code></strong>
+Right *** Exception: divide by zero
+</pre><p id="x_Z11"><a name="x_Z11"></a>
+        What happened here?  Let's try to piece it together, and
+        illustrate with another attempt:
+      </p><a name="exc.ghci:try3"></a><pre id="exc.ghci:try3" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let z = undefined</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>try (print z)</code></strong>
+Left Prelude.undefined
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>result &lt;- try (return z)</code></strong>
+Right *** Exception: Prelude.undefined
+</pre><p id="x_a11"><a name="x_a11"></a>
+        As before, assigning <code class="code">undefined</code> to <code class="literal">z</code> was
+        not a problem.  The key to this puzzle, and to the division
+        puzzle, lies with lazy evaluation.  Specifically, it lies with
+        <code class="literal">return</code>, which does not force the evaluation of its argument;
+        it only wraps it up.  So, the result of <code class="literal">try (return
+        undefined)</code> would be <code class="literal">Right
+        undefined</code>.  Now, <span class="command"><strong>ghci</strong></span> wants to display this result
+        on the terminal.  It gets as far as printing out
+        <code class="literal">"Right "</code>, but you can't print out
+        <code class="code">undefined</code> (or the result of division by zero).  So when you
+        see the exception message, it's coming from <span class="command"><strong>ghci</strong></span>, not your
+        program.
+      </p><p id="x_b11"><a name="x_b11"></a>
+        This is a key point.  Let's think about why our earlier
+        example worked and this one didn't.  Earlier, we put
+        <code class="literal">print x</code> inside <code class="literal">try</code>.  Printing the value
+        of something, of course, requires it to be evaluated, so the
+        exception was detected at the right place.  But simply using
+        <code class="literal">return</code> does not force evaluation.  To solve this problem,
+        the <code class="literal">Control.Exception</code> module defines the
+        <code class="function">evaluate</code> function.  It behaves just like <code class="literal">return</code>, but
+        forces its argument to be evaluated immediately.  Let's try
+        it:
+      </p><a name="exc.ghci:try4"></a><pre id="exc.ghci:try4" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let z = undefined</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>result &lt;- try (evaluate z)</code></strong>
+Left Prelude.undefined
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>result &lt;- try (evaluate x)</code></strong>
+Left divide by zero
+</pre><p id="x_c11"><a name="x_c11"></a>
+        There, that's what was expected.  This worked for both
+        <code class="code">undefined</code> and our division by zero example.
+      </p><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_d11"><a name="x_d11"></a>
+          Remember: whenever you are trying to catch exceptions thrown
+          by pure code, use <code class="function">evaluate</code> instead of <code class="literal">return</code> inside your
+          exception-catching function.
+        </p></td></tr></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="errors.exceptions.handle">Using handle</h3></div></div></div><p id="x_e11"><a name="x_e11"></a>
+        Often, you may wish to perform one action if a piece of code
+        completes without an exception, and a different action
+        otherwise.  For situations like this, there's a function
+        called <code class="literal">handle</code>.  This function has type <code class="literal">(Exception
+        -&gt; IO a) -&gt; IO a -&gt; IO a</code>.  That is, it
+        takes two parameters: the first is a function to call in the
+        event there is an exception while performing the second.
+        Here's one way we could use it:
+      </p><a name="exc.ghci:handle1"></a><pre id="exc.ghci:handle1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m Control.Exception</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let x = 5 `div` 0</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let y = 5 `div` 1</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>handle (\_ -&gt; putStrLn "Error calculating result") (print x)</code></strong>
+Error calculating result
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>handle (\_ -&gt; putStrLn "Error calculating result") (print y)</code></strong>
+5
+</pre><p id="x_f11"><a name="x_f11"></a>
+        This way, we can print out a nice message if there is an error
+        in the calculations.  It's nicer than having the program crash
+        with a division by zero error, for sure.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="errors.exceptions.selective">Selective Handling of Exceptions</h3></div></div></div><p id="x_g11"><a name="x_g11"></a>
+        One problem with the above example is that it prints
+        <code class="literal">"Error calculating result"</code> for
+        <span class="emphasis"><em>any</em></span> exception.  There may have been an
+        exception other than a division by zero exception.  For
+        instance, there may have been an error displaying the output,
+        or some other exception could have been thrown by the pure
+        code.
+      </p><p id="x_h11"><a name="x_h11"></a>
+        There's a function <code class="literal">handleJust</code> for these situations.  It
+        lets you specify a test to see whether you are interested in a
+        given exception.  Let's take a look:
+      </p><a name="hj1.hs:all"></a><pre id="hj1.hs:all" class="programlisting">-- file: ch19/hj1.hs
+import Control.Exception
+
+catchIt :: Exception -&gt; Maybe ()
+catchIt (ArithException DivideByZero) = Just ()
+catchIt _ = Nothing
+
+handler :: () -&gt; IO ()
+handler _ = putStrLn "Caught error: divide by zero"
+
+safePrint :: Integer -&gt; IO ()
+safePrint x = handleJust catchIt handler (print x)</pre><p id="x_i11"><a name="x_i11"></a>
+        <code class="literal">catchIt</code> defines a function that decides
+        whether or not we're interested in a given exception.  It
+        returns <code class="literal">Just</code> if so, and <code class="literal">Nothing</code> if not.  Also, the value
+        attached to <code class="literal">Just</code> will be passed to our handler.  We can now
+        use <code class="literal">safePrint</code> nicely:
+      </p><a name="exc.ghci:handleJust1"></a><pre id="exc.ghci:handleJust1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l hj1.hs</code></strong>
+[1 of 1] Compiling Main             ( hj1.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let x = 5 `div` 0</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let y = 5 `div` 1</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>safePrint x</code></strong>
+Caught error: divide by zero
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>safePrint y</code></strong>
+5
+</pre><p id="x_j11"><a name="x_j11"></a>
+        The <code class="literal">Control.Exception</code> module also presents
+        a number of functions that we can use as part of the test in 
+        <code class="literal">handleJust</code> to narrow down the kinds of exceptions we care
+        about.  For instance, there is a function
+        <code class="literal">arithExceptions</code> of type <code class="literal">Exception
+        -&gt; Maybe ArithException</code> that will pick out any
+        <code class="literal">ArithException</code>, but ignore any other one.
+        We could use it like this:
+      </p><a name="hj2.hs:all"></a><pre id="hj2.hs:all" class="programlisting">-- file: ch19/hj2.hs
+import Control.Exception
+
+handler :: ArithException -&gt; IO ()
+handler e = putStrLn $ "Caught arithmetic error: " ++ show e
+
+safePrint :: Integer -&gt; IO ()
+safePrint x = handleJust arithExceptions handler (print x)</pre><p id="x_k11"><a name="x_k11"></a>
+        In this way, we can catch all types of
+        <code class="literal">ArithException</code>, but still let other
+        exceptions pass through unmodified and uncaught.  We can see
+        it work like so:
+      </p><a name="exc.ghci:handleJust2"></a><pre id="exc.ghci:handleJust2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l hj2.hs</code></strong>
+[1 of 1] Compiling Main             ( hj2.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let x = 5 `div` 0</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let y = 5 `div` 1</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>safePrint x</code></strong>
+Caught arithmetic error: divide by zero
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>safePrint y</code></strong>
+5
+</pre><p id="x_l11"><a name="x_l11"></a>
+        Of particular interest, you might notice the
+        <code class="literal">ioErrors</code> test, which corresponds to the
+        large class of I/O-related exceptions.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="errors.exceptions.io">I/O Exceptions</h3></div></div></div><p id="x_m11"><a name="x_m11"></a>
+        Perhaps the largest source of exceptions in any program is
+        I/O.  All sorts of things can go wrong when dealing with the
+        outside world: disks can be full, networks can go down, or
+        files can be empty when you expect them to have data.  In
+        Haskell, an I/O exception is just like any other exception in
+        that can be represented by the <code class="literal">Exception</code> data type.  On the
+        other hand, because there are so many types of I/O exceptions,
+        a special module—<code class="literal">System.IO.Error</code> exists
+        for dealing with them.
+      </p><p id="x_n11"><a name="x_n11"></a>
+        <code class="literal">System.IO.Error</code> defines two functions:
+        <code class="literal">catch</code> and <code class="literal">try</code> which, like their counterparts in
+        <code class="literal">Control.Exception</code>, are used to deal with
+        exceptions.  Unlike the <code class="literal">Control.Exception</code>
+        functions, however, these functions will only trap I/O errors,
+        and will pass all other exceptions through uncaught.  In
+        Haskell, I/O errors all have type <code class="literal">IOError</code>,
+        which is defined as the same as
+        <code class="literal">IOException</code>.
+      </p><div class="warning"><table border="0" summary="Warning: Be careful which names you use"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="/support/figs/warning.png"></td><th align="left">Be careful which names you use</th></tr><tr><td align="left" valign="top"><p id="x_o11"><a name="x_o11"></a>
+          Because both <code class="literal">System.IO.Error</code> and
+          <code class="literal">Control.Exception</code> define functions with
+          the same names, if you import both in your program, you will
+          get an error message about an ambiguous reference to a
+          function.  You can import one or the other module
+          <code class="literal">qualified</code>, or hide the symbols from one
+          module or the other.</p><p id="x_D31"><a name="x_D31"></a>Note that <code class="literal">Prelude</code> exports
+          <code class="literal">System.IO.Error</code>'s version of <code class="literal">catch</code>,
+          <span class="emphasis"><em>not</em></span> the version provided by
+          <code class="code">Control.Exception</code>.  Remember that the former
+          can only catch I/O errors, while the latter can catch all
+          exceptions.  In other words, the <code class="literal">catch</code> in
+          <code class="code">Control.Exception</code> is almost always the one you
+          will want, but it is <span class="emphasis"><em>not</em></span> the one you
+          will get by default.
+        </p></td></tr></table></div><p id="x_p11"><a name="x_p11"></a>
+        Let's take a look at one approach to using exceptions in the
+        I/O system to our benefit.  Back in <a class="xref" href="io.html#io.files" title="Working With Files and Handles">the section called “Working With Files and Handles”</a>, we presented a program that used an
+        imperative style to read lines from a file one by one.
+        Although we subsequently demonstrated more compact, "Haskelly"
+        ways to solve that problem, let's revisit that example here.
+        In the <code class="literal">mainloop</code> function, we had to
+        explicitly test if we were at the end of the input file before
+        each attempt to read a line from it.  Instead, we could check
+        if the attempt to read a line resulted in an EOF error, like
+        so:
+      </p><a name="toupper-impch20.hs:all"></a><pre id="toupper-impch20.hs:all" class="programlisting">-- file: ch19/toupper-impch20.hs
+import System.IO
+import System.IO.Error
+import Data.Char(toUpper)
+
+main :: IO ()
+main = do 
+       inh &lt;- openFile "input.txt" ReadMode
+       outh &lt;- openFile "output.txt" WriteMode
+       mainloop inh outh
+       hClose inh
+       hClose outh
+
+mainloop :: Handle -&gt; Handle -&gt; IO ()
+mainloop inh outh = 
+    do input &lt;- try (hGetLine inh)
+       case input of
+         Left e -&gt; 
+             if isEOFError e
+                then return ()
+                else ioError e
+         Right inpStr -&gt;
+             do hPutStrLn outh (map toUpper inpStr)
+                mainloop inh outh</pre><p id="x_q11"><a name="x_q11"></a>
+        Here, we use the <code class="literal">System.IO.Error</code> version of
+        <code class="literal">try</code> to check whether <code class="literal">hGetLine</code> threw an
+        <code class="literal">IOError</code>.  If it did, we use <code class="literal">isEOFError</code>
+        (defined in <code class="literal">System.IO.Error</code>) to see if the
+        thrown exception indicated that we reached the end of the
+        file.  If it did, we exit the loop.  If the exception was
+        something else, we call <code class="literal">ioError</code> to re-throw it.
+      </p><p id="x_r11"><a name="x_r11"></a>
+        There are many such tests and ways to extract information from
+        <code class="literal">IOError</code> defined in <code class="literal">System.IO.Error</code>.  We
+        recommend that you consult that page in the library reference
+        when you need to know about them.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="errors.exceptions.raising">Throwing Exceptions</h3></div></div></div><p id="x_s11"><a name="x_s11"></a>
+        Thus far, we have talked in detail about handling exceptions.
+        There is another piece to the puzzle: throwing
+        exceptions<sup>[<a name="id662948" href="#ftn.id662948" class="footnote">41</a>]</sup>.  In
+        the examples we have visited so far in this chapter, the
+        Haskell system throws exceptions for you.  However, it is
+        possible to throw any exception yourself.  We'll show you how.
+      </p><p id="x_t11"><a name="x_t11"></a>
+        You'll notice that most of these functions appear to return a
+        value of type <code class="literal">a</code> or <code class="literal">IO
+        a</code>.  This means that the function can appear to
+        return a value of any type.  In fact, because these functions
+        throw exceptions, they never "return" anything in the normal
+        sense.  These return values let you use these functions in
+        various contexts where various different types are expected.
+      </p><p id="x_u11"><a name="x_u11"></a>
+        Let's start our tour of ways to throw exceptions with the
+        functions in <code class="literal">Control.Exception</code>.  The
+        most generic function is <code class="literal">throw</code>, which has type
+        <code class="literal">Exception -&gt; a</code>.  This function can throw
+        any <code class="literal">Exception</code>, and can do so in a pure context.  There is a
+        companion function <code class="literal">throwIO</code> with type <code class="literal">Exception
+        -&gt; IO a</code> that throws an exception in the <span class="type">IO</span>
+        monad.  Both functions require an <code class="literal">Exception</code> to throw.  You
+        can craft an <code class="literal">Exception</code> by hand, or reuse an <code class="literal">Exception</code> that
+        was previously created.
+      </p><p id="x_v11"><a name="x_v11"></a>
+        There is also a function <code class="literal">ioError</code>, which is defined
+        identically in both <code class="literal">Control.Exception</code> and
+        <code class="literal">System.IO.Error</code> with type <code class="literal">IOError
+        -&gt; IO a</code>.  This is used when you want to generate
+        an arbitrary I/O-related exception.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="errors.exceptions.dynamic">Dynamic Exceptions</h3></div></div></div><p id="x_z11"><a name="x_z11"></a>
+        This makes use of two little-used Haskell modules:
+        <code class="literal">Data.Dynamic</code> and
+        <code class="literal">Data.Typeable</code>.  We will not go into a great
+        level of detail on those modules here, but will give you the
+        tools you need to craft and use your own dynamic exception
+        type.
+      </p><p id="x_A21"><a name="x_A21"></a>
+        In <a class="xref" href="using-databases.html" title="Chapter 21. Using Databases">Chapter 21, <i>Using Databases</i></a>, you will see that the HDBC
+        database library uses dynamic exceptions to indicate errors
+        from SQL databases back to applications.  Errors from database
+        engines often have three components: an integer that
+        represents an error code, a state, and a human-readable error
+        message.  We will build up our own implementation of the HDBC
+        <code class="literal">SqlError</code> type here in this chapter.  Let's
+        start with the data structure representing the error itself:
+      </p><a name="dynexc.hs:sqlerror"></a><pre id="dynexc.hs:sqlerror" class="programlisting">-- file: ch19/dynexc.hs
+{-# LANGUAGE DeriveDataTypeable #-}
+
+import Data.Dynamic
+import Control.Exception
+
+data SqlError = SqlError {seState :: String,
+                          seNativeError :: Int,
+                          seErrorMsg :: String}
+                deriving (Eq, Show, Read, Typeable)</pre><p id="x_B21"><a name="x_B21"></a>By deriving the <span class="type">Typeable</span>
+	typeclass, we've made this type available for dynamically
+	typed programming.  In order for <span class="application">GHC</span> to automatically
+	generate a <span class="type">Typeable</span> instance, we had to enable
+	the <code class="code">DeriveDataTypeable</code> language
+	extension<sup>[<a name="id663179" href="#ftn.id663179" class="footnote">42</a>]</sup>.</p><p id="x_C21"><a name="x_C21"></a>
+        Now, let's define a <code class="literal">catchSql</code> and a
+        <code class="literal">handleSql</code> that can be used to catch an
+        exception that is an <code class="literal">SqlError</code>.  Note that
+        the regular <code class="literal">catch</code> and <code class="literal">handle</code> functions cannot catch our
+        <code class="literal">SqlError</code>, because it is not a type of
+        <code class="literal">Exception</code>.
+      </p><a name="dynexc.hs:catch"></a><pre id="dynexc.hs:catch" class="programlisting">-- file: ch19/dynexc.hs
+{- | Execute the given IO action.
+
+If it raises a 'SqlError', then execute the supplied 
+handler and return its return value.  Otherwise, proceed
+as normal. -}
+catchSql :: IO a -&gt; (SqlError -&gt; IO a) -&gt; IO a
+catchSql = catchDyn
+
+{- | Like 'catchSql', with the order of arguments reversed. -}
+handleSql :: (SqlError -&gt; IO a) -&gt; IO a -&gt; IO a
+handleSql = flip catchSql</pre><p id="x_D21"><a name="x_D21"></a>
+        These functions are simply thin wrappers around <code class="literal">catchDyn</code>,
+        which has type <code class="literal">Typeable exception =&gt; IO a -&gt;
+        (exception -&gt; IO a) -&gt; IO a</code>.  We here simply
+        restrict the type of this so that it catches only SQL
+        exceptions.
+      </p><p id="x_E21"><a name="x_E21"></a>
+        Normally, when an exception is thrown, but not caught
+        anywhere, the program will crash and will display the
+        exception to standard error.  With a dynamic exception,
+        however, the system will not know how to display this, so you
+        will simply see an unhelpful "unknown exception" message.  We
+        can provide a utility so that application writers can simply
+        say <code class="literal">main = handleSqlError $ do ...</code>, and
+        have confidence that any exceptions thrown (in that thread)
+        will be displayed.  Here's how to write
+        <code class="literal">handleSqlError</code>:
+      </p><a name="dynexc.hs:handleSqlError"></a><pre id="dynexc.hs:handleSqlError" class="programlisting">-- file: ch19/dynexc.hs
+{- | Catches 'SqlError's, and re-raises them as IO errors with fail.
+Useful if you don't care to catch SQL errors, but want to see a sane
+error message if one happens.  One would often use this as a 
+high-level wrapper around SQL calls. -}
+handleSqlError :: IO a -&gt; IO a
+handleSqlError action =
+    catchSql action handler
+    where handler e = fail ("SQL error: " ++ show e)</pre><p id="x_F21"><a name="x_F21"></a>
+        Finally, let's give you an example of how to throw an
+        <code class="literal">SqlError</code> as an exception.  Here's a
+        function that will do just that:
+      </p><a name="dynexc.hs:throwSql"></a><pre id="dynexc.hs:throwSql" class="programlisting">-- file: ch19/dynexc.hs
+throwSqlError :: String -&gt; Int -&gt; String -&gt; a
+throwSqlError state nativeerror errormsg =
+    throwDyn (SqlError state nativeerror errormsg)
+
+throwSqlErrorIO :: String -&gt; Int -&gt; String -&gt; IO a
+throwSqlErrorIO state nativeerror errormsg =
+    evaluate (throwSqlError state nativeerror errormsg)</pre><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_cJ1"><a name="x_cJ1"></a>As a reminder, <code class="literal">evaluate</code> is like
+        <code class="literal">return</code> but forces the evaluation of its argument.
+      </p></td></tr></table></div><p id="x_G21"><a name="x_G21"></a>
+        This completes our dynamic exception support.  That was a lot
+        of code, and you may not have needed that much, but we wanted
+        to give you an example of the dynamic exception itself and the
+        utilities that often go with it.  In fact, these examples
+        reflect almost exactly what is present in the HDBC library.
+        Let's play with these in <span class="command"><strong>ghci</strong></span> for a bit:
+      </p><a name="dynexc.ghci:e1"></a><pre id="dynexc.ghci:e1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l dynexc.hs</code></strong>
+[1 of 1] Compiling Main             ( dynexc.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>throwSqlErrorIO "state" 5 "error message"</code></strong>
+*** Exception: (unknown)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>handleSqlError $ throwSqlErrorIO "state" 5 "error message"</code></strong>
+*** Exception: user error (SQL error: SqlError {seState = "state", seNativeError = 5, seErrorMsg = "error message"})
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>handleSqlError $ fail "other error"</code></strong>
+*** Exception: user error (other error)
+</pre><p id="x_H21"><a name="x_H21"></a>
+        From this, you can see that <span class="command"><strong>ghci</strong></span> doesn't know how to display
+        an SQL error by itself.  However, you can also see that our
+        <code class="literal">handleSqlError</code> function helped out with
+        that, but also passed through other errors unmodified.  Let's
+        finally try out a custom handler:
+      </p><a name="dynexc.ghci:e2"></a><pre id="dynexc.ghci:e2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>handleSql (fail . seErrorMsg) (throwSqlErrorIO "state" 5 "my error")</code></strong>
+*** Exception: user error (my error)
+</pre><p id="x_I21"><a name="x_I21"></a>
+        Here, we defined a custom error handler that threw a new
+        exception, consisting of the message in the
+        <code class="literal">seErrorMsg</code> field of the
+        <code class="literal">SqlError</code>.  You can see that it worked as
+        intended.
+      </p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="errors.exercises">Exercises</h2></div></div></div><div class="orderedlist"><ol type="1"><li><p id="x_iz"><a name="x_iz"></a>
+          Take the <code class="literal">Either</code> example and made it work with laziness in
+          the style of the <code class="literal">Maybe</code> example.
+        </p></li></ol></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id663540">Error handling in monads</h2></div></div></div><p id="x_E31"><a name="x_E31"></a>Because we must catch exceptions in the <span class="type">IO</span> monad, if we
+      try to use them inside a monad, or in a stack of monad
+      transformers, we'll get bounced out to the <span class="type">IO</span> monad.  This is
+      almost never what we would actually like.</p><p id="x_F31"><a name="x_F31"></a>We defined a <span class="type">MaybeT</span> transformer in
+      <a class="xref" href="monad-transformers.html#monadtrans.maybet" title="Understanding monad transformers by building one">the section called “Understanding monad transformers by building one”</a>, but it is more useful as an
+      aid to understanding than a programming tool.  Fortunately, a
+      dedicated—and more useful—monad transformer
+      already exists: <span class="type">ErrorT</span>, which is defined in the
+      <code class="code">Control.Monad.Error</code> module.</p><p id="x_G31"><a name="x_G31"></a>The <span class="type">ErrorT</span> transformer lets us add
+      exceptions to a monad, but it uses its own special exception
+      machinery, separate from that provided the
+      <code class="code">Control.Exception</code> module.  It gives us some
+      interesting capabilities.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_dJ1"><a name="x_dJ1"></a>If we stick with the <span class="type">ErrorT</span> interfaces, we
+	  can both throw and catch exceptions within this
+	  monad.</p></li><li><p id="x_H31"><a name="x_H31"></a>Following the naming pattern of other monad
+	  transformers, the execution function is named
+	  <code class="function">runErrorT</code>. An uncaught
+	  <span class="type">ErrorT</span> exception will stop propagating upwards
+	  when it reaches <code class="function">runErrorT</code>. We will not
+	  be kicked out to the <span class="type">IO</span> monad.</p></li><li><p id="x_I31"><a name="x_I31"></a>We control the type our exceptions will
+	  have.</p></li></ul></div><div class="note"><table border="0" summary="Note: Do not confuse ErrorT with regular exceptions"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Do not confuse ErrorT with regular exceptions</th></tr><tr><td align="left" valign="top"><p id="x_eJ1"><a name="x_eJ1"></a>If we use the <code class="function">throw</code> function from
+	<code class="code">Control.Exception</code> inside <span class="type">ErrorT</span> (or
+	if we use <code class="function">error</code> or
+	<code class="code">undefined</code>), we will <span class="emphasis"><em>still</em></span> be
+	bounced out to the <span class="type">IO</span> monad.</p></td></tr></table></div><p id="x_J31"><a name="x_J31"></a>As with other <code class="code">mtl</code> monads, the interface that
+      <span class="type">ErrorT</span> provides is defined by a typeclass.</p><a name="MonadError.hs:MonadError"></a><pre id="MonadError.hs:MonadError" class="programlisting">-- file: ch19/MonadError.hs
+class (Monad m) =&gt; MonadError e m | m -&gt; e where
+    throwError :: e             -- error to throw
+               -&gt; m a
+
+    catchError :: m a           -- action to execute
+               -&gt; (e -&gt; m a)    -- error handler
+               -&gt; m a</pre><p id="x_K31"><a name="x_K31"></a>The type variable <code class="varname">e</code>
+      represents the error type we want to use.  Whatever our error
+      type is, we must make it an instance of the <span class="type">Error</span>
+      typeclass.</p><a name="MonadError.hs:Error"></a><pre id="MonadError.hs:Error" class="programlisting">-- file: ch19/MonadError.hs
+class Error a where
+    -- create an exception with no message
+    noMsg  :: a
+
+    -- create an exception with a message
+    strMsg :: String -&gt; a</pre><p id="x_L31"><a name="x_L31"></a>The <code class="function">strMsg</code> function is used by
+      <span class="type">ErrorT</span>'s implementation of
+      <code class="function">fail</code>.  It throws
+      <code class="function">strMsg</code> as an exception, passing it the
+      string argument it received.  As for <code class="function">noMsg</code>,
+      it is used to provide an <code class="function">mzero</code>
+      implementation for the <span class="type">MonadPlus</span> typeclass.</p><p id="x_M31"><a name="x_M31"></a>To support the <code class="function">strMsg</code> and
+      <code class="function">noMsg</code> functions, our
+      <span class="type">ParseError</span> type will have a <code class="code">Chatty</code>
+      constructor. This will be used as the constructor if, for
+      example, someone calls <code class="function">fail</code> in our
+      monad.</p><p id="x_N31"><a name="x_N31"></a>One last piece of plumbing that we need to know about is the
+      type of the execution function <span class="type">runErrorT</span>.</p><a name="parseInt.ghci:runErrorT"></a><pre id="parseInt.ghci:runErrorT" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t runErrorT</code></strong>
+runErrorT :: ErrorT e m a -&gt; m (Either e a)
+</pre><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id663875">A tiny parsing framework</h3></div></div></div><p id="x_O31"><a name="x_O31"></a>To illustrate the use of <span class="type">ErrorT</span>, let's
+	develop the bare bones of a parsing library similar to
+	Parsec.</p><a name="ParseInt.hs:ParseError"></a><pre id="ParseInt.hs:ParseError" class="programlisting">-- file: ch19/ParseInt.hs
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+import Control.Monad.Error
+import Control.Monad.State
+import qualified Data.ByteString.Char8 as B
+
+data ParseError = NumericOverflow
+                | EndOfInput
+                | Chatty String
+                  deriving (Eq, Ord, Show)
+
+instance Error ParseError where
+    noMsg  = Chatty "oh noes!"
+    strMsg = Chatty</pre><p id="x_P31"><a name="x_P31"></a>For our parser's state, we will create a very small monad
+	transformer stack. A <span class="type">State</span> monad carries around
+	the <span class="type">ByteString</span> to parse, and stacked on top is
+	<span class="type">ErrorT</span> to provide error handling.</p><a name="ParseInt.hs:Parser"></a><pre id="ParseInt.hs:Parser" class="programlisting">-- file: ch19/ParseInt.hs
+newtype Parser a = P {
+      runP :: ErrorT ParseError (State B.ByteString) a
+    } deriving (Monad, MonadError ParseError)</pre><p id="x_Q31"><a name="x_Q31"></a>As usual, we have wrapped our monad stack in a <code class="code">newtype</code>.
+	This costs us nothing in performance, but adds type safety. We
+	have deliberately avoided deriving an instance of
+	<span class="type">MonadState B.ByteString</span>.  This means that users
+	of the <span class="type">Parser</span> monad will not be able to use
+	<code class="function">get</code> or <code class="function">put</code> to query
+	or modify the parser's state.  As a result, we force ourselves
+	to do some manual lifting to get at the <span class="type">State</span>
+	monad in our stack.  This is, however, very easy to do.</p><a name="ParseInt.hs:liftP"></a><pre id="ParseInt.hs:liftP" class="programlisting">-- file: ch19/ParseInt.hs
+liftP :: State B.ByteString a -&gt; Parser a
+liftP m = P (lift m)
+
+satisfy :: (Char -&gt; Bool) -&gt; Parser Char
+satisfy p = do
+  s &lt;- liftP get
+  case B.uncons s of
+    Nothing         -&gt; throwError EndOfInput
+    Just (c, s')
+        | p c       -&gt; liftP (put s') &gt;&gt; return c
+        | otherwise -&gt; throwError (Chatty "satisfy failed")</pre><p id="x_R31"><a name="x_R31"></a>The <code class="function">catchError</code> function is useful for
+	tasks beyond simple error handling.  For instance, we can
+	easily defang an exception, turning it into a more friendly
+	form.</p><a name="ParseInt.hs:optional"></a><pre id="ParseInt.hs:optional" class="programlisting">-- file: ch19/ParseInt.hs
+optional :: Parser a -&gt; Parser (Maybe a)
+optional p = (Just `liftM` p) `catchError` \_ -&gt; return Nothing</pre><p id="x_S31"><a name="x_S31"></a>Our execution function merely plugs together the various
+	layers, and rearranges the result into a tidier form.</p><a name="ParseInt.hs:runParser"></a><pre id="ParseInt.hs:runParser" class="programlisting">-- file: ch19/ParseInt.hs
+runParser :: Parser a -&gt; B.ByteString
+          -&gt; Either ParseError (a, B.ByteString)
+runParser p bs = case runState (runErrorT (runP p)) bs of
+                   (Left err, _) -&gt; Left err
+                   (Right r, bs) -&gt; Right (r, bs)</pre><p id="x_T31"><a name="x_T31"></a>If we load this into <span class="command"><strong>ghci</strong></span>, we can put it through its
+	paces.</p><a name="parseInt.ghci:test"></a><pre id="parseInt.ghci:test" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m +Data.Char</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let p = satisfy isDigit</code></strong>
+Loading package array-0.1.0.0 ... linking ... done.
+Loading package bytestring-0.9.0.1 ... linking ... done.
+Loading package mtl-1.1.0.0 ... linking ... done.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runParser p (B.pack "x")</code></strong>
+Left (Chatty "satisfy failed")
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runParser p (B.pack "9abc")</code></strong>
+Right ('9',"abc")
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runParser (optional p) (B.pack "x")</code></strong>
+Right (Nothing,"x")
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>runParser (optional p) (B.pack "9a")</code></strong>
+Right (Just '9',"a")
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id664122">Exercises</h3></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id664132"></a><a name="id664134"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_U31"><a name="x_U31"></a>Write a <code class="function">many</code> parser, with type
+	      <span class="type">Parser a -&gt; Parser [a]</span>.  It should apply
+	      a parser until it fails.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id664156"></a><a name="id664158"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_V31"><a name="x_V31"></a>Use <code class="function">many</code> to write an
+	      <code class="function">int</code> parser, with type <span class="type">Parser
+		Int</span>.  It should accept negative as well as
+		positive integers.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id664185"></a><a name="id664187"></a><p><b>3.</b></p></td><td align="left" valign="top"><p id="x_W31"><a name="x_W31"></a>Modify your <code class="function">int</code> parser to throw
+	      a <code class="code">NumericOverflow</code> exception if it detects a
+	      numeric overflow while parsing.</p></td></tr></tbody></table></div></div></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id660064" href="#id660064" class="para">38</a>] </sup>
+          We're using integral division here, so <code class="literal">50 /
+            8</code> shows as <code class="literal">6</code> instead of
+      <code class="literal">6.25</code>.  We're not using floating-point
+      arithmetic in this example because division by zero with a
+          <code class="literal">Double</code> produces the special value
+      <code class="literal">Infinity</code> rather than an error.
+        </p></div><div class="footnote"><p><sup>[<a name="ftn.id660185" href="#id660185" class="para">39</a>] </sup>For an introduction to <code class="literal">Maybe</code>,
+        refer to <a class="xref" href="defining-types-streamlining-functions.html#deftypes.morecontrolled" title="A more controlled approach">the section called “A more controlled approach”</a>.</p></div><div class="footnote"><p><sup>[<a name="ftn.id661243" href="#id661243" class="para">40</a>] </sup>For more information on <code class="literal">Either</code>,
+	    refer to <a class="xref" href="efficient-file-processing-regular-expressions-and-file-name-matching.html#glob.errapi" title="Handling errors through API design">the section called “Handling errors through API design”</a>.</p></div><div class="footnote"><p><sup>[<a name="ftn.id662948" href="#id662948" class="para">41</a>] </sup>In some other languages, throwing an exception is
+	    referred to as <span class="emphasis"><em>raising</em></span> it.</p></div><div class="footnote"><p><sup>[<a name="ftn.id663179" href="#id663179" class="para">42</a>] </sup>
+	    It is possible to derive <span class="type">Typeable</span> instances
+	    by hand, but that is cumbersome.</p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="monad-transformers.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="systems-programming-in-haskell.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 18. Monad transformers </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 20. Systems Programming in Haskell</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

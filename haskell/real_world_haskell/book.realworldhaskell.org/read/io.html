@@ -1,0 +1,1364 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 7. I/O</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="using-typeclasses.html" title="Chapter 6. Using Typeclasses"><link rel="next" href="efficient-file-processing-regular-expressions-and-file-name-matching.html" title="Chapter 8. Efficient file processing, regular expressions, and file name matching"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 7. I/O</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="using-typeclasses.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="efficient-file-processing-regular-expressions-and-file-name-matching.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="io"><div class="titlepage"><div><div><h2 class="title">Chapter 7. I/O</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="io.html#io.basics">Classic I/O in Haskell</a></span></dt><dd><dl><dt><span class="sect2"><a href="io.html#io.purevsimpure">Pure vs. I/O</a></span></dt><dt><span class="sect2"><a href="io.html#io.purity">Why Purity Matters</a></span></dt></dl></dd><dt><span class="sect1"><a href="io.html#io.files">Working With Files and Handles</a></span></dt><dd><dl><dt><span class="sect2"><a href="io.html#io.files.openFile">More on openFile</a></span></dt><dt><span class="sect2"><a href="io.html#io.files.closing">Closing Handles</a></span></dt><dt><span class="sect2"><a href="io.html#io.files.seeking">Seek and Tell</a></span></dt><dt><span class="sect2"><a href="io.html#io.files.stdin">Standard Input, Output, and Error</a></span></dt><dt><span class="sect2"><a href="io.html#io.files.ops">Deleting and Renaming Files</a></span></dt><dt><span class="sect2"><a href="io.html#io.files.temp">Temporary Files</a></span></dt></dl></dd><dt><span class="sect1"><a href="io.html#io.example">Extended Example: Functional I/O and Temporary Files</a></span></dt><dt><span class="sect1"><a href="io.html#io.lazy">Lazy I/O</a></span></dt><dd><dl><dt><span class="sect2"><a href="io.html#io.lazy.hGetContents">hGetContents</a></span></dt><dt><span class="sect2"><a href="io.html#io.lazy.readFile">readFile and writeFile</a></span></dt><dt><span class="sect2"><a href="io.html#io.lazy.output">A Word On Lazy Output</a></span></dt><dt><span class="sect2"><a href="io.html#io.lazy.interact">interact</a></span></dt><dd><dl><dt><span class="sect3"><a href="io.html#id614267">Filters with interact</a></span></dt></dl></dd></dl></dd><dt><span class="sect1"><a href="io.html#io.monad">The IO Monad</a></span></dt><dd><dl><dt><span class="sect2"><a href="io.html#io.monad.actions">Actions</a></span></dt><dt><span class="sect2"><a href="io.html#io.bind">Sequencing</a></span></dt><dt><span class="sect2"><a href="io.html#io.return">The True Nature of Return</a></span></dt></dl></dd><dt><span class="sect1"><a href="io.html#io.imperative">Is Haskell Really Imperative?</a></span></dt><dt><span class="sect1"><a href="io.html#io.sideeffects">Side Effects with Lazy I/O</a></span></dt><dt><span class="sect1"><a href="io.html#io.buffering">Buffering</a></span></dt><dd><dl><dt><span class="sect2"><a href="io.html#id615631">Buffering Modes</a></span></dt><dt><span class="sect2"><a href="io.html#id615793">Flushing The Buffer</a></span></dt></dl></dd><dt><span class="sect1"><a href="io.html#io.args">Reading Command-Line Arguments</a></span></dt><dt><span class="sect1"><a href="io.html#io.environ">Environment Variables</a></span></dt></dl></div><p id="x_xB"><a name="x_xB"></a>
+    It should be obvious that most, if not all, programs are devoted
+    to gathering data from outside, processing it, and providing
+    results back to the outside world.  That is, input and output are
+    key.
+  </p><p id="x_yB"><a name="x_yB"></a>
+    Haskell's I/O system is powerful and expressive.  It is easy to work
+    with and important to understand.  Haskell strictly separates pure
+    code from code that could cause things to occur in the world.
+    That is, it provides a complete isolation from side-effects in
+    pure code.  Besides helping programmers to reason about the
+    correctness of their code, it also permits compilers to
+    automatically 
+    introduce optimizations and parallelism.
+  </p><p id="x_zB"><a name="x_zB"></a>
+    We'll begin this chapter with simple, standard-looking I/O in Haskell.
+    Then we'll discuss some of the more powerful options as well as provide
+    more detail on how I/O fits into the pure, lazy, functional Haskell
+    world.
+  </p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="io.basics">Classic I/O in Haskell</h2></div></div></div><p id="x_AC"><a name="x_AC"></a>
+      Let's get started with I/O in Haskell by looking at a program that looks
+      surprisingly similar to I/O in other languages such as C or Perl.
+    </p><a name="basicio.hs:all"></a><pre id="basicio.hs:all" class="programlisting">-- file: ch07/basicio.hs
+main = do
+       putStrLn "Greetings!  What is your name?"
+       inpStr &lt;- getLine
+       putStrLn $ "Welcome to Haskell, " ++ inpStr ++ "!"</pre><p id="x_BC"><a name="x_BC"></a>
+      You can compile this program to a standalone executable, run it with
+      <span class="command"><strong>runghc</strong></span>, or invoke <code class="literal">main</code> from within <span class="command"><strong>ghci</strong></span>.
+      Here's a sample session using <span class="command"><strong>runghc</strong></span>:
+    </p><pre id="id610319" class="screen">
+$ <strong class="userinput"><code>runghc basicio.hs</code></strong>
+Greetings!  What is your name?
+<strong class="userinput"><code>John</code></strong>
+Welcome to Haskell, John!
+</pre><p id="x_CC"><a name="x_CC"></a>
+      That's a fairly simple, obvious result.  You can see that <code class="literal">putStrLn</code>
+      writes out a <code class="literal">String</code>, followed by an end-of-line character.  <code class="literal">getLine</code>
+      reads a line from standard input.  The <code class="literal">&lt;-</code> syntax may be new to
+      you.  Put simply, that binds the result from executing an
+      I/O action to a name. 
+      <sup>[<a name="id610368" href="#ftn.id610368" class="footnote">15</a>]</sup>
+      We use the simple list concatenation operator
+      <code class="literal">++</code> to join the input string with our own text.
+    </p><p id="x_GC"><a name="x_GC"></a>
+      Let's take a look at the types of <code class="literal">putStrLn</code> and <code class="literal">getLine</code>.  You can
+      find that information in the library reference, or just ask <span class="command"><strong>ghci</strong></span>:
+    </p><a name="basicio.ghci:all"></a><pre id="basicio.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type putStrLn</code></strong>
+putStrLn :: String -&gt; IO ()
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type getLine</code></strong>
+getLine :: IO String
+</pre><p id="x_HC"><a name="x_HC"></a>
+      Notice that both of these types have <span class="type">IO</span> in their return value.  That
+      is your key to knowing that they may have side effects, or that
+      they may return different values even when called with the same
+      arguments, or both.  The type of <code class="literal">putStrLn</code> looks like
+      a function.  It takes a parameter of type <code class="literal">String</code> and returns
+      value of type
+      <code class="literal">IO ()</code>.  Just what is an <code class="literal">IO ()</code>
+      though?
+    </p><p id="x_IC"><a name="x_IC"></a>
+      Anything that is type <code class="literal">IO
+        <em class="replaceable"><code>something</code></em></code> is an I/O
+      <span class="emphasis"><em>action</em></span>.  You can store it and nothing
+      will happen.  I could say <code class="literal">writefoo = putStrLn
+        "foo"</code> and nothing happens right then.  But if I
+      later use <code class="literal">writefoo</code> in the middle of
+      another I/O action, the <code class="literal">writefoo</code> action
+      will be executed when its parent action is executed -- I/O
+      actions can be glued together to form bigger I/O actions.  The
+      <code class="literal">()</code> is an empty tuple (pronounced
+      “<span class="quote">unit</span>”), indicating that there is no return value
+      from <code class="literal">putStrLn</code>.  This is similar to <code class="literal">void</code>
+      in Java or C.<sup>[<a name="id610538" href="#ftn.id610538" class="footnote">16</a>]</sup>
+    </p><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_qp"><a name="x_qp"></a>
+        Actions can be created, assigned, and passed anywhere.
+        However, they may only be performed (executed) from within
+        another I/O action.  
+      </p></td></tr></table></div><p id="x_LN"><a name="x_LN"></a>Let's look at this with
+      <span class="command"><strong>ghci</strong></span>:
+    </p><a name="basicio.ghci:putStrLn"></a><pre id="basicio.ghci:putStrLn" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let writefoo = putStrLn "foo"</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>writefoo</code></strong>
+foo
+</pre><p id="x_JC"><a name="x_JC"></a>
+      In this example, the output <code class="literal">foo</code> is not a return
+      value from <code class="literal">putStrLn</code>.  Rather, it's the side effect of <code class="literal">putStrLn</code> actually
+      writing <code class="literal">foo</code> to the terminal.
+    </p><p id="x_MN"><a name="x_MN"></a>
+      Notice one other thing: <span class="command"><strong>ghci</strong></span> actually executed
+      <code class="literal">writefoo</code>.  This means that, when given an I/O
+      action, <span class="command"><strong>ghci</strong></span> will perform it for you on the spot.
+    </p><div class="note"><table border="0" summary="Note: What Is An I/O Action?"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">What Is An I/O Action?</th></tr><tr><td align="left" valign="top"><p id="x_NN"><a name="x_NN"></a>
+        Actions:
+      </p><div class="itemizedlist"><ul type="disc"><li><p id="x_ON"><a name="x_ON"></a>Have the type <code class="literal">IO <em class="replaceable"><code>t</code></em></code></p></li><li><p id="x_PN"><a name="x_PN"></a>Are first-class values in Haskell
+        and fit seamlessly with Haskell's type system
+          </p></li><li><p id="x_QN"><a name="x_QN"></a>Produce an effect when
+        <span class="emphasis"><em>performed</em></span>, but not when
+        <span class="emphasis"><em>evaluated</em></span>.  That is, they only produce an
+        effect when called by something else in an I/O context.
+          </p></li><li><p id="x_RN"><a name="x_RN"></a>Any expression may produce an action as its
+        value, but the action will not perform I/O until it is
+        executed inside another I/O action (or it is <code class="literal">main</code>)</p></li><li><p id="x_SN"><a name="x_SN"></a>Performing (executing) an action of type <code class="literal">IO
+        t</code> may perform I/O and will ultimately deliver a
+        result of type <code class="literal">t</code></p></li></ul></div></td></tr></table></div><p id="x_KC"><a name="x_KC"></a>
+      The type of <code class="literal">getLine</code> may look strange to you.  It looks like a value,
+      rather than a function.  And in fact, that is one way to look at it:
+      <code class="literal">getLine</code> is storing an I/O action.  When that action is
+      performed,
+      you get
+      a <code class="literal">String</code>.  The <code class="literal">&lt;-</code> operator is used to "pull out" the result
+      from performing an I/O action and store it in a
+      variable.
+    </p><p id="x_LC"><a name="x_LC"></a>
+      <code class="literal">main</code> itself is an I/O action with type <code class="literal">IO
+        ()</code>.  You can only perform I/O actions from
+      within other I/O actions.  All I/O in Haskell programs is driven
+      from the top at <code class="literal">main</code>, which is where execution of every Haskell
+      program begins.  This, then, is the mechanism that provides
+      isolation from side effects in Haskell: you perform I/O in
+      your <code class="literal">IO</code> actions, and call pure (non-I/O) functions
+      from there.  Most Haskell code is pure; the I/O actions perform
+        I/O and call that pure code.
+    </p><p id="x_EC"><a name="x_EC"></a>
+      <code class="literal">do</code> is a convenient way to define a sequence of actions.  As you'll
+      see later, there are other ways.  When you use <code class="literal">do</code> in this way,
+      indentation is significant; make sure you line up your actions
+      properly.
+    </p><p id="x_FC"><a name="x_FC"></a>
+      You only need to use <code class="literal">do</code> if you have more than one action that you need
+      to perform.  The value of a <code class="literal">do</code> block is the value
+      of the last action executed.  For a complete description of <code class="literal">do</code>
+      syntax, see <a class="xref" href="monads.html#monads.do" title="Desugaring of do blocks">the section called “Desugaring of do blocks”</a>.
+    </p><p id="x_MC"><a name="x_MC"></a>
+      Let's consider an example of calling pure code from within
+      an I/O action:
+    </p><a name="callingpure.hs:all"></a><pre id="callingpure.hs:all" class="programlisting">-- file: ch07/callingpure.hs
+name2reply :: String -&gt; String
+name2reply name =
+    "Pleased to meet you, " ++ name ++ ".\n" ++
+    "Your name contains " ++ charcount ++ " characters."
+    where charcount = show (length name)
+
+main :: IO ()
+main = do
+       putStrLn "Greetings once again.  What is your name?"
+       inpStr &lt;- getLine
+       let outStr = name2reply inpStr
+       putStrLn outStr</pre><p id="x_NC"><a name="x_NC"></a>
+      Notice the <code class="literal">name2reply</code> function in this example.  It
+      is a regular Haskell function and obeys all the rules we've told you
+      about: it always returns the same result when given the same input, it
+      has no side effects, and it operates lazily.  It uses other Haskell
+      functions: <code class="literal">(++)</code>, <code class="literal">show</code>, and
+      <code class="literal">length</code>.
+    </p><p id="x_OC"><a name="x_OC"></a>
+      Down in <code class="literal">main</code>, we bind the result of
+      <code class="literal">name2reply inpStr</code> to <code class="literal">outStr</code>.
+      When you're working in a <code class="literal">do</code> block, you use <code class="literal">&lt;-</code> to get
+      results from <span class="type">IO</span> actions and <code class="literal">let</code> to get results from pure
+      code.  When used in a <code class="literal">do</code> block, you should not put
+      <code class="literal">in</code> after your <code class="literal">let</code> statement.
+    </p><p id="x_PC"><a name="x_PC"></a>
+      You can see here how we read the person's name from the keyboard.
+      Then, that data got passed to a pure function, and its result was
+      printed.  In fact, the last two lines of <code class="literal">main</code> could have been replaced
+      with <code class="literal">putStrLn (name2reply inpStr)</code>.  So, while <code class="literal">main</code>
+      did have side effects—it caused things to appear on the terminal,
+      for instance—<code class="literal">name2reply</code> did not and
+      could not.  That's because <code class="literal">name2reply</code> is a pure
+      function, not an action.
+    </p><p id="x_QC"><a name="x_QC"></a>
+      Let's examine this with <span class="command"><strong>ghci</strong></span>:
+    </p><a name="callingpure.ghci:all"></a><pre id="callingpure.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load callingpure.hs</code></strong>
+[1 of 1] Compiling Main             ( callingpure.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>name2reply "John"</code></strong>
+"Pleased to meet you, John.\nYour name contains 4 characters."
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>putStrLn (name2reply "John")</code></strong>
+Pleased to meet you, John.
+Your name contains 4 characters.
+</pre><p id="x_RC"><a name="x_RC"></a>
+      The <code class="literal">\n</code> within the string is the end-of-line
+      (newline) character, which causes the terminal to begin a new line in
+      its output.  Just calling <code class="literal">name2reply "John"</code> in
+      <span class="command"><strong>ghci</strong></span> will show you the <code class="literal">\n</code> literally, because it is
+      using <code class="literal">show</code> to display the return value.  But using <code class="literal">putStrLn</code> sends
+      it to the terminal, and the terminal interprets <code class="literal">\n</code>
+      to start a new line.
+    </p><p id="x_SC"><a name="x_SC"></a>
+      What do you think will happen if you simply type
+      <strong class="userinput"><code>main</code></strong> at the <span class="command"><strong>ghci</strong></span> prompt?  Give it a try.
+    </p><p id="x_TC"><a name="x_TC"></a>
+      After looking at these example programs, you may be wondering if Haskell
+      is really imperative rather than pure, lazy, and functional.
+        Some of these examples look like a sequence
+        of actions to be followed in order.  There's more to it than that,
+        though.  We'll discuss that question later in this chapter in 
+        <a class="xref" href="io.html#io.imperative" title="Is Haskell Really Imperative?">the section called “Is Haskell Really Imperative?”</a> and <a class="xref" href="io.html#io.lazy" title="Lazy I/O">the section called “Lazy I/O”</a>.
+    </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.purevsimpure">Pure vs. I/O</h3></div></div></div><p id="x_UN"><a name="x_UN"></a>
+        As a way to help with understanding the differences between
+        pure code and I/O, here's a comparison table.  When we
+        speak of pure code, we are talking about Haskell functions
+        that always return the same result when given the same input
+        and have no side effects.  In Haskell, only the execution of
+        I/O actions avoid these rules.
+      </p><div class="table"><a name="io.purevsimpure.table"></a><p class="title"><b>Table 7.1. Pure vs. Impure</b></p><div class="table-contents"><table summary="Pure vs. Impure" border="1"><colgroup><col align="left"><col align="left"></colgroup><thead><tr><th align="left">Pure</th><th align="left">Impure</th></tr></thead><tbody><tr><td align="left">Always produces the same result when given the
+                same parameters</td><td align="left">May produce different results for the same
+                parameters</td></tr><tr><td align="left">Never has side effects</td><td align="left">May have side effects</td></tr><tr><td align="left">Never alters state</td><td align="left">May alter the global state of the program,
+              system, or world</td></tr></tbody></table></div></div><br class="table-break"></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.purity">Why Purity Matters</h3></div></div></div><p id="x_VN"><a name="x_VN"></a>
+        In this section, we've discussed how Haskell draws a clear
+        distinction between pure code and I/O actions.  Most languages
+        don't draw this distinction.  In languages such as C or Java, 
+        there is no such thing as a function that is guaranteed by the
+        compiler to
+        always return the same result for the same arguments, or a
+        function that is guaranteed to never have side effects.  The
+        only way to know if a given function has side effects is to
+        read its documentation and hope that it's accurate.
+      </p><p id="x_WN"><a name="x_WN"></a>
+        Many bugs in programs are caused by unanticipated side
+        effects.  Still more are caused by misunderstanding
+        circumstances in which functions may return different results
+        for the same input.  As multithreading and other forms of
+        parallelism grow increasingly common, it becomes more
+        difficult to manage global side effects.
+      </p><p id="x_XN"><a name="x_XN"></a>
+        Haskell's method of isolating side effects into I/O actions
+        provides a clear boundary.  You can always know which parts of
+        the system may alter state and which won't.  You can always be
+        sure that the pure parts of your program aren't having
+        unanticipated results.  This helps you to think about the
+        program.  It also helps the compiler to think about it.
+        Recent versions of <span class="command"><strong>ghc</strong></span>, for instance, can provide a level of
+        automatic parallelism for the pure parts of your code --
+        something of a holy grail for computing.
+      </p><p id="x_YN"><a name="x_YN"></a>
+        For more discussion on this topic, refer to <a class="xref" href="io.html#io.sideeffects" title="Side Effects with Lazy I/O">the section called “Side Effects with Lazy I/O”</a>.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="io.files">Working With Files and Handles</h2></div></div></div><p id="x_VC"><a name="x_VC"></a>
+      So far,  you've seen how to interact with the user at the
+      computer's terminal.  Of course, you'll
+      often need to manipulate specific files.  That's easy to do, too.  
+    </p><p id="x_UC"><a name="x_UC"></a>
+      Haskell defines quite a few basic functions for I/O, many of
+      which are similar to functions seen in other programming
+      languages.  The library
+      reference for <code class="literal">System.IO</code> provides a good summary of
+      all the basic I/O functions, should you need one that we aren't touching upon
+      here. 
+    </p><p id="x_WC"><a name="x_WC"></a>
+      You will
+      generally begin by using <code class="literal">openFile</code>, which will give you a file <code class="literal">Handle</code>.
+      That <code class="literal">Handle</code> is then used to perform specific operations on the file.
+      Haskell provides functions such as <code class="literal">hPutStrLn</code> that work just like
+      <code class="literal">putStrLn</code> but take an additional argument—a <code class="literal">Handle</code>—that
+      specifies which file to operate upon.  When you're done, you'll use
+      <code class="literal">hClose</code> to close the <code class="literal">Handle</code>.  These functions are all defined
+      in <code class="literal">System.IO</code>, so you'll need to import that module
+      when working with files.  There are "h" functions corresponding to
+      virtually all of the non-"h" functions; for instance, there is <code class="function">print</code>
+      for printing to the screen and <code class="literal">hPrint</code> for printing to a file.
+    </p><p id="x_XC"><a name="x_XC"></a>
+      Let's start with an imperative way to read and write files.
+ This should
+      seem similar to a <code class="literal">while</code> loop that you may
+      find in other languages.  This isn't the best way to write it in
+      Haskell; later, you'll see examples of more Haskellish approaches.
+    </p><a name="toupper-imp.hs:all"></a><pre id="toupper-imp.hs:all" class="programlisting">-- file: ch07/toupper-imp.hs
+import System.IO
+import Data.Char(toUpper)
+
+main :: IO ()
+main = do 
+       inh &lt;- openFile "input.txt" ReadMode
+       outh &lt;- openFile "output.txt" WriteMode
+       mainloop inh outh
+       hClose inh
+       hClose outh
+
+mainloop :: Handle -&gt; Handle -&gt; IO ()
+mainloop inh outh = 
+    do ineof &lt;- hIsEOF inh
+       if ineof
+           then return ()
+           else do inpStr &lt;- hGetLine inh
+                   hPutStrLn outh (map toUpper inpStr)
+                   mainloop inh outh</pre><p id="x_YC"><a name="x_YC"></a>
+      Like every Haskell program, execution of this program begins with
+      <code class="literal">main</code>.  Two files are opened:
+      <code class="literal">input.txt</code> is opened for reading, and
+      <code class="literal">output.txt</code> is opened for writing.  Then we call
+      <code class="literal">mainloop</code> to process the file.
+    </p><p id="x_ZC"><a name="x_ZC"></a>
+      <code class="literal">mainloop</code> begins by checking to see if we're
+      at the end of file (EOF) for the input.  If not, we read a line
+      from the input.  We write out the same line to the output, after
+      first converting it to uppercase.  Then we recursively call
+      <code class="literal">mainloop</code> again to continue processing the
+      file.<sup>[<a name="id611551" href="#ftn.id611551" class="footnote">17</a>]</sup>
+    </p><p id="x_aC"><a name="x_aC"></a>
+      Notice that <code class="literal">return</code> call.  This is not really the same as <code class="literal">return</code> in
+      C or Python.  In those languages, <code class="literal">return</code> is used to terminate
+      execution of the current function immediately, and to return a value to
+      the caller.  In Haskell, <code class="literal">return</code> is the opposite of <code class="literal">&lt;-</code>.  That
+      is, <code class="literal">return</code> takes a pure value and wraps it inside <span class="type">IO</span>.  Since every
+      I/O action must return some <span class="type">IO</span> type, if your result came from pure
+      computation, you must use <code class="literal">return</code> to wrap it in <span class="type">IO</span>.  As an
+      example, if <code class="literal">7</code> is an <code class="literal">Int</code>, then
+      <code class="literal">return 7</code> would create an action stored in a 
+      value of type
+      <code class="literal">IO Int</code>.  When executed, that action would
+      produce the result <code class="literal">7</code>.  For more
+      details on <code class="literal">return</code>, see <a class="xref" href="io.html#io.return" title="The True Nature of Return">the section called “The True Nature of Return”</a>.  
+    </p><p id="x_bC"><a name="x_bC"></a>
+      Let's try running the program.  We've got a file named
+      <code class="literal">input.txt</code> that looks like this:
+    </p><pre id="id611682" class="programlisting">
+This is ch08/input.txt
+
+Test Input
+I like Haskell
+Haskell is great
+I/O is fun
+
+123456789
+    </pre><p id="x_cC"><a name="x_cC"></a>
+      Now, you can use <code class="literal">runghc toupper-imp.hs</code> and you'll
+      find <code class="literal">output.txt</code> in your directory.  It should look
+      like this:
+    </p><pre id="id611708" class="programlisting">
+THIS IS CH08/INPUT.TXT
+
+TEST INPUT
+I LIKE HASKELL
+HASKELL IS GREAT
+I/O IS FUN
+
+123456789
+    </pre><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.files.openFile">More on openFile</h3></div></div></div><p id="x_dC"><a name="x_dC"></a>
+        Let's use <span class="command"><strong>ghci</strong></span> to check on the type of <code class="literal">openFile</code>:
+      </p><a name="openFile.ghci:all"></a><pre id="openFile.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module System.IO</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type openFile</code></strong>
+openFile :: FilePath -&gt; IOMode -&gt; IO Handle
+</pre><p id="x_eC"><a name="x_eC"></a>
+        <code class="literal">FilePath</code> is simply another name for <code class="literal">String</code>.  It is used in the
+        types of I/O functions to help clarify that the parameter is being
+        used as a filename, and not as regular data.
+      </p><p id="x_fC"><a name="x_fC"></a>
+        <code class="literal">IOMode</code> specifies how the file is to be managed.  The possible
+        values for <code class="literal">IOMode</code> are listed in <a class="xref" href="io.html#io.files.openFile.IOModes" title="Table 7.2. Possible IOMode Values">Table 7.2, “Possible IOMode Values”</a>.
+      </p><p class="remark"><i><span class="remark">FIXME: check formatting on this table for final book; openjade
+      doesn't render it well</span></i></p><div class="table"><a name="io.files.openFile.IOModes"></a><p class="title"><b>Table 7.2. Possible IOMode Values</b></p><div class="table-contents"><table summary="Possible IOMode Values" border="1"><colgroup><col align="left"><col align="left"><col align="left"><col align="left"></colgroup><thead><tr><th align="left"><code class="literal">IOMode</code></th><th align="left">Can read?</th><th align="left">Can write?</th><th align="left">Starting position</th><th align="left">Notes</th></tr></thead><tbody><tr><td align="left"><code class="literal">ReadMode</code></td><td align="left">Yes</td><td align="left">No</td><td align="left">Beginning of file</td><td align="left">File must exist already</td></tr><tr><td align="left"><code class="literal">WriteMode</code></td><td align="left">No</td><td align="left">Yes</td><td align="left">Beginning of file</td><td align="left">File is truncated (completely emptied) if it already existed</td></tr><tr><td align="left"><code class="literal">ReadWriteMode</code></td><td align="left">Yes</td><td align="left">Yes</td><td align="left">Beginning of file</td><td align="left">File is created if it didn't exist; otherwise, existing
+                data is left intact</td></tr><tr><td align="left"><code class="literal">AppendMode</code></td><td align="left">No</td><td align="left">Yes</td><td align="left">End of file</td><td align="left">File is created if it didn't exist; otherwise, existing
+                data is left intact.</td></tr></tbody></table></div></div><br class="table-break"><p id="x_gC"><a name="x_gC"></a>
+        While we are mostly working with text examples in this chapter,
+        binary files can also be used in Haskell.  If you are working with a
+        binary file, you should use <code class="literal">openBinaryFile</code> instead of <code class="literal">openFile</code>.
+        Operating systems such as Windows process files differently if they
+        are opened as binary instead of as text.  On operating systems such
+        as Linux, both <code class="literal">openFile</code> and <code class="literal">openBinaryFile</code> perform the same
+        operation.  Nevertheless, for portability, it is still wise to always
+        use <code class="literal">openBinaryFile</code> if you will be dealing with binary data.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.files.closing">Closing Handles</h3></div></div></div><p id="x_hC"><a name="x_hC"></a>
+        You've already seen that <code class="literal">hClose</code> is used to close file handles.
+        Let's take a moment and think about why this is important.
+      </p><p id="x_iC"><a name="x_iC"></a>
+        As you'll see in <a class="xref" href="io.html#io.buffering" title="Buffering">the section called “Buffering”</a>, Haskell maintains
+        internal buffers for files.  This provides an important performance
+        boost.  However, it means that until you call <code class="literal">hClose</code> on a
+        file that is open for writing, your data may not be flushed
+        out to the operating system.  
+      </p><p id="x_jC"><a name="x_jC"></a>
+        Another reason to make sure to <code class="literal">hClose</code> files is that open files take
+        up resources on the system.  If your program runs for a long time, and
+        opens many files but fails to close them, it is conceivable that your
+        program could even crash due to resource exhaustion.  All of
+        this is no different in Haskell than in other languages.
+      </p><p id="x_kC"><a name="x_kC"></a>
+        When a program exits, Haskell will normally take care of closing any
+        files that remain open.  However, there are some circumstances in
+        which this may not happen<sup>[<a name="id612101" href="#ftn.id612101" class="footnote">18</a>]</sup>, so once
+        again, it is best to be responsible and call <code class="literal">hClose</code> all the time.
+      </p><p id="x_aN"><a name="x_aN"></a>
+        Haskell provides several tools for you to use to easily ensure
+        this happens, regardless of whether errors are present.  
+        You can read about <code class="literal">finally</code> in <a class="xref" href="io.html#io.example" title="Extended Example: Functional I/O and Temporary Files">the section called “Extended Example: Functional I/O and Temporary Files”</a> and <code class="literal">bracket</code> in
+        <a class="xref" href="io-case-study-a-library-for-searching-the-filesystem.html#find.acquire.use.release" title="The acquire-use-release cycle">the section called “The acquire-use-release cycle”</a>.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.files.seeking">Seek and Tell</h3></div></div></div><p id="x_mC"><a name="x_mC"></a>
+        When reading and writing from a <code class="literal">Handle</code> that corresponds to
+        a file on disk, the operating system maintains
+        an internal record of the current position.  Each time you do another
+        read, the operating system returns the next chunk of data that begins
+        at the current position, and increments the position to reflect the
+        data that you read.
+      </p><p id="x_nC"><a name="x_nC"></a>
+        You can use <code class="literal">hTell</code> to find out your current position in the file.
+        When the file is initially created, it is empty and your position
+        will be 0.  After you write out 5 bytes, your position will be
+        5, and so on.  <code class="literal">hTell</code> takes a <code class="literal">Handle</code> and returns an <code class="literal">IO
+          Integer</code> with your position.
+      </p><p id="x_oC"><a name="x_oC"></a>
+        The companion to <code class="literal">hTell</code> is <code class="literal">hSeek</code>.  <code class="literal">hSeek</code> lets you change the
+        file position.  It takes three parameters: a <code class="literal">Handle</code>, a <code class="literal">SeekMode</code>,
+        and a position.
+      </p><p id="x_pC"><a name="x_pC"></a>
+        <code class="literal">SeekMode</code> can be one of three different values, which specify how
+        the given position is to be interpreted.  <code class="literal">AbsoluteSeek</code> means that
+        the position is a precise location in the file.  This is the same
+        kind of information that <code class="literal">hTell</code> gives you.  <code class="literal">RelativeSeek</code> means to
+        seek from the current position.  A positive number requests going 
+        forwards in the file, and a negative number means going backwards.
+        Finally, <code class="literal">SeekFromEnd</code> will seek to the specified number of bytes
+        before the end of the file.  <code class="literal">hSeek handle SeekFromEnd
+          0</code> will take you to the end of the file.
+        For an example of <code class="literal">hSeek</code>, refer to <a class="xref" href="io.html#io.example" title="Extended Example: Functional I/O and Temporary Files">the section called “Extended Example: Functional I/O and Temporary Files”</a>.
+      </p><p id="x_qC"><a name="x_qC"></a>
+        Not all <code class="literal">Handle</code>s are seekable.  A <code class="literal">Handle</code> usually corresponds to a
+        file, but it can also correspond to other things such as network
+        connections, tape drives, or terminals.  You can use <code class="literal">hIsSeekable</code> to
+        see if a given <code class="literal">Handle</code> is seekable.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.files.stdin">Standard Input, Output, and Error</h3></div></div></div><p id="x_rC"><a name="x_rC"></a>
+        Earlier, we pointed out that for each non-"h" function, there is
+        usually also a corresponding "h" function that works on any <code class="literal">Handle</code>.
+        In fact, the non-"h" functions are nothing more than shortcuts for
+        their "h" counterparts.
+      </p><p id="x_sC"><a name="x_sC"></a>
+        There are three pre-defined <code class="literal">Handle</code>s in
+        <code class="literal">System.IO</code>.  These <code class="literal">Handle</code>s are always available
+        for your use.
+        They are <code class="literal">stdin</code>, which corresponds to standard input; <code class="literal">stdout</code> for
+        standard output; and <code class="literal">stderr</code> for standard error.  Standard input
+        normally refers to the keyboard, standard output to the monitor, and
+        standard error also normally goes to the monitor.
+      </p><p id="x_uC"><a name="x_uC"></a>
+        Functions such as <code class="literal">getLine</code> can thus be trivially defined like this:
+      </p><pre id="id612426" class="programlisting">
+getLine = hGetLine stdin
+putStrLn = hPutStrLn stdout
+print = hPrint stdout
+</pre><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_bN"><a name="x_bN"></a>We're using partial application here.  If this isn't
+        making sense, consult
+          <a class="xref" href="functional-programming.html#fp.partialapp" title="Partial function application and currying">the section called “Partial function application and currying”</a> for a refresher.
+        </p></td></tr></table></div><p id="x_vC"><a name="x_vC"></a>
+        Earlier, we told you what the three standard file handles "normally"
+        correspond to.  That's because some operating systems let you
+        redirect the file handles to come from (or go to) different places—files, devices, or even other programs.  This feature is used
+        extensively in shell scripting on POSIX (Linux, BSD, Mac)
+        operating systems, but can
+        also be used on Windows.
+      </p><p id="x_wC"><a name="x_wC"></a>
+        It often makes sense to use standard input and output instead of
+        specific files.  This lets you interact with a human at the terminal.
+        But it also lets you work with input and output files—or even
+        combine your code with other programs—if that's
+        what's requested.<sup>[<a name="id612475" href="#ftn.id612475" class="footnote">19</a>]</sup>
+      </p><p id="x_xC"><a name="x_xC"></a>
+        As an example, we can provide input to
+        <code class="literal">callingpure.hs</code> in advance like this:
+      </p><pre id="id612505" class="screen">
+$ <strong class="userinput"><code>echo John|runghc callingpure.hs</code></strong>
+Greetings once again.  What is your name?
+Pleased to meet you, John.
+Your name contains 4 characters.
+      </pre><p id="x_yC"><a name="x_yC"></a>
+        While <code class="literal">callingpure.hs</code> was running, it did not wait
+        for input at the keyboard; instead it received
+        <code class="literal">John</code> from the <code class="literal">echo</code> program.
+        Notice also that the output didn't contain the word
+        <code class="literal">John</code> on a separate line as it did when this
+        program was run at the keyboard.  The terminal normally echoes
+        everything you type back to you, but that is technically input, and
+        is not included in the output stream.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.files.ops">Deleting and Renaming Files</h3></div></div></div><p id="x_zC"><a name="x_zC"></a>
+        So far in this chapter, we've discussed the contents of the files.
+        Let's now talk a bit about the files themselves.
+      </p><p id="x_AD"><a name="x_AD"></a>
+        <code class="literal">System.Directory</code> provides two functions you may find useful.
+        <code class="literal">removeFile</code> takes a single argument, a filename, and deletes that
+        file.<sup>[<a name="id612589" href="#ftn.id612589" class="footnote">20</a>]</sup>  <code class="literal">renameFile</code> takes two filenames: the first
+        is the old name and the second is the new name.  If the new filename
+        is in a different directory, you can also think of this as a move.
+        The old filename must exist prior to the call to <code class="literal">renameFile</code>.  If
+        the new file already exists, it is removed before the rename takes
+        place.
+      </p><p id="x_rp"><a name="x_rp"></a>
+        Like many other functions that take a filename, if the "old"
+        name doesn't exist, <code class="literal">renameFile</code> will raise an exception.
+        More information on exception handling can be found in <a class="xref" href="error-handling.html" title="Chapter 19. Error handling">Chapter 19, <i>Error handling</i></a>.
+      </p><p id="x_CD"><a name="x_CD"></a>
+        There are many other functions in <code class="literal">System.Directory</code> for doing things
+        such as creating and removing directories, finding lists of files in
+        directories, and testing for file existence.  These are discussed in
+        <a class="xref" href="systems-programming-in-haskell.html#systems.directories" title="Directory and File Information">the section called “Directory and File Information”</a>.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.files.temp">Temporary Files</h3></div></div></div><p id="x_DD"><a name="x_DD"></a>
+        Programmers frequently need temporary files.  These files
+        may be used to store large amounts of data needed for computations, data to be
+        used by other programs, or any number of other uses.
+      </p><p id="x_ED"><a name="x_ED"></a>
+        While you could craft a way to manually open files with unique names,
+        the details of doing this in a secure way differ from platform to
+        platform.  Haskell provides a convenient function called
+        <code class="literal">openTempFile</code> (and a corresponding <code class="literal">openBinaryTempFile</code>) to handle
+        the difficult bits for you.
+      </p><p id="x_FD"><a name="x_FD"></a>
+        <code class="literal">openTempFile</code> takes two parameters: the directory in which to create
+        the file, and a "template" for naming the file.  The directory could
+        simply be <code class="literal">"."</code> for the current working directory.
+        Or you could use
+        <code class="literal">System.Directory.getTemporaryDirectory</code> to find the
+        best place for temporary files on a given machine.  The template is used
+        as the basis for the file name; it will have some random characters
+        added to it to ensure that the result is truly unique.  It
+        guarantees that it will be working on a unique filename, in fact.
+      </p><p id="x_GD"><a name="x_GD"></a>
+        The return type of <code class="literal">openTempFile</code> is <code class="literal">IO (FilePath,
+          Handle)</code>.  The first part of the tuple is the name of the
+        file created, and the second is a <code class="literal">Handle</code> opened in <code class="literal">ReadWriteMode</code>
+        over that file.  When you're done with the file, you'll want to
+        <code class="literal">hClose</code> it and then call <code class="literal">removeFile</code> to delete it.  See the
+        following example for a sample function to use.
+      </p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="io.example">Extended Example: Functional I/O and Temporary Files</h2></div></div></div><p id="x_HD"><a name="x_HD"></a>
+      Here's a larger example that puts together some concepts from this
+      chapter, from some earlier chapters, and a few you haven't seen yet.
+      Take a look at the program and see if you can figure out what it does
+      and how it works.
+    </p><a name="tempfile.hs:all"></a><pre id="tempfile.hs:all" class="programlisting">-- file: ch07/tempfile.hs
+import System.IO
+import System.Directory(getTemporaryDirectory, removeFile)
+import System.IO.Error(catch)
+import Control.Exception(finally)
+
+-- The main entry point.  Work with a temp file in myAction.
+main :: IO ()
+main = withTempFile "mytemp.txt" myAction
+
+{- The guts of the program.  Called with the path and handle of a temporary
+   file.  When this function exits, that file will be closed and deleted
+   because myAction was called from withTempFile. -}
+myAction :: FilePath -&gt; Handle -&gt; IO ()
+myAction tempname temph = 
+    do -- Start by displaying a greeting on the terminal
+       putStrLn "Welcome to tempfile.hs"
+       putStrLn $ "I have a temporary file at " ++ tempname
+
+       -- Let's see what the initial position is
+       pos &lt;- hTell temph
+       putStrLn $ "My initial position is " ++ show pos
+
+       -- Now, write some data to the temporary file
+       let tempdata = show [1..10]
+       putStrLn $ "Writing one line containing " ++ 
+                  show (length tempdata) ++ " bytes: " ++
+                  tempdata
+       hPutStrLn temph tempdata
+
+       -- Get our new position.  This doesn't actually modify pos
+       -- in memory, but makes the name "pos" correspond to a different 
+       -- value for the remainder of the "do" block.
+       pos &lt;- hTell temph
+       putStrLn $ "After writing, my new position is " ++ show pos
+
+       -- Seek to the beginning of the file and display it
+       putStrLn $ "The file content is: "
+       hSeek temph AbsoluteSeek 0
+
+       -- hGetContents performs a lazy read of the entire file
+       c &lt;- hGetContents temph
+
+       -- Copy the file byte-for-byte to stdout, followed by \n
+       putStrLn c
+
+       -- Let's also display it as a Haskell literal
+       putStrLn $ "Which could be expressed as this Haskell literal:"
+       print c
+
+{- This function takes two parameters: a filename pattern and another
+   function.  It will create a temporary file, and pass the name and Handle
+   of that file to the given function.
+
+   The temporary file is created with openTempFile.  The directory is the one
+   indicated by getTemporaryDirectory, or, if the system has no notion of
+   a temporary directory, "." is used.  The given pattern is passed to
+   openTempFile.
+
+   After the given function terminates, even if it terminates due to an
+   exception, the Handle is closed and the file is deleted. -}
+withTempFile :: String -&gt; (FilePath -&gt; Handle -&gt; IO a) -&gt; IO a
+withTempFile pattern func =
+    do -- The library ref says that getTemporaryDirectory may raise on
+       -- exception on systems that have no notion of a temporary directory.
+       -- So, we run getTemporaryDirectory under catch.  catch takes
+       -- two functions: one to run, and a different one to run if the
+       -- first raised an exception.  If getTemporaryDirectory raised an
+       -- exception, just use "." (the current working directory).
+       tempdir &lt;- catch (getTemporaryDirectory) (\_ -&gt; return ".")
+       (tempfile, temph) &lt;- openTempFile tempdir pattern 
+
+       -- Call (func tempfile temph) to perform the action on the temporary
+       -- file.  finally takes two actions.  The first is the action to run.
+       -- The second is an action to run after the first, regardless of
+       -- whether the first action raised an exception.  This way, we ensure
+       -- the temporary file is always deleted.  The return value from finally
+       -- is the first action's return value.
+       finally (func tempfile temph) 
+               (do hClose temph
+                   removeFile tempfile)</pre><p id="x_ID"><a name="x_ID"></a>
+      Let's start looking at this program from the end.  The
+      <code class="literal">withTempFile</code> function demonstrates that Haskell
+      doesn't forget its functional nature when I/O is introduced.  This
+      function takes a <code class="literal">String</code> and another function.  The function
+      passed to <code class="literal">withTempFile</code> is invoked with the
+      name and <code class="literal">Handle</code> of a temporary file.  When that function
+      exits, the temporary file is closed and deleted.  So even when
+      dealing with I/O, we can still find the idiom of passing
+      functions as parameters to be convenient.  Lisp programmers
+      might find our <code class="literal">withTempFile</code> function similar
+      to Lisp's <code class="literal">with-open-file</code> function.
+    </p><p id="x_JD"><a name="x_JD"></a>
+      There is some exception handling going on to make the program more
+      robust in the face of errors.  You normally want the temporary files to
+      be deleted after processing completes, even if something went wrong.  So we make sure
+      that happens.  For more on exception handling, see <a class="xref" href="error-handling.html" title="Chapter 19. Error handling">Chapter 19, <i>Error handling</i></a>.
+    </p><p id="x_KD"><a name="x_KD"></a>Let's return to the start of the program.  <code class="literal">main</code> is defined simply
+      as <code class="literal">withTempFile "mytemp.txt" myAction</code>.
+      <code class="literal">myAction</code>, then, will be invoked with the name and
+      <code class="literal">Handle</code> of the temporary file.
+    </p><p id="x_LD"><a name="x_LD"></a>
+      <code class="literal">myAction</code> displays some information to the terminal,
+      writes some data to the file, seeks to the beginning of the file, 
+      and reads the data back with
+      <code class="literal">hGetContents</code>.<sup>[<a name="id612980" href="#ftn.id612980" class="footnote">21</a>]</sup>  It then displays
+      the contents of the file byte-for-byte, and also as a Haskell literal
+      via <code class="literal">print c</code>.  That's the same as <code class="literal">putStrLn
+        (show c)</code>.
+    </p><p id="x_ND"><a name="x_ND"></a>
+      Let's look at the output:
+    </p><pre id="id613018" class="screen">
+$ <strong class="userinput"><code>runhaskell tempfile.hs</code></strong>
+Welcome to tempfile.hs
+I have a temporary file at /tmp/mytemp8572.txt
+My initial position is 0
+Writing one line containing 22 bytes: [1,2,3,4,5,6,7,8,9,10]
+After writing, my new position is 23
+The file content is:
+[1,2,3,4,5,6,7,8,9,10]
+
+Which could be expressed as this Haskell literal:
+"[1,2,3,4,5,6,7,8,9,10]\n"
+    </pre><p id="x_OD"><a name="x_OD"></a>
+      Every time you run this program, your temporary file name should be
+      slightly different since it contains a randomly-generated component.
+      Looking at this output, there are a few questions that might occur to
+      you:
+    </p><div class="orderedlist"><ol type="1"><li><p id="x_PD"><a name="x_PD"></a>Why is your position 23 after writing a line with 22
+          bytes?</p></li><li><p id="x_QD"><a name="x_QD"></a>Why is there an empty line after the file content
+          display?</p></li><li><p id="x_RD"><a name="x_RD"></a>Why is there a <code class="literal">\n</code> at the end of the
+          Haskell literal display?</p></li></ol></div><p id="x_SD"><a name="x_SD"></a>
+      You might be able to guess that the answers to all three questions are
+      related.  See if you can work out the answers for a moment.  If you
+      need some help, here are the explanations:
+    </p><div class="orderedlist"><ol type="1"><li><p id="x_TD"><a name="x_TD"></a>That's because we used <code class="literal">hPutStrLn</code> instead of <code class="literal">hPutStr</code>
+          to write the data.  <code class="literal">hPutStrLn</code> always terminates the line by
+          writing a <code class="literal">\n</code> at the end, which didn't appear in
+          <code class="literal">tempdata</code>.</p></li><li><p id="x_UD"><a name="x_UD"></a>We used <code class="literal">putStrLn c</code> to display the
+          file contents <code class="literal">c</code>.  Because the data was written
+          originally with <code class="literal">hPutStrLn</code>, <code class="literal">c</code> ends with the
+          newline character, and <code class="literal">putStrLn</code> adds a second newline character.
+          The result is a blank line.</p></li><li><p id="x_VD"><a name="x_VD"></a>The <code class="literal">\n</code> is the newline character from
+          the original <code class="literal">hPutStrLn</code>.</p></li></ol></div><p id="x_dN"><a name="x_dN"></a>
+      As a final note, the byte counts may be different on some
+      operating systems.  Windows, for instance, uses the two-byte sequence
+      <code class="literal">\r\n</code> as the end-of-line marker, so you may
+      see differences on that platform.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="io.lazy">Lazy I/O</h2></div></div></div><p id="x_WD"><a name="x_WD"></a>
+      So far in this chapter, you've seen examples of fairly traditional I/O.
+      Each line, or block of data, is requested individually and processed
+      individually.
+    </p><p id="x_XD"><a name="x_XD"></a>
+      Haskell has another approach available to you as well.  Since Haskell
+      is a lazy language, meaning that any given piece of data is only
+      evaluated when its value must be known, there are some novel ways of
+      approaching I/O.
+    </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.lazy.hGetContents">hGetContents</h3></div></div></div><p id="x_YD"><a name="x_YD"></a>
+        One novel way to approach I/O is the <code class="literal">hGetContents</code> function.<sup>[<a name="id613259" href="#ftn.id613259" class="footnote">22</a>]</sup>  <code class="literal">hGetContents</code> has the type
+        <code class="literal">Handle -&gt; IO String</code>.  The <code class="literal">String</code> it returns
+        represents all of the data in the file given by the
+        <code class="literal">Handle</code>.<sup>[<a name="id613298" href="#ftn.id613298" class="footnote">23</a>]</sup>
+      </p><p id="x_bD"><a name="x_bD"></a>
+        In a strictly-evaluated language, using such a function is often a bad idea.
+        It may be fine to read the entire contents of a 2KB file, but if you
+        try to read the entire contents of a 500GB file, you are likely to
+        crash due to lack of RAM to store all that data.  In these
+        languages, you would traditionally use mechanisms such as 
+        loops to process the file's entire data.
+      </p><p id="x_cD"><a name="x_cD"></a>
+        But <code class="literal">hGetContents</code> is different.  The <code class="literal">String</code> it returns is evaluated
+        lazily.  At the moment you call <code class="literal">hGetContents</code>, nothing is actually
+        read.  Data is only read from the <code class="literal">Handle</code> as the elements (characters)
+        of the list are processed.  As elements of the <code class="literal">String</code> are no longer
+        used, Haskell's garbage collector automatically frees that
+        memory.  
+        All of this happens
+        completely transparently to you.  And since you have what looks like—and, really, is—a pure <code class="literal">String</code>, you can pass it to pure (non-<span class="type">IO</span>)
+        code.
+      </p><p id="x_dD"><a name="x_dD"></a>
+        Let's take a quick look at an example.  Back in
+        <a class="xref" href="io.html#io.files" title="Working With Files and Handles">the section called “Working With Files and Handles”</a>, you saw an imperative program
+        that converted the entire content of a file to uppercase.  Its
+        imperative algorithm was similar to what you'd see in many other
+        languages.  Here now is the much simpler algorithm that
+        exploits lazy evaluation:
+      </p><a name="toupper-lazy1.hs:all"></a><pre id="toupper-lazy1.hs:all" class="programlisting">-- file: ch07/toupper-lazy1.hs
+import System.IO
+import Data.Char(toUpper)
+
+main :: IO ()
+main = do 
+       inh &lt;- openFile "input.txt" ReadMode
+       outh &lt;- openFile "output.txt" WriteMode
+       inpStr &lt;- hGetContents inh
+       let result = processData inpStr
+       hPutStr outh result
+       hClose inh
+       hClose outh
+
+processData :: String -&gt; String
+processData = map toUpper</pre><p id="x_eD"><a name="x_eD"></a>
+        Notice that <code class="literal">hGetContents</code> handled <span class="emphasis"><em>all</em></span> of the
+        reading for us.  Also, take a look at <code class="literal">processData</code>.
+        It's a pure function since it has no side effects and always returns
+        the same result each time it is called.  It has no need to know—and no way to tell—that its input is being read lazily from a file
+        in this case.  It can work perfectly well with a 20-character literal
+        or a 500GB data dump on disk.
+      </p><p id="x_fD"><a name="x_fD"></a>
+        You can even verify that with <span class="command"><strong>ghci</strong></span>:
+      </p><a name="toupper-lazy1.ghci:all"></a><pre id="toupper-lazy1.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load toupper-lazy1.hs</code></strong>
+[1 of 1] Compiling Main             ( toupper-lazy1.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>processData "Hello, there!  How are you?"</code></strong>
+"HELLO, THERE!  HOW ARE YOU?"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type processData</code></strong>
+processData :: String -&gt; String
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type processData "Hello!"</code></strong>
+processData "Hello!" :: String
+</pre><div class="warning"><table border="0" summary="Warning"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="/support/figs/warning.png"></td><th align="left">Warning</th></tr><tr><td align="left" valign="top"><p id="x_sp"><a name="x_sp"></a>
+          If we had tried to hang on to <code class="literal">inpStr</code> in
+          the above example, past the one place where it was used (the
+          call to <code class="literal">processData</code>), the program would
+          have lost its memory efficiency.  That's because the
+          compiler would have been forced to keep
+          <code class="literal">inpStr</code>'s value in memory for future use.
+          Here it knows that <code class="literal">inpStr</code> will never be
+          reused, and frees the memory as soon as it is done with it.
+          Just remember: memory is only freed after its last use.
+        </p></td></tr></table></div><p id="x_gD"><a name="x_gD"></a>
+        This program was a bit verbose to make it clear that there was pure
+        code in use.  Here's a bit more concise version, which we will build
+        on in the next examples:
+      </p><a name="toupper-lazy2.hs:all"></a><pre id="toupper-lazy2.hs:all" class="programlisting">-- file: ch07/toupper-lazy2.hs
+import System.IO
+import Data.Char(toUpper)
+
+main = do 
+       inh &lt;- openFile "input.txt" ReadMode
+       outh &lt;- openFile "output.txt" WriteMode
+       inpStr &lt;- hGetContents inh
+       hPutStr outh (map toUpper inpStr)
+       hClose inh
+       hClose outh</pre><p id="x_hD"><a name="x_hD"></a>
+        You are not required to ever consume all the data from the input file
+        when using <code class="literal">hGetContents</code>.  Whenever the Haskell system determines
+        that the entire string <code class="literal">hGetContents</code> returned can be garbage collected
+       —which means it will never again be used—the file is closed
+        for you automatically.  The same principle applies to data read from
+        the file.  Whenever a given piece of data will never again be
+        needed, the Haskell environment releases the memory it was stored
+        within.  Strictly speaking, we wouldn't have to call
+        <code class="literal">hClose</code> at all in this example program.
+        However, it is still a good practice to get into, as later
+        changes to a program could make the call to
+        <code class="literal">hClose</code> important.
+      </p><div class="warning"><table border="0" summary="Warning"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="/support/figs/warning.png"></td><th align="left">Warning</th></tr><tr><td align="left" valign="top"><p id="x_eN"><a name="x_eN"></a>
+          When using <code class="literal">hGetContents</code>, it is important to remember that
+          even though you may never again explicitly reference <code class="literal">Handle</code>
+          directly in the rest of the program, you must not close the
+          <code class="literal">Handle</code> until you have finished consuming its results via
+          <code class="literal">hGetContents</code>.  Doing so would cause you to miss on some or
+          all of the file's data.  Since Haskell is lazy, you generally
+          can assume that you have consumed input only after you have
+          output the result of the computations involving the input.
+        </p></td></tr></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.lazy.readFile">readFile and writeFile</h3></div></div></div><p id="x_iD"><a name="x_iD"></a>
+        Haskell programmers use <code class="literal">hGetContents</code> as a filter quite often.  They
+        read from one file, do something to the data, and write the result
+        out elsewhere.  This is so common that there are some shortcuts for
+        doing it.  <code class="literal">readFile</code> and <code class="literal">writeFile</code> are shortcuts for working with
+        files as strings.  They handle all the details of opening files,
+        closing files, reading data, and writing data.  <code class="literal">readFile</code> uses
+        <code class="literal">hGetContents</code> internally.
+      </p><p id="x_jD"><a name="x_jD"></a>
+        Can you guess the Haskell types of these functions?  Let's check with
+        <span class="command"><strong>ghci</strong></span>:
+      </p><a name="readfile.ghci:all"></a><pre id="readfile.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type readFile</code></strong>
+readFile :: FilePath -&gt; IO String
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type writeFile</code></strong>
+writeFile :: FilePath -&gt; String -&gt; IO ()
+</pre><p id="x_tp"><a name="x_tp"></a>
+        Now, here's an example program that uses <code class="literal">readFile</code> and
+        <code class="literal">writeFile</code>:
+      </p><a name="toupper-lazy3.hs:all"></a><pre id="toupper-lazy3.hs:all" class="programlisting">-- file: ch07/toupper-lazy3.hs
+import Data.Char(toUpper)
+
+main = do 
+       inpStr &lt;- readFile "input.txt"
+       writeFile "output.txt" (map toUpper inpStr)</pre><p id="x_kD"><a name="x_kD"></a>
+        Look at that—the guts of the program take up only two lines!
+        <code class="literal">readFile</code> returned a lazy <code class="literal">String</code>, which we stored in
+        <code class="literal">inpStr</code>.  We then took that, processed it, and
+        passed it to <code class="literal">writeFile</code> for writing.
+      </p><p id="x_fN"><a name="x_fN"></a>
+        Neither <code class="literal">readFile</code> nor <code class="literal">writeFile</code> ever provide a <code class="literal">Handle</code> for
+        you to work with, so there is nothing to ever <code class="literal">hClose</code>.
+        <code class="literal">readFile</code> uses <code class="literal">hGetContents</code> internally, and the underlying
+        <code class="literal">Handle</code> will be closed when the returned <code class="literal">String</code> is
+        garbage-collected or all the input has been consumed.
+        <code class="literal">writeFile</code> will close its underlying <code class="literal">Handle</code> when the entire
+        <code class="literal">String</code> supplied to it has been written.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.lazy.output">A Word On Lazy Output</h3></div></div></div><p id="x_lD"><a name="x_lD"></a>
+        By now, you should understand how lazy input works in Haskell.  But
+        what about laziness during output?
+      </p><p id="x_mD"><a name="x_mD"></a>
+        As you know, nothing in Haskell is evaluated before its value is
+        needed.  Since functions such as <code class="literal">writeFile</code> and <code class="literal">putStr</code> write out the entire
+        <code class="literal">String</code> passed to them, that entire <code class="literal">String</code> must be evaluated.  So
+        you are guaranteed that the argument to <code class="literal">putStr</code> will be evaluated in
+        full.<sup>[<a name="id613923" href="#ftn.id613923" class="footnote">24</a>]</sup> 
+      </p><p id="x_oD"><a name="x_oD"></a>
+        But what does that mean for laziness of the input?  In the examples
+        above, will the call to <code class="literal">putStr</code> or <code class="literal">writeFile</code> force the entire
+        input string to be loaded into memory at once, just to be written
+        out?
+      </p><p id="x_pD"><a name="x_pD"></a>
+        The answer is no.  <code class="literal">putStr</code> (and all the similar output functions)
+        write out data as it becomes available.  They also have no need for
+        keeping around data already written, so as long as nothing else in
+        the program needs it, the memory can be freed immediately.  In
+        a sense, you can think of the <code class="literal">String</code> between <code class="literal">readFile</code> and
+        <code class="literal">writeFile</code> as a pipe linking the two.  Data goes in one end,
+        is transformed some way, and flows back out the other.
+      </p><p id="x_qD"><a name="x_qD"></a>
+        You can verify this yourself by generating a large
+        <code class="literal">input.txt</code> for <code class="literal">toupper-lazy3.hs</code>.
+        It may take a bit to process, but you should see a constant—and
+        low—memory usage while it is being processed.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.lazy.interact">interact</h3></div></div></div><p id="x_rD"><a name="x_rD"></a>
+        You learned that <code class="literal">readFile</code> and <code class="literal">writeFile</code> address the common situation of
+        reading from one file, making a conversion, and writing to a
+        different file.  There's a situation that's even more common than
+        that: reading from standard input, making a conversion, and writing
+        the result to standard output.  For that situation, there is a
+        function called <code class="literal">interact</code>.  The type of <code class="literal">interact</code> is
+        <code class="literal">(String -&gt; String) -&gt; IO ()</code>.   That is, it
+        takes one argument: a
+        function of type <code class="literal">String -&gt; String</code>.  That function
+        is passed the result of <code class="literal">getContents</code>—that is,
+        standard input read lazily.  The result of that function is sent to
+        standard output.
+      </p><p id="x_sD"><a name="x_sD"></a>
+        We can convert our example program to operate on standard input
+        and standard output by using <code class="literal">interact</code>.  Here's one
+        way to do that:
+      </p><a name="toupper-lazy4.hs:all"></a><pre id="toupper-lazy4.hs:all" class="programlisting">-- file: ch07/toupper-lazy4.hs
+import Data.Char(toUpper)
+
+main = interact (map toUpper)</pre><p id="x_tD"><a name="x_tD"></a>
+        Look at that—<span class="emphasis"><em>one</em></span> line of code to achieve our
+        transformation!  To achieve the same effect as with the previous
+        examples, you could run this one like this:
+      </p><pre id="id614111" class="screen">
+$ <strong class="userinput"><code>runghc toupper-lazy4.hs &lt; input.txt &gt; output.txt</code></strong>
+      </pre><p id="x_uD"><a name="x_uD"></a>
+        Or, if you'd like to see the output printed to the screen, you could
+        type:
+      </p><pre id="id614131" class="screen">
+$ <strong class="userinput"><code>runghc toupper-lazy4.hs &lt; input.txt</code></strong>
+      </pre><p id="x_vD"><a name="x_vD"></a>
+        If you want to see that Haskell output truly does write out chunks of
+        data as soon as they are received, run <code class="literal">runghc
+          toupper-lazy4.hs</code> without any other command-line
+        parameters.  You should see each character echoed back out as soon as
+        you type it, but in uppercase.  Buffering may change this behavior;
+        see <a class="xref" href="io.html#io.buffering" title="Buffering">the section called “Buffering”</a> later in this chapter for more
+        on buffering.  If you see each line echoed as soon as you type it, or
+        even nothing at all for awhile, buffering is causing this behavior.
+      </p><p id="x_wD"><a name="x_wD"></a>
+        You can also write simple interactive programs using <code class="literal">interact</code>.  Let's
+        start with a simple example: adding a line of text before the
+        uppercase output.
+      </p><a name="toupper-lazy5.hs:all"></a><pre id="toupper-lazy5.hs:all" class="programlisting">-- file: ch07/toupper-lazy5.hs
+import Data.Char(toUpper)
+
+main = interact (map toUpper . (++) "Your data, in uppercase, is:\n\n")</pre><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_gN"><a name="x_gN"></a>If the use of the <code class="literal">.</code> operator is
+        confusing, you might wish to refer to <a class="xref" href="functional-programming.html#fp.compose" title="Code reuse through composition">the section called “Code reuse through composition”</a>.
+          </p></td></tr></table></div><p id="x_xD"><a name="x_xD"></a>
+        Here we add a string at the beginning of the output.  Can you spot
+        the problem, though?
+      </p><p id="x_yD"><a name="x_yD"></a>
+        Since we're calling <code class="literal">map</code> on the <span class="emphasis"><em>result</em></span> of
+        <code class="literal">(++)</code>, that header itself will appear in uppercase.
+        We can fix that in this way:
+      </p><a name="toupper-lazy6.hs:all"></a><pre id="toupper-lazy6.hs:all" class="programlisting">-- file: ch07/toupper-lazy6.hs
+import Data.Char(toUpper)
+
+main = interact ((++) "Your data, in uppercase, is:\n\n" . 
+                 map toUpper)</pre><p id="x_zD"><a name="x_zD"></a>
+        This moved the header outside of the <code class="literal">map</code>.
+      </p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title" id="id614267">Filters with interact</h4></div></div></div><p id="x_AE"><a name="x_AE"></a>
+          Another common use of <code class="literal">interact</code> is filtering.  Let's say that you
+          want to write a program that reads a file and prints out every line
+          that contains the character "a".  Here's how you might do that with
+          <code class="literal">interact</code>:
+        </p><a name="filter.hs:all"></a><pre id="filter.hs:all" class="programlisting">-- file: ch07/filter.hs
+main = interact (unlines . filter (elem 'a') . lines)</pre><p id="x_BE"><a name="x_BE"></a>
+          This may have introduced three functions that you aren't familiar
+          with yet.  Let's inspect their types with <span class="command"><strong>ghci</strong></span>:
+        </p><a name="filter.ghci:all"></a><pre id="filter.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type lines</code></strong>
+lines :: String -&gt; [String]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type unlines</code></strong>
+unlines :: [String] -&gt; String
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type elem</code></strong>
+elem :: (Eq a) =&gt; a -&gt; [a] -&gt; Bool
+</pre><p id="x_CE"><a name="x_CE"></a>
+          Can you guess what these functions do just by looking at
+          their types?
+          If not, you can find them explained in <a class="xref" href="functional-programming.html#fp.splitlines" title="Warming up: portably splitting lines of text">the section called “Warming up: portably splitting lines of text”</a> and <a class="xref" href="functional-programming.html#fp.lists.strings" title="Special string-handling functions">the section called “Special string-handling functions”</a>. 
+          You'll frequently see <code class="literal">lines</code> and
+          <code class="literal">unlines</code> used with I/O.  Finally, <code class="literal">elem</code> takes a element and a list
+          and returns <code class="literal">True</code> if that element occurs anywhere in the list.
+        </p><p id="x_EE"><a name="x_EE"></a>
+          Try running this over our standard example input:
+        </p><pre id="id614410" class="screen">
+  $ <strong class="userinput"><code>runghc filter.hs &lt; input.txt</code></strong>
+  I like Haskell
+  Haskell is great
+        </pre><p id="x_FE"><a name="x_FE"></a>
+          Sure enough, you got back the two lines that contain an "a".  
+          Lazy filters are a powerful way to use Haskell.  When you think
+          about it, a filter—such as the standard Unix program
+          <span class="command"><strong>grep</strong></span>—sounds a lot like a function.  It takes
+          some input, applies some computation, and generates a predictable
+          output.
+        </p></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="io.monad">The IO Monad</h2></div></div></div><p id="x_GE"><a name="x_GE"></a>
+      You've seen a number of examples of I/O in Haskell by this point.
+      Let's take a moment to step back and think about how I/O relates to the
+      broader Haskell language.
+    </p><p id="x_HE"><a name="x_HE"></a>
+      Since Haskell is a pure language, 
+      if you give a certain function a specific
+      argument, the function will return the same result every time you give
+      it that argument.  Moreover, the function will not change anything
+      about the program's overall state.
+    </p><p id="x_IE"><a name="x_IE"></a>
+      You may be wondering, then, how I/O fits into this picture.  Surely if
+      you want to read a line of input from the keyboard, the function to
+      read input can't possibly return the same result every time it is run,
+      right?  Moreover, I/O is all about changing state.  I/O could cause
+      pixels on a terminal to light up, to cause paper to start coming out of
+      a printer, or even to cause a package to be shipped from a warehouse on
+      a different continent.  I/O doesn't just change the state of a program.
+      You can think of I/O as changing the state of the world.
+    </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.monad.actions">Actions</h3></div></div></div><p id="x_JE"><a name="x_JE"></a>
+        Most languages do not make a distinction between a pure function and an
+        impure one.  Haskell has functions in the mathematical sense: they are
+        purely computations which cannot be altered by anything external.
+        Moreover, the computation can be performed at any time—or even
+        never, if its result is never needed.
+      </p><p id="x_KE"><a name="x_KE"></a>
+        Clearly, then, we need some other tool to work with I/O.  That tool in
+        Haskell is called <span class="emphasis"><em>actions</em></span>.  Actions resemble
+        functions.  They do nothing when they are defined, but perform some
+        task when they are invoked.  I/O actions are defined within the <span class="type">IO</span>
+        monad.  Monads are a powerful way of chaining functions
+        together
+        purely and are covered in <a class="xref" href="monads.html" title="Chapter 14. Monads">Chapter 14, <i>Monads</i></a>.  It's not
+        necessary to understand monads in order to understand I/O.  Just
+        understand that the result type of actions is "tagged" with 
+        <span class="type">IO</span>.  Let's take a look at some types:
+      </p><pre id="id614534" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type putStrLn</code></strong>
+putStrLn :: String -&gt; IO ()
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type getLine</code></strong>
+getLine :: IO String
+</pre><p id="x_LE"><a name="x_LE"></a>
+        The type of <code class="literal">putStrLn</code> is just like any other function.  The function takes
+        one parameter and returns an <code class="literal">IO ()</code>.  This
+        <code class="literal">IO ()</code> is the action.  You can store and pass actions
+        in pure code if you wish, though this isn't frequently done.  An action doesn't do
+        anything until it is invoked.  Let's look at an example of this:
+      </p><a name="actions.hs:all"></a><pre id="actions.hs:all" class="programlisting">-- file: ch07/actions.hs
+str2action :: String -&gt; IO ()
+str2action input = putStrLn ("Data: " ++ input)
+
+list2actions :: [String] -&gt; [IO ()]
+list2actions = map str2action
+
+numbers :: [Int]
+numbers = [1..10]
+
+strings :: [String]
+strings = map show numbers
+
+actions :: [IO ()]
+actions = list2actions strings
+
+printitall :: IO ()
+printitall = runall actions
+
+-- Take a list of actions, and execute each of them in turn.
+runall :: [IO ()] -&gt; IO ()
+runall [] = return ()
+runall (firstelem:remainingelems) = 
+    do firstelem
+       runall remainingelems
+
+main = do str2action "Start of the program"
+          printitall
+          str2action "Done!"</pre><p id="x_ME"><a name="x_ME"></a>
+        <code class="literal">str2action</code> is a function that takes one parameter
+        and returns an <code class="literal">IO ()</code>.  As you can see at the end of
+        <code class="literal">main</code>, you could use this directly in another action and it will print
+        out a line right away.  Or, you can store—but not execute—the
+        action from pure code.  You can see an example of that in
+        <code class="literal">list2actions</code>—we use <code class="literal">map</code> over
+        <code class="literal">str2action</code> and return a list of actions, just like
+        we would with other pure data.  You can see that everything up through
+        <code class="literal">printitall</code> is built up with pure tools.
+      </p><p id="x_NE"><a name="x_NE"></a>
+        Although we define <code class="literal">printitall</code>, it doesn't get
+        executed until its action is evaluated somewhere else.  Notice in
+        <code class="literal">main</code> how we use <code class="literal">str2action</code> as
+        an I/O action to be executed, but earlier we used it outside of the I/O
+        monad and assembled results into a list.
+      </p><p id="x_OE"><a name="x_OE"></a>
+        You could think of it this way: every statement, except <code class="literal">let</code>, in a <code class="literal">do</code> block must
+        yield an I/O action which will be executed.
+      </p><p id="x_PE"><a name="x_PE"></a>
+        The call to <code class="literal">printitall</code> finally executes all those actions.  Actually,
+        since Haskell is lazy, the actions aren't generated until here either.
+      </p><p id="x_QE"><a name="x_QE"></a>
+        When you run the program, your output will look like this:
+      </p><pre id="id614731" class="screen">
+Data: Start of the program
+Data: 1
+Data: 2
+Data: 3
+Data: 4
+Data: 5
+Data: 6
+Data: 7
+Data: 8
+Data: 9
+Data: 10
+Data: Done!
+      </pre><p id="x_RE"><a name="x_RE"></a>
+        We can actually write this in a much more compact way.  Consider this
+        revision of the example:
+      </p><a name="actions2.hs:all"></a><pre id="actions2.hs:all" class="programlisting">-- file: ch07/actions2.hs
+str2message :: String -&gt; String
+str2message input = "Data: " ++ input
+
+str2action :: String -&gt; IO ()
+str2action = putStrLn . str2message
+
+numbers :: [Int]
+numbers = [1..10]
+
+main = do str2action "Start of the program"
+          mapM_ (str2action . show) numbers
+          str2action "Done!"</pre><p id="x_SE"><a name="x_SE"></a>
+        Notice in <code class="literal">str2action</code> the use of the standard
+        function composition operator.  In <code class="literal">main</code>, there's a call to <code class="literal">mapM_</code>.
+        This function is similar to <code class="literal">map</code>.  It takes a function and a list.
+        The function supplied to <code class="literal">mapM_</code> is an I/O action that is executed for
+        every item in the list.  <code class="literal">mapM_</code> throws out the result of the function,
+        though you can use <code class="literal">mapM</code> to return a list of I/O results if you want
+        them.  Take a look at their types:
+      </p><a name="map.ghci:all"></a><pre id="map.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type mapM</code></strong>
+mapM :: (Monad m) =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type mapM_</code></strong>
+mapM_ :: (Monad m) =&gt; (a -&gt; m b) -&gt; [a] -&gt; m ()
+</pre><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_TE"><a name="x_TE"></a>
+          These functions actually work for more than just I/O; they work for any
+          <code class="literal">Monad</code>.  For now, wherever you see "M", just think "IO".
+          Also, functions that end with an underscore typically
+          discard their result.
+        </p></td></tr></table></div><p id="x_UE"><a name="x_UE"></a>
+        Why a <code class="literal">mapM</code> when we already have <code class="literal">map</code>?  Because <code class="literal">map</code> is a pure
+        function that returns a list.  It doesn't—and can't—actually
+        execute actions directly.  <code class="literal">mapM</code> is a utility that lives in the
+        <span class="type">IO</span> monad and thus can actually execute the
+        actions.<sup>[<a name="id614894" href="#ftn.id614894" class="footnote">25</a>]</sup>
+      </p><p id="x_VE"><a name="x_VE"></a>
+        Going back to <code class="literal">main</code>, <code class="literal">mapM_</code> applies 
+        <code class="literal">(str2action . show)</code> to every element in
+        <code class="literal">numbers</code>.  <code class="literal">show</code> converts each number to a <code class="literal">String</code>
+        and <code class="literal">str2action</code> converts each <code class="literal">String</code> to an action.
+        <code class="literal">mapM_</code> combines these individual actions into one big
+        action that prints out lines.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.bind">Sequencing</h3></div></div></div><p id="x_WE"><a name="x_WE"></a>
+        <code class="literal">do</code> blocks are actually shortcut notations for joining
+        together actions.  There are two operators that you can use instead of <code class="literal">do</code>
+        blocks: <code class="literal">&gt;&gt;</code> and <code class="literal">&gt;&gt;=</code>.  Let's look at their types in <span class="command"><strong>ghci</strong></span>:
+      </p><a name="sequence.ghci:all"></a><pre id="sequence.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (&gt;&gt;)</code></strong>
+(&gt;&gt;) :: (Monad m) =&gt; m a -&gt; m b -&gt; m b
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (&gt;&gt;=)</code></strong>
+(&gt;&gt;=) :: (Monad m) =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</pre><p id="x_XE"><a name="x_XE"></a>
+        The <code class="literal">&gt;&gt;</code> operator sequences two actions together: the first action is performed,
+        then the second.  The result of the computation is the result of the
+        second action.  The result of the first action is thrown away.  This is similar to
+        simply having a line in a <code class="literal">do</code> block.  You might write
+        <code class="literal">putStrLn "line 1" <code class="literal">&gt;&gt;</code> putStrLn "line 2"</code> to
+        test this out.  It will print out two lines, discard the
+        result from the first <code class="literal">putStrLn</code>, and provide
+        the result from the second.
+      </p><p id="x_YE"><a name="x_YE"></a>
+        The <code class="literal">&gt;&gt;=</code> operator runs an action, then passes its result to a
+        function that returns an
+        action.  That second action is run as well, and the result of the entire
+        expression is the result of that second action.  As an
+        example, you could write <code class="literal">getLine <code class="literal">&gt;&gt;=</code>
+        putStrLn</code>, which would read a line from the keyboard
+        and then display it back out.
+      </p><p id="x_ZE"><a name="x_ZE"></a>
+        Let's re-write one of our examples to avoid <code class="literal">do</code> blocks.  Remember
+        this example from the start of the chapter?
+      </p><pre id="id615133" class="programlisting">-- file: ch07/basicio.hs
+main = do
+       putStrLn "Greetings!  What is your name?"
+       inpStr &lt;- getLine
+       putStrLn $ "Welcome to Haskell, " ++ inpStr ++ "!"</pre><p id="x_aE"><a name="x_aE"></a>
+        Let's write that without a <code class="literal">do</code> block:
+      </p><a name="basicio-nodo.hs:all"></a><pre id="basicio-nodo.hs:all" class="programlisting">-- file: ch07/basicio-nodo.hs
+main =
+    putStrLn "Greetings!  What is your name?" &gt;&gt;
+    getLine &gt;&gt;=
+    (\inpStr -&gt; putStrLn $ "Welcome to Haskell, " ++ inpStr ++ "!")</pre><p id="x_bE"><a name="x_bE"></a>
+        The Haskell compiler internally performans a translation just like
+        this when you define a <code class="literal">do</code> block.
+      </p><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_iN"><a name="x_iN"></a>Forgetting how to use <code class="literal">\</code> (lambda
+        expressions)?  See <a class="xref" href="functional-programming.html#fp.anonymous" title="Anonymous (lambda) functions">the section called “Anonymous (lambda) functions”</a>.
+        </p></td></tr></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="io.return">The True Nature of Return</h3></div></div></div><p id="x_jN"><a name="x_jN"></a>
+        Earlier in this chapter, we mentioned that <code class="literal">return</code> is probably not
+        what it looks like.  Many languages have a keyword named <code class="literal">return</code>
+        that aborts execution of a function immediately and returns a value
+        to the caller.
+      </p><p id="x_kN"><a name="x_kN"></a>
+        The Haskell <code class="literal">return</code> function is quite different.  In Haskell,
+        <code class="literal">return</code> is used to wrap data in a monad.  When speaking about I/O,
+        <code class="literal">return</code> is used to take pure data and bring it into the IO monad.
+      </p><p id="x_lN"><a name="x_lN"></a>
+        Now, why would we want to do that?  Remember that anything whose
+        result depends on I/O must be within the IO monad.  So if we are
+        writing a function that performs I/O, then a pure computation, we
+        will need to use <code class="literal">return</code> to make this pure computation the proper
+        return value of the function.  Otherwise, a type error would
+        occur.  Here's an example:
+      </p><a name="return1.hs:all"></a><pre id="return1.hs:all" class="programlisting">-- file: ch07/return1.hs
+import Data.Char(toUpper)
+
+isGreen :: IO Bool
+isGreen =
+    do putStrLn "Is green your favorite color?"
+       inpStr &lt;- getLine
+       return ((toUpper . head $ inpStr) == 'Y')</pre><p id="x_mN"><a name="x_mN"></a>
+        We have a pure computation that yields a <code class="literal">Bool</code>.  That computation is
+        passed to <code class="literal">return</code>, which puts it into the <span class="type">IO</span> monad.  Since it is
+        the last value in the <code class="literal">do</code> block, it becomes the return value of
+        <code class="literal">isGreen</code>, but this is not because we used the
+        <code class="literal">return</code> function.
+      </p><p id="x_nN"><a name="x_nN"></a>
+        Here's a version of the same program with the pure computation broken
+        out into a separate function.  This helps keep the pure code
+        separate, and can also make the intent more clear.
+      </p><a name="return2.hs:all"></a><pre id="return2.hs:all" class="programlisting">-- file: ch07/return2.hs
+import Data.Char(toUpper)
+
+isYes :: String -&gt; Bool
+isYes inpStr = (toUpper . head $ inpStr) == 'Y'
+
+isGreen :: IO Bool
+isGreen =
+    do putStrLn "Is green your favorite color?"
+       inpStr &lt;- getLine
+       return (isYes inpStr)</pre><p id="x_oN"><a name="x_oN"></a>
+        Finally, here's a contrived example to show that <code class="literal">return</code> truly does
+        not have to occur at the end of a <code class="literal">do</code> block.  In practice, it
+        usually is, but it need not be so.
+      </p><a name="return3.hs:all"></a><pre id="return3.hs:all" class="programlisting">-- file: ch07/return3.hs
+returnTest :: IO ()
+returnTest =
+    do one &lt;- return 1
+       let two = 2
+       putStrLn $ show (one + two)</pre><p id="x_pN"><a name="x_pN"></a>
+        Notice that we used <code class="literal">&lt;-</code> in combination with <code class="literal">return</code>, but <code class="literal">let</code>
+        in combination with the simple literal.  That's because we needed
+        both values to be pure in order to add them, and <code class="literal">&lt;-</code> pulls
+        things out of monads, effectively reversing the effect of <code class="literal">return</code>.
+        Run this in <span class="command"><strong>ghci</strong></span> and you'll see <code class="literal">3</code> displayed, as
+        expected.
+      </p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="io.imperative">Is Haskell Really Imperative?</h2></div></div></div><p id="x_cE"><a name="x_cE"></a>
+      These <code class="literal">do</code> blocks may look a lot like an imperative language.  After
+      all, you're giving commands to run in sequence most of the time.
+    </p><p id="x_dE"><a name="x_dE"></a>
+      But Haskell remains a lazy language at its core.  While it is necessary
+      to sequence actions for I/O at times, this is done using tools that are
+      part of Haskell already.  Haskell achieves a nice separation of I/O
+      from the rest of the language through the <span class="type">IO</span> monad as well.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="io.sideeffects">Side Effects with Lazy I/O</h2></div></div></div><p id="x_eE"><a name="x_eE"></a>
+      Earlier in this chapter, you read about <code class="literal">hGetContents</code>.
+      We explained that the <code class="literal">String</code> it returns can be used in pure code.
+    </p><p id="x_fE"><a name="x_fE"></a>
+      We need to get a bit more specific about what side effects are.  When
+      we say Haskell has no side-effects, what exactly does that mean?
+    </p><p id="x_gE"><a name="x_gE"></a>
+      At a certain level, side-effects are always possible.  A poorly-written
+      loop, even if written in pure code, could cause the system's RAM to be
+      exhausted and the machine to crash.  Or it could cause data to be
+      swapped to disk.
+    </p><p id="x_hE"><a name="x_hE"></a>
+      When we speak of no side effects, we mean that pure code in Haskell
+      can't run commands that trigger side effects.  Pure functions 
+      can't modify a global variable, request I/O, or run a command to take
+      down a system.
+    </p><p id="x_iE"><a name="x_iE"></a>
+      When you have a <code class="literal">String</code> from <code class="literal">hGetContents</code> that is passed to a pure
+      function, the function has no idea that this <code class="literal">String</code> is backed by a
+      disk file.  It will behave just as it always would, but processing that
+      <code class="literal">String</code> may cause the environment to issue I/O commands.  The pure
+      function isn't issuing them; they are happening as a result of the
+      processing the pure function is doing, just as with the example of
+      swapping RAM to disk.
+    </p><p id="x_jE"><a name="x_jE"></a>
+      In some cases, you may need more control over exactly when your I/O
+      occurs.  Perhaps you are reading data interactively from the user, or
+      via a pipe from another program, and need to communicate directly with
+      the user.  In those cases, <code class="literal">hGetContents</code> will probably not be
+      appropriate.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="io.buffering">Buffering</h2></div></div></div><p id="x_kE"><a name="x_kE"></a>
+      The I/O subsystem is one of the slowest parts of a modern
+      computer.  
+      Completing a
+      write to disk can take thousands of times as long as a write to memory.
+      A write over the network can be hundreds or thousands of times slower
+      yet.  Even if your operation doesn't directly communicate with the disk—perhaps because the data is cached—I/O still involves a system call,
+      which slows things down by itself.
+    </p><p id="x_lE"><a name="x_lE"></a>
+      For this reason, modern operating systems and programming languages
+      both provide  tools to help programs perform better where I/O is
+      concerned.  The operating system typically performs caching—storing
+      frequently-used pieces of data in memory for faster access.
+    </p><p id="x_mE"><a name="x_mE"></a>
+      Programming languages typically perform buffering.  This means that
+      they may request one large chunk of data from the operating system,
+      even if the code underneath is processing data one character at a time.
+      By doing this, they can achieve remarkable performance gains because
+      each request for I/O to the operating system carries a
+      processing cost.  Buffering allows us to read the same amount of
+      data with far fewer I/O requests.
+    </p><p id="x_nE"><a name="x_nE"></a>
+      Haskell, too, provides buffering in its I/O system.
+      In many cases, it is even on by
+      default.  Up till now, we have pretended it isn't there.  Haskell
+      usually is good about picking a good default buffering mode.  But this
+      default is rarely the fastest.  If you have speed-critical I/O code,
+      changing buffering could make a significant impact on your program.
+    </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id615631">Buffering Modes</h3></div></div></div><p id="x_oE"><a name="x_oE"></a>
+        There are three different buffering modes in Haskell.  They are
+        defined as the <code class="literal">BufferMode</code> type: <code class="literal">NoBuffering</code>,
+        <code class="literal">LineBuffering</code>, and <code class="literal">BlockBuffering</code>.
+      </p><p id="x_pE"><a name="x_pE"></a><code class="literal">NoBuffering</code>
+        does just what it sounds like—no buffering.  Data read via functions
+        like <code class="literal">hGetLine</code> will be read from the OS one character at a time.  Data
+        written will be written immediately, and also often will be written one
+        character at a time.  For this reason, <code class="literal">NoBuffering</code> is usually a very
+        poor performer and not suitable for general-purpose use.
+      </p><p id="x_qE"><a name="x_qE"></a>
+        <code class="literal">LineBuffering</code> causes the output buffer to be written whenever the
+        newline character is output, or whenever it gets too large.  On
+        input, it will usually attempt to read whatever data is available in
+        chunks until it first sees the newline character.  When reading from
+        the terminal, it should return data immediately after each press of
+        Enter.  It is often a reasonable default.
+      </p><p id="x_rE"><a name="x_rE"></a>
+        <code class="literal">BlockBuffering</code> causes Haskell to read or write data in fixed-size
+        chunks when possible.  This is the best performer when processing
+        large amounts of data in batch, even if that data is line-oriented.
+        However, it is unusable for interactive programs because it will
+        block input until a full block is read.  <code class="literal">BlockBuffering</code> accepts one
+        parameter of type <code class="literal">Maybe</code>: if <code class="literal">Nothing</code>, it will use an implementation-defined buffer
+        size.  Or, you can use a setting such as <code class="literal">Just 4096</code> to 
+        set the buffer to 4096 bytes.
+      </p><p id="x_sE"><a name="x_sE"></a>
+        The default buffering mode is dependent upon the operating system and
+        Haskell implementation.    You can
+        ask the system for the current buffering mode by calling
+        <code class="literal">hGetBuffering</code>.  The current mode can be set with
+        <code class="literal">hSetBuffering</code>, which accepts a <code class="literal">Handle</code> and <code class="literal">BufferMode</code>.  As an example, you can say 
+        <code class="literal">hSetBuffering stdin (BlockBuffering Nothing)</code>.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id615793">Flushing The Buffer</h3></div></div></div><p id="x_tE"><a name="x_tE"></a>
+        For any type of buffering, you may sometimes want to force Haskell to
+        write out any data that has been saved up in the buffer.
+        There are a few
+        times when this will happen automatically: a call to <code class="literal">hClose</code>, for
+        instance.  Sometimes you may want to instead call <code class="literal">hFlush</code>, which
+        will force any pending data to be written immediately.  This
+        could be useful when the <code class="literal">Handle</code> is a network socket and you
+        want the data to be transmitted immediately, or when you want
+        to make the data on disk available to other programs that
+        might be reading it concurrently.
+      </p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="io.args">Reading Command-Line Arguments</h2></div></div></div><p id="x_uE"><a name="x_uE"></a>
+      Many command-line programs are interested in the parameters passed on
+      the command line.  <code class="literal">System.Environment.getArgs</code>
+      returns <code class="literal">IO [String]</code> listing each argument.
+      This is the same as <code class="literal">argv</code> in C, starting with
+      <code class="literal">argv[1]</code>.  The program name
+      (<code class="literal">argv[0]</code> in C) is available from <code class="literal">System.Environment.getProgName</code>.
+    </p><p id="x_wE"><a name="x_wE"></a>
+      The <code class="literal">System.Console.GetOpt</code> module provides some tools
+      for parsing command-line options.  If you have a program with complex
+      options, you may find it useful.  You can find an example of its
+      use in <a class="xref" href="software-transactional-memory.html#stm.urlcheck.parseArgs" title="Command line parsing">the section called “Command line parsing”</a>.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="io.environ">Environment Variables</h2></div></div></div><p id="x_xE"><a name="x_xE"></a>
+      If you need to read environment variables, you can use one of two
+      functions in <code class="literal">System.Environment</code>: <code class="literal">getEnv</code> or
+      <code class="literal">getEnvironment</code>.  <code class="literal">getEnv</code> looks for a specific variable and raises an
+      exception if it doesn't exist.  <code class="literal">getEnvironment</code> returns the whole
+      environment as a <code class="literal">[(String, String)]</code>, and then you
+      can use functions such as <code class="literal">lookup</code> to find the environment entry you
+      want.
+    </p><p id="x_yE"><a name="x_yE"></a>
+      Setting environment variables is not defined in a cross-platform way in
+      Haskell.  If you are on a POSIX platform such as Linux, you can use
+      <code class="literal">putEnv</code> or <code class="literal">setEnv</code> from the
+      <code class="literal">System.Posix.Env</code> module.  Environment setting is not
+      defined for Windows.
+    </p></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id610368" href="#id610368" class="para">15</a>] </sup>You will later see that it has a more
+        broad application, but it is sufficient to think of it in these terms
+        for now.</p></div><div class="footnote"><p><sup>[<a name="ftn.id610538" href="#id610538" class="para">16</a>] </sup>The type of the value
+          <code class="literal">()</code> is also <code class="literal">()</code>.</p></div><div class="footnote"><p><sup>[<a name="ftn.id611551" href="#id611551" class="para">17</a>] </sup>Imperative programmers might be
+      concerned that such a recursive call would consume large amounts
+      of stack space.  In Haskell, recursion is a common idiom, and
+      the compiler is smart enough to avoid consuming much stack by
+      optimizing tail-recursive functions.</p></div><div class="footnote"><p><sup>[<a name="ftn.id612101" href="#id612101" class="para">18</a>] </sup>If there was a bug in the C
+            part of a hybrid program, for instance</p></div><div class="footnote"><p><sup>[<a name="ftn.id612475" href="#id612475" class="para">19</a>] </sup>For more information on
+        interoperating with other programs with pipes, see <a class="xref" href="systems-programming-in-haskell.html#systems.piping" title="Extended Example: Piping">the section called “Extended Example: Piping”</a>.</p></div><div class="footnote"><p><sup>[<a name="ftn.id612589" href="#id612589" class="para">20</a>] </sup>POSIX programmers may be interested to know that
+            this corresponds to <code class="literal">unlink()</code> in
+            C.</p></div><div class="footnote"><p><sup>[<a name="ftn.id612980" href="#id612980" class="para">21</a>] </sup><code class="literal">hGetContents</code> will be discussed in
+          <a class="xref" href="io.html#io.lazy" title="Lazy I/O">the section called “Lazy I/O”</a></p></div><div class="footnote"><p><sup>[<a name="ftn.id613259" href="#id613259" class="para">22</a>] </sup>There is
+            also a shortcut function <code class="literal">getContents</code> that operates on standard
+            input.</p></div><div class="footnote"><p><sup>[<a name="ftn.id613298" href="#id613298" class="para">23</a>] </sup>More precisely, it is the entire data from the
+            current position of the file pointer to the end of the
+            file.</p></div><div class="footnote"><p><sup>[<a name="ftn.id613923" href="#id613923" class="para">24</a>] </sup>Excepting I/O errors such as a full
+            disk, of course.</p></div><div class="footnote"><p><sup>[<a name="ftn.id614894" href="#id614894" class="para">25</a>] </sup>Technically speaking, <code class="literal">mapM</code> combines
+        a bunch of separate I/O actions into one big action.  The
+        separate actions are executed when the big action is.</p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="using-typeclasses.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="efficient-file-processing-regular-expressions-and-file-name-matching.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 6. Using Typeclasses </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 8. Efficient file processing, regular expressions, and file name matching</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

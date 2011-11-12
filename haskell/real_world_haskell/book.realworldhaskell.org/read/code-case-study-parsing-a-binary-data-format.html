@@ -1,0 +1,852 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 10. Code case study: parsing a binary data format</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="io-case-study-a-library-for-searching-the-filesystem.html" title="Chapter 9. I/O case study: a library for searching the filesystem"><link rel="next" href="testing-and-quality-assurance.html" title="Chapter 11. Testing and quality assurance"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 10. Code case study: parsing a binary data format</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="io-case-study-a-library-for-searching-the-filesystem.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="testing-and-quality-assurance.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="binary"><div class="titlepage"><div><div><h2 class="title">Chapter 10. Code case study: parsing a binary data format</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="code-case-study-parsing-a-binary-data-format.html#id624562">Greyscale files</a></span></dt><dt><span class="sect1"><a href="code-case-study-parsing-a-binary-data-format.html#id624638">Parsing a raw PGM file</a></span></dt><dt><span class="sect1"><a href="code-case-study-parsing-a-binary-data-format.html#id624895">Getting rid of boilerplate code</a></span></dt><dt><span class="sect1"><a href="code-case-study-parsing-a-binary-data-format.html#binary.implicit">Implicit state</a></span></dt><dd><dl><dt><span class="sect2"><a href="code-case-study-parsing-a-binary-data-format.html#id625296">The identity parser</a></span></dt><dt><span class="sect2"><a href="code-case-study-parsing-a-binary-data-format.html#id625467">Record syntax, updates, and pattern matching</a></span></dt><dt><span class="sect2"><a href="code-case-study-parsing-a-binary-data-format.html#id625576">A more interesting parser</a></span></dt><dt><span class="sect2"><a href="code-case-study-parsing-a-binary-data-format.html#id625735">Obtaining and modifying the parse state</a></span></dt><dt><span class="sect2"><a href="code-case-study-parsing-a-binary-data-format.html#id625864">Reporting parse errors</a></span></dt><dt><span class="sect2"><a href="code-case-study-parsing-a-binary-data-format.html#id625932">Chaining parsers together</a></span></dt></dl></dd><dt><span class="sect1"><a href="code-case-study-parsing-a-binary-data-format.html#binary.functor">Introducing functors</a></span></dt><dd><dl><dt><span class="sect2"><a href="code-case-study-parsing-a-binary-data-format.html#id626723">Constraints on type definitions are bad</a></span></dt><dt><span class="sect2"><a href="code-case-study-parsing-a-binary-data-format.html#binary.fmap">Infix use of fmap</a></span></dt><dt><span class="sect2"><a href="code-case-study-parsing-a-binary-data-format.html#id627053">Flexible instances</a></span></dt><dt><span class="sect2"><a href="code-case-study-parsing-a-binary-data-format.html#binary.functor.laws">Thinking more about functors</a></span></dt></dl></dd><dt><span class="sect1"><a href="code-case-study-parsing-a-binary-data-format.html#id627398">Writing a functor instance for Parse</a></span></dt><dt><span class="sect1"><a href="code-case-study-parsing-a-binary-data-format.html#id627617">Using functors for parsing</a></span></dt><dt><span class="sect1"><a href="code-case-study-parsing-a-binary-data-format.html#id627853">Rewriting our PGM parser</a></span></dt><dt><span class="sect1"><a href="code-case-study-parsing-a-binary-data-format.html#id627990">Future directions</a></span></dt><dt><span class="sect1"><a href="code-case-study-parsing-a-binary-data-format.html#id628045">Exercises</a></span></dt></dl></div><p id="x_sQ"><a name="x_sQ"></a>In this chapter, we'll discuss a common task:
+    parsing a binary file.  We will use this task for two purposes.
+    Our first is indeed to talk a little about parsing, but our main
+    goal is to talk about program organisation, refactoring, and
+    “<span class="quote">boilerplate removal</span>”.  We will demonstrate how you
+    can tidy up repetitious code, and set the stage for our discussion
+    of monads in <a class="xref" href="monads.html" title="Chapter 14. Monads">Chapter 14, <i>Monads</i></a>.</p><p id="x_tQ"><a name="x_tQ"></a>The file formats that we will work with come from
+    the netpbm suite, an ancient and venerable collection of programs
+    and file formats for working with bitmap images.  These file
+    formats have the dual advantages of wide use and being fairly
+    easy, though not completely trivial, to parse.  Most importantly
+    for our convenience, netpbm files are not compressed.</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id624562">Greyscale files</h2></div></div></div><p id="x_uQ"><a name="x_uQ"></a>The name of netpbm's greyscale file format is PGM
+      (“<span class="quote">portable grey map</span>”).  It is actually not one
+      format, but two; the “<span class="quote">plain</span>” (or “<span class="quote">P2</span>”)
+      format is encoded as ASCII, while the more common
+      “<span class="quote">raw</span>” (“<span class="quote">P5</span>”) format is mostly
+      binary.</p><p id="x_vQ"><a name="x_vQ"></a>A file of either format starts with a header, which in turn
+      begins with a “<span class="quote">magic</span>” string describing the format.
+      For a plain file, the string is <code class="literal">P2</code>, and for
+      raw, it's <code class="literal">P5</code>. The magic string is followed by
+      white space, then by three numbers: the width, height, and
+      maximum grey value of the image. These numbers are represented
+      as ASCII decimal numbers, separated by white space.</p><p id="x_wQ"><a name="x_wQ"></a>After the maximum grey value comes the image data.  In a raw
+      file, this is a string of binary values.  In a plain file, the
+      values are represented as ASCII decimal numbers separated by
+      single space characters.</p><p id="x_xQ"><a name="x_xQ"></a>A raw file can contain a sequence of images, one after the
+      other, each with its own header.  A plain file contains only one
+      image.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id624638">Parsing a raw PGM file</h2></div></div></div><p id="x_yQ"><a name="x_yQ"></a>For our first try at a parsing function, we'll only worry
+      about raw PGM files. We'll write our PGM parser as a
+      <span class="emphasis"><em>pure</em></span> function. It's not responsible for
+      obtaining the data to parse, just for the actual parsing.  This
+      is a common approach in Haskell programs. By separating the
+      reading of the data from what we subsequently do with it, we
+      gain flexibility in where we take the data from.</p><p id="x_zQ"><a name="x_zQ"></a>We'll use the <span class="type">ByteString</span> type to
+      store our greymap data, because it's compact.  Since the header
+      of a PGM file is ASCII text, but its body is binary, we import
+      both the text- and binary-oriented <span class="type">ByteString</span>
+      modules.</p><a name="PNM.hs:imports"></a><pre id="PNM.hs:imports" class="programlisting">-- file: ch10/PNM.hs
+import qualified Data.ByteString.Lazy.Char8 as L8
+import qualified Data.ByteString.Lazy as L
+import Data.Char (isSpace)</pre><p id="x_AR"><a name="x_AR"></a>For our purposes, it doesn't matter whether we use a lazy or
+      strict <span class="type">ByteString</span>, so we've somewhat arbitrarily
+      chosen the lazy kind.</p><p id="x_CR"><a name="x_CR"></a>We'll use a straightforward data type to represent PGM
+      images.</p><a name="PNM.hs:Greymap"></a><pre id="PNM.hs:Greymap" class="programlisting">-- file: ch10/PNM.hs
+data Greymap = Greymap {
+      greyWidth :: Int
+    , greyHeight :: Int
+    , greyMax :: Int
+    , greyData :: L.ByteString
+    } deriving (Eq)</pre><p id="x_DR"><a name="x_DR"></a>Normally, a Haskell <span class="type">Show</span> instance should
+      produce a string representation that we can read back by calling
+      <code class="function">read</code>.  However, for a bitmap graphics file,
+      this would potentially produce huge text strings, for example if
+      we were to <code class="function">show</code> a photo.  For this reason,
+      we're not going to let the compiler automatically derive a
+      <span class="type">Show</span> instance for us: we'll write our own,
+      and intentionally simplify it.</p><a name="PNM.hs:Show"></a><pre id="PNM.hs:Show" class="programlisting">-- file: ch10/PNM.hs
+instance Show Greymap where
+    show (Greymap w h m _) = "Greymap " ++ show w ++ "x" ++ show h ++
+                             " " ++ show m</pre><p id="x_ER"><a name="x_ER"></a>Because our <span class="type">Show</span> instance intentionally avoids
+      printing the bitmap data, there's no point in writing a
+      <span class="type">Read</span> instance, as we can't reconstruct a valid
+      <span class="type">Greymap</span> from the result of
+      <code class="function">show</code>.</p><p id="x_FR"><a name="x_FR"></a>Here's an obvious type for our parsing function.</p><a name="PNM.hs:parseP5.type"></a><pre id="PNM.hs:parseP5.type" class="programlisting">-- file: ch10/PNM.hs
+parseP5 :: L.ByteString -&gt; Maybe (Greymap, L.ByteString)</pre><p id="x_GR"><a name="x_GR"></a>This will take a <span class="type">ByteString</span>, and if the parse
+      succeeds, it will return a single parsed <span class="type">Greymap</span>, along
+      with the string that remains after parsing.  That residual
+      string will</p><p id="x_HR"><a name="x_HR"></a>Our parsing function has to consume a little bit
+      of its input at a time.  First, we need to assure ourselves that
+      we're really looking at a raw PGM file; then we need to parse
+      the numbers from the remainder of the header; then we consume
+      the bitmap data.  Here's an obvious way to express this, which
+      we will use as a base for later improvements.</p><a name="PNM.hs:parseP5"></a><pre id="PNM.hs:parseP5" class="programlisting">-- file: ch10/PNM.hs
+matchHeader :: L.ByteString -&gt; L.ByteString -&gt; Maybe L.ByteString
+
+-- "nat" here is short for "natural number"
+getNat :: L.ByteString -&gt; Maybe (Int, L.ByteString)
+
+getBytes :: Int -&gt; L.ByteString
+         -&gt; Maybe (L.ByteString, L.ByteString)
+
+parseP5 s =
+  case matchHeader (L8.pack "P5") s of
+    Nothing -&gt; Nothing
+    Just s1 -&gt;
+      case getNat s1 of
+        Nothing -&gt; Nothing
+        Just (width, s2) -&gt;
+          case getNat (L8.dropWhile isSpace s2) of
+            Nothing -&gt; Nothing
+            Just (height, s3) -&gt;
+              case getNat (L8.dropWhile isSpace s3) of
+                Nothing -&gt; Nothing
+                Just (maxGrey, s4)
+                  | maxGrey &gt; 255 -&gt; Nothing
+                  | otherwise -&gt;
+                      case getBytes 1 s4 of
+                        Nothing -&gt; Nothing
+                        Just (_, s5) -&gt;
+                          case getBytes (width * height) s5 of
+                            Nothing -&gt; Nothing
+                            Just (bitmap, s6) -&gt;
+                              Just (Greymap width height maxGrey bitmap, s6)</pre><p id="x_IR"><a name="x_IR"></a>This is a very literal piece of code, performing
+      all of the parsing in one long staircase of <code class="literal">case</code> expressions.
+      Each function returns the residual <span class="type">ByteString</span> left
+      over after it has consumed all it needs from its input string.
+      We pass each residual string along to the next step.  We
+      deconstruct each result in turn, either returning
+      <code class="code">Nothing</code> if the parsing step failed, or building up
+      a piece of the final result as we proceed. Here are the bodies
+      of the functions that we apply during parsing.  Their types are
+      commented out because we already presented them above.</p><a name="PNM.hs:parseP5.functions"></a><pre id="PNM.hs:parseP5.functions" class="programlisting">-- file: ch10/PNM.hs
+-- L.ByteString -&gt; L.ByteString -&gt; Maybe L.ByteString
+matchHeader prefix str
+    | prefix `L8.isPrefixOf` str
+        = Just (L8.dropWhile isSpace (L.drop (L.length prefix) str))
+    | otherwise
+        = Nothing
+
+-- L.ByteString -&gt; Maybe (Int, L.ByteString)
+getNat s = case L8.readInt s of
+             Nothing -&gt; Nothing
+             Just (num,rest)
+                 | num &lt;= 0    -&gt; Nothing
+                 | otherwise -&gt; Just (fromIntegral num, rest)
+
+-- Int -&gt; L.ByteString -&gt; Maybe (L.ByteString, L.ByteString)
+getBytes n str = let count           = fromIntegral n
+                     both@(prefix,_) = L.splitAt count str
+                 in if L.length prefix &lt; count
+                    then Nothing
+                    else Just both</pre></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id624895">Getting rid of boilerplate code</h2></div></div></div><p id="x_JR"><a name="x_JR"></a>While our <code class="function">parseP5</code> function
+      works, the style in which we wrote it is somehow not pleasing.
+      Our code marches steadily to the right of the screen, and it's
+      clear that a slightly more complicated function would soon run
+      out of visual real estate.  We repeat a pattern of
+      constructing and then deconstructing <span class="type">Maybe</span> values,
+      only continuing if a particular value matches
+      <code class="function">Just</code>.  All of the similar <code class="literal">case</code>
+      expressions act as “<span class="quote">boilerplate code</span>”, busywork
+      that obscures what we're really trying to do.  In short, this
+      function is begging for some abstraction and refactoring.</p><p id="x_KR"><a name="x_KR"></a>If we step back a little, we can see two patterns.  First is
+      that many of the functions that we apply have similar types.  Each
+      takes a <span class="type">ByteString</span> as its last argument, and
+      returns <span class="type">Maybe</span> something else.  Secondly, every step
+      in the “<span class="quote">ladder</span>” of our <code class="function">parseP5</code>
+      function deconstructs a <span class="type">Maybe</span> value, and either
+      fails or passes the unwrapped result to a function.</p><p id="x_LR"><a name="x_LR"></a>We can quite easily write a function that captures this
+      second pattern.</p><a name="PNM.hs:bind"></a><pre id="PNM.hs:bind" class="programlisting">-- file: ch10/PNM.hs
+(&gt;&gt;?) :: Maybe a -&gt; (a -&gt; Maybe b) -&gt; Maybe b
+Nothing &gt;&gt;? _ = Nothing
+Just v  &gt;&gt;? f = f v</pre><p id="x_MR"><a name="x_MR"></a>The <code class="function">(&gt;&gt;?)</code> function acts
+	very simply: it takes a value as its left argument, and a
+	function as its right. If the value is not
+	<code class="literal">Nothing</code>, it applies the function to
+	whatever is wrapped in the <code class="code">Just</code> constructor.  We
+	have defined our function as an operator so that we can use it
+	to chain functions together.  Finally, we haven't provided a
+	fixity declaration for <code class="function">(&gt;&gt;?)</code>, so it
+	defaults to <code class="code">infixl 9</code> (left associative, strongest
+	operator precedence).  In other words, <code class="code">a &gt;&gt;? b
+	  &gt;&gt;? c</code> will be evaluated from left to right, as
+	<code class="code">(a &gt;&gt;? b) &gt;&gt;? c)</code>.</p><p id="x_NR"><a name="x_NR"></a>With this chaining function in hand, we can take a second
+      try at our parsing function.</p><a name="PNM.hs:parseP5_take2"></a><pre id="PNM.hs:parseP5_take2" class="programlisting">-- file: ch10/PNM.hs
+parseP5_take2 :: L.ByteString -&gt; Maybe (Greymap, L.ByteString)
+parseP5_take2 s =
+    matchHeader (L8.pack "P5") s       &gt;&gt;?
+    \s -&gt; skipSpace ((), s)           &gt;&gt;?
+    (getNat . snd)                    &gt;&gt;?
+    skipSpace                         &gt;&gt;?
+    \(width, s) -&gt;   getNat s         &gt;&gt;?
+    skipSpace                         &gt;&gt;?
+    \(height, s) -&gt;  getNat s         &gt;&gt;?
+    \(maxGrey, s) -&gt; getBytes 1 s     &gt;&gt;?
+    (getBytes (width * height) . snd) &gt;&gt;?
+    \(bitmap, s) -&gt; Just (Greymap width height maxGrey bitmap, s)
+
+skipSpace :: (a, L.ByteString) -&gt; Maybe (a, L.ByteString)
+skipSpace (a, s) = Just (a, L8.dropWhile isSpace s)</pre><p id="x_OR"><a name="x_OR"></a>The key to understanding this function is to think about the
+      chaining.  On the left hand side of each
+      <code class="function">(&gt;&gt;?)</code> is a <span class="type">Maybe</span> value;
+      on the right is a function that returns a <span class="type">Maybe</span>
+      value.  Each left-and-right-sides expression is thus of type
+      <span class="type">Maybe</span>, suitable for passing to the following
+      <code class="function">(&gt;&gt;?)</code> expression.</p><p id="x_PR"><a name="x_PR"></a>The other change that we've made to improve readability is
+      add a <code class="function">skipSpace</code> function.  With these
+      changes, we've halved the number of lines of code compared to
+      our original parsing function.  By removing the boilerplate
+      <code class="literal">case</code> expressions, we've made the code easier to follow.</p><p id="x_QR"><a name="x_QR"></a>While we warned against overuse of anonymous functions in
+      <a class="xref" href="functional-programming.html#fp.anonymous" title="Anonymous (lambda) functions">the section called “Anonymous (lambda) functions”</a>, we use several in our chain
+      of functions here.  Because these functions are so small, we
+      wouldn't improve readability by giving them names.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="binary.implicit">Implicit state</h2></div></div></div><p id="x_RR"><a name="x_RR"></a>We're not yet out of the woods.  Our code
+      explicitly passes pairs around, using one element for an
+      intermediate part of the parsed result and the other for the
+      current residual <span class="type">ByteString</span>.  If we want to extend
+      the code, for example to track the number of bytes we've
+      consumed so that we can report the location of a parse failure,
+      we already have eight different spots that we will need to
+      modify, just to pass a three-tuple around.</p><p id="x_EF1"><a name="x_EF1"></a>This approach makes even a small body of code difficult to
+      change.  The problem lies with our use of pattern matching to
+      pull values out of each pair: we have embedded the knowledge
+      that we are always working with pairs straight into our code.
+      As pleasant and helpful as pattern matching is, it can lead us
+      in some undesirable directions if we do not use it
+      carefully.</p><p id="x_TR"><a name="x_TR"></a>Let's do something to address the inflexibility of
+      our new code.  First, we will change the type of state that our
+      parser uses.</p><a name="Parse.hs:ParseState"></a><pre id="Parse.hs:ParseState" class="programlisting">-- file: ch10/Parse.hs
+data ParseState = ParseState {
+      string :: L.ByteString
+    , offset :: Int64           -- imported from Data.Int
+    } deriving (Show)</pre><p id="x_UR"><a name="x_UR"></a>In our switch to an algebraic data type, we added
+      the ability to track both the current residual string and the
+      offset into the original string since we started parsing.  The
+      more important change was our use of record syntax: we can now
+      <span class="emphasis"><em>avoid</em></span> pattern matching on the pieces of
+      state that we pass around, and use the accessor functions
+      <code class="function">string</code> and <code class="function">offset</code>
+      instead.</p><p id="x_FF1"><a name="x_FF1"></a>We have given our parsing state a name.  When we name
+      something, it can become easier to reason about.  For example,
+      we can now look at parsing as a kind of function: it consumes a
+      parsing state, and produces both a new parsing state and some
+      other piece of information.  We can directly represent this as a
+      Haskell type.</p><a name="Parse.hs:simpleParse"></a><pre id="Parse.hs:simpleParse" class="programlisting">-- file: ch10/Parse.hs
+simpleParse :: ParseState -&gt; (a, ParseState)
+simpleParse = undefined</pre><p id="x_GF1"><a name="x_GF1"></a>To provide more help to our users, we would like to
+      report an error message if parsing fails.  This only requires a
+      minor tweak to the type of our parser.</p><a name="Parse.hs:betterParse"></a><pre id="Parse.hs:betterParse" class="programlisting">-- file: ch10/Parse.hs
+betterParse :: ParseState -&gt; Either String (a, ParseState)
+betterParse = undefined</pre><p id="x_HF1"><a name="x_HF1"></a>In order to future-proof our code, it is best if we do not
+      expose the implementation of our parser to our users.  When we
+      explicitly used pairs for state earlier, we found ourselves in
+      trouble almost immediately, once we considered extending the
+      capabilities of our parser.  To stave off a repeat of that
+      difficulty, we will hide the details of our parser type using a
+      <code class="code">newtype</code> declaration.</p><a name="Parse.hs:Parse"></a><pre id="Parse.hs:Parse" class="programlisting">-- file: ch10/Parse.hs
+newtype Parse a = Parse {
+      runParse :: ParseState -&gt; Either String (a, ParseState)
+    }</pre><p id="x_IF1"><a name="x_IF1"></a>Remember that the <code class="code">newtype</code> definition is just a
+      compile-time wrapper around a function, so it has no run-time
+      overhead.  When we want to use the function, we will apply the
+      <code class="function">runParser</code> accessor.</p><p id="x_VR"><a name="x_VR"></a>If we do not export the <code class="code">Parse</code> value
+      constructor from our module, we can ensure that nobody else will
+      be able to accidentally create a parser, nor will they be able
+      to inspect its internals via pattern matching.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id625296">The identity parser</h3></div></div></div><p id="x_XR"><a name="x_XR"></a>Let's try to define a simple parser, the
+	<span class="emphasis"><em>identity</em></span> parser.  All it does is turn
+	whatever it is passed into the result of the parse.  In this
+	way, it somewhat resembles the <code class="function">id</code>
+	function.</p><a name="Parse.hs:identity"></a><pre id="Parse.hs:identity" class="programlisting">-- file: ch10/Parse.hs
+identity :: a -&gt; Parse a
+identity a = Parse (\s -&gt; Right (a, s))</pre><p id="x_YR"><a name="x_YR"></a>This function leaves the parse state untouched,
+	and uses its argument as the result of the parse.  We wrap the
+	body of the function in our <span class="type">Parse</span> type to satisfy
+	the type checker.  How can we use this wrapped function to
+	parse something?</p><p id="x_ZR"><a name="x_ZR"></a>The first thing we must do is peel off the
+	<code class="function">Parse</code> wrapper so that we can get at the
+	function inside.  We do so using the
+	<code class="function">runParse</code> function. We also need to
+	construct a <span class="type">ParseState</span>, then run our parsing
+	function on that parse state.  Finally, we'd like to separate
+	the result of the parse from the final
+	<span class="type">ParseState</span>.</p><a name="Parse.hs:parse"></a><pre id="Parse.hs:parse" class="programlisting">-- file: ch10/Parse.hs
+parse :: Parse a -&gt; L.ByteString -&gt; Either String a
+parse parser initState
+    = case runParse parser (ParseState initState 0) of
+        Left err          -&gt; Left err
+        Right (result, _) -&gt; Right result</pre><p id="x_aR"><a name="x_aR"></a>Because neither the
+	<code class="function">identity</code> parser nor the
+	<code class="function">parse</code> function examines the parse state,
+	we don't even need to create an input string in order to try
+	our code.</p><a name="parse.ghci:parse"></a><pre id="parse.ghci:parse" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load Parse</code></strong>
+[1 of 2] Compiling PNM              ( PNM.hs, interpreted )
+[2 of 2] Compiling Parse            ( Parse.hs, interpreted )
+Ok, modules loaded: PNM, Parse.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type parse (identity 1) undefined</code></strong>
+parse (identity 1) undefined :: (Num t) =&gt; Either String t
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (identity 1) undefined</code></strong>
+Loading package array-0.1.0.0 ... linking ... done.
+Loading package bytestring-0.9.0.1 ... linking ... done.
+Right 1
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (identity "foo") undefined</code></strong>
+Right "foo"
+</pre><p id="x_bR"><a name="x_bR"></a>A parser that doesn't even inspect its input
+	might not seem interesting, but we will shortly see that in
+	fact it is useful.   Meanwhile, we have gained confidence that
+	our types are correct and that we understand the basic
+	workings of our code.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id625467">Record syntax, updates, and pattern matching</h3></div></div></div><p id="x_JF1"><a name="x_JF1"></a>Record syntax is useful for more than just accessor
+	functions: we can use it to copy and partly change an existing
+	value.  In use, the notation looks like this.</p><a name="Parse.hs:modifyOffset"></a><pre id="Parse.hs:modifyOffset" class="programlisting">-- file: ch10/Parse.hs
+modifyOffset :: ParseState -&gt; Int64 -&gt; ParseState
+modifyOffset initState newOffset =
+    initState { offset = newOffset }</pre><p id="x_KF1"><a name="x_KF1"></a>This creates a new <span class="type">ParseState</span> value identical
+	to <code class="varname">initState</code>, but with its
+	<code class="code">offset</code> field set to whatever value we specify for
+	<code class="code">newOffset</code>.</p><a name="parse.ghci:modifyOffset"></a><pre id="parse.ghci:modifyOffset" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let before = ParseState (L8.pack "foo") 0</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let after = modifyOffset before 3</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>before</code></strong>
+ParseState {string = Chunk "foo" Empty, offset = 0}
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>after</code></strong>
+ParseState {string = Chunk "foo" Empty, offset = 3}
+</pre><p id="x_LF1"><a name="x_LF1"></a>We can set as many fields as we want inside the curly
+	braces, separating them using commas.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id625576">A more interesting parser</h3></div></div></div><p id="x_MF1"><a name="x_MF1"></a>Let's focus now on writing a parser that does something
+	meaningful.  We're not going to get too ambitious yet: all we
+	want to do is parse a single byte.</p><a name="Parse.hs:parseByte"></a><pre id="Parse.hs:parseByte" class="programlisting">-- file: ch10/Parse.hs
+-- import the Word8 type from Data.Word
+parseByte :: Parse Word8
+parseByte =
+    getState ==&gt; \initState -&gt;
+    case L.uncons (string initState) of
+      Nothing -&gt;
+          bail "no more input"
+      Just (byte,remainder) -&gt;
+          putState newState ==&gt; \_ -&gt;
+          identity byte
+        where newState = initState { string = remainder,
+                                     offset = newOffset }
+              newOffset = offset initState + 1</pre><p id="x_cR"><a name="x_cR"></a>There are a number of new functions in our
+	definition.</p><p id="x_NF1"><a name="x_NF1"></a>The <code class="function">L8.uncons</code> function takes the
+	first element from a <span class="type">ByteString</span>.</p><a name="parse.ghci:uncons"></a><pre id="parse.ghci:uncons" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>L8.uncons (L8.pack "foo")</code></strong>
+Just ('f',Chunk "oo" Empty)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>L8.uncons L8.empty</code></strong>
+Nothing
+</pre><p id="x_OF1"><a name="x_OF1"></a>Our <code class="function">getState</code> function retrieves the
+	current parsing state, while <code class="function">putState</code>
+	replaces it.  The <code class="function">bail</code> function
+	terminates parsing and reports an error.  The
+	<code class="function">(==&gt;)</code> function chains parsers
+	together.  We will cover each of these functions
+	shortly.</p><div class="tip"><table border="0" summary="Tip: Hanging lambdas"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Hanging lambdas</th></tr><tr><td align="left" valign="top"><p id="x_qS"><a name="x_qS"></a>The definition of
+	  <code class="function">parseByte</code> has a visual style that we
+	  haven't discussed before. It contains anonymous functions in
+	  which the parameters and <code class="code"><code class="literal">-&gt;</code></code> sit at the
+	  end of a line, with the function's body following on the
+	  next line.</p><p id="x_rS"><a name="x_rS"></a>This style of laying out an anonymous function
+	  doesn't have an official name, so let's call it a
+	  “<span class="quote">hanging lambda</span>”.  Its main use is to make room
+	  for more text in the body of the function.  It also makes it
+	  more visually clear that there's a relationship between one
+	  function and the one that follows.  Often, for instance, the
+	  result of the first function is being passed as a parameter
+	  to the second.</p></td></tr></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id625735">Obtaining and modifying the parse state</h3></div></div></div><p id="x_fR"><a name="x_fR"></a>Our <code class="function">parseByte</code> function
+	doesn't take the parse state as an argument.  Instead, it has
+	to call <code class="function">getState</code> to get a copy of the
+	state, and <code class="function">putState</code> to replace the
+	current state with a new one.</p><a name="Parse.hs:getPut"></a><pre id="Parse.hs:getPut" class="programlisting">-- file: ch10/Parse.hs
+getState :: Parse ParseState
+getState = Parse (\s -&gt; Right (s, s))
+
+putState :: ParseState -&gt; Parse ()
+putState s = Parse (\_ -&gt; Right ((), s))</pre><p id="x_gR"><a name="x_gR"></a>When reading these functions, recall that the
+	left element of the tuple is the result of a
+	<span class="type">Parse</span>, while the right is the current
+	<span class="type">ParseState</span>.  This makes it easier to follow what
+	these functions are doing.</p><p id="x_hR"><a name="x_hR"></a>The <code class="function">getState</code> function
+	extracts the current parsing state, so that the caller can
+	access the string. The <code class="function">putState</code> function
+	replaces the current parsing state with a new one.  This
+	becomes the state that will be seen by the next function in
+	the <code class="function">(==&gt;)</code> chain.</p><p id="x_iR"><a name="x_iR"></a>These functions let us move explicit state
+	handling into the bodies of only those functions that need it.
+	Many functions don't need to know what the current state is,
+	and so they'll never call <code class="function">getState</code> or
+	<code class="function">putState</code>.  This lets us write more
+	compact code than our earlier parser, which had to pass tuples
+	around by hand.  We will see the effect in some of the code
+	that follows.</p><p id="x_jR"><a name="x_jR"></a>We've packaged up the details of the parsing
+	state into the <span class="type">ParseState</span> type, and we work with
+	it using accessors instead of pattern matching.  Now that the
+	parsing state is passed around implicitly, we gain a further
+	benefit.  If we want to add more information to the parsing
+	state, all we need to do is modify the definition of
+	<span class="type">ParseState</span>, and the bodies of whatever functions
+	need the new information.  Compared to our earlier parsing
+	code, where all of our state was exposed through pattern
+	matching, this is much more modular: the only code we affect
+	is code that needs the new information.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id625864">Reporting parse errors</h3></div></div></div><p id="x_kR"><a name="x_kR"></a>We carefully defined our <span class="type">Parse</span> type to
+	accommodate the possibility of failure.  The
+	<code class="function">(==&gt;)</code> combinator checks for a parse
+	failure and stops parsing if it runs into a failure.  But we
+	haven't yet introduced the <code class="function">bail</code> function,
+	which we use to report a parse error.</p><a name="Parse.hs:bail"></a><pre id="Parse.hs:bail" class="programlisting">-- file: ch10/Parse.hs
+bail :: String -&gt; Parse a
+bail err = Parse $ \s -&gt; Left $
+           "byte offset " ++ show (offset s) ++ ": " ++ err</pre><p id="x_lR"><a name="x_lR"></a>After we call <code class="function">bail</code>,
+	<code class="function">(==&gt;)</code> will successfully pattern match
+	on the <code class="code">Left</code> constructor that it wraps the error
+	message with, and it will not invoke the next parser in the
+	chain.  This will cause the error message to percolate back
+	through the chain of prior callers.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id625932">Chaining parsers together</h3></div></div></div><p id="x_PF1"><a name="x_PF1"></a>The <code class="function">(==&gt;)</code> function serves a
+	similar purpose to our earlier
+	<code class="function">(&gt;&gt;?)</code> function: it is
+	“<span class="quote">glue</span>” that lets us chain functions
+	together.</p><a name="Parse.hs:bind"></a><pre id="Parse.hs:bind" class="programlisting">-- file: ch10/Parse.hs
+(==&gt;) :: Parse a -&gt; (a -&gt; Parse b) -&gt; Parse b
+
+firstParser ==&gt; secondParser  =  Parse chainedParser
+  where chainedParser initState   =
+          case runParse firstParser initState of
+            Left errMessage -&gt;
+                Left errMessage
+            Right (firstResult, newState) -&gt;
+                runParse (secondParser firstResult) newState</pre><p id="x_dR"><a name="x_dR"></a>The body of <code class="function">(==&gt;)</code> is
+	interesting, and ever so slightly tricky.  Recall that the
+	<span class="type">Parse</span> type represents really a function inside a
+	wrapper.  Since <code class="function">(==&gt;)</code> lets us chain
+	two <span class="type">Parse</span> values to produce a third, it must
+	return a function, in a wrapper.</p><p id="x_QF1"><a name="x_QF1"></a>The function doesn't really “<span class="quote">do</span>” much: it
+	just creates a <span class="emphasis"><em>closure</em></span> to remember the
+	values of <code class="varname">firstParser</code> and
+	<code class="varname">secondParser</code>.</p><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_RF1"><a name="x_RF1"></a>A closure is simply the pairing of a function with its
+	  <span class="emphasis"><em>environment</em></span>, the bound variables that
+	  it can see.  Closures are commonplace in Haskell.  For
+	  instance, the section <code class="function">(+5)</code> is a
+	  closure.  An implementation must record the value
+	  <code class="code">5</code> as the second argument to the
+	  <code class="function">(+)</code> operator, so that the resulting
+	  function can add <code class="code">5</code> to whatever value it is
+	  passed.</p></td></tr></table></div><p id="x_SF1"><a name="x_SF1"></a>This closure will not be unwrapped and applied until we
+	apply <code class="function">parse</code>.  At that point, it will be
+	applied with a <span class="type">ParseState</span>.  It will apply
+	<code class="varname">firstParser</code> and inspect its result.  If
+	that parse fails, the closure will fail too.  Otherwise, it
+	will pass the result of the parse and the new
+	<span class="type">ParseState</span> to
+	<code class="varname">secondParser</code>.</p><p id="x_eR"><a name="x_eR"></a>This is really quite fancy and subtle stuff:
+	we're effectively passing the <span class="type">ParseState</span> down the
+	chain of <span class="type">Parse</span> values in a hidden argument.
+	(We'll be revisiting this kind of code in a few chapters, so
+	don't fret if that description seemed dense.)</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="binary.functor">Introducing functors</h2></div></div></div><p id="x_mR"><a name="x_mR"></a>We're by now thoroughly familiar with the
+      <code class="function">map</code> function, which applies a function to
+      every element of a list, returning a list of possibly a
+      different type.</p><a name="functor.ghci:map"></a><pre id="functor.ghci:map" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>map (+1) [1,2,3]</code></strong>
+[2,3,4]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>map show [1,2,3]</code></strong>
+["1","2","3"]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type map show</code></strong>
+map show :: (Show a) =&gt; [a] -&gt; [String]
+</pre><p id="x_nR"><a name="x_nR"></a>This <code class="function">map</code>-like activity can be useful in
+      other instances.  For example, consider a binary tree.</p><a name="TreeMap.hs:Tree"></a><pre id="TreeMap.hs:Tree" class="programlisting">-- file: ch10/TreeMap.hs
+data Tree a = Node (Tree a) (Tree a)
+            | Leaf a
+              deriving (Show)</pre><p id="x_oR"><a name="x_oR"></a>If we want to take a tree of strings and turn it into a tree
+      containing the lengths of those strings, we could write a
+      function to do this.</p><a name="TreeMap.hs:treeLengths"></a><pre id="TreeMap.hs:treeLengths" class="programlisting">-- file: ch10/TreeMap.hs
+treeLengths (Leaf s) = Leaf (length s)
+treeLengths (Node l r) = Node (treeLengths l) (treeLengths r)</pre><p id="x_pR"><a name="x_pR"></a>Now that our eyes are attuned to looking for patterns that
+      we can turn into generally useful functions, we can see a
+      possible case of this here.</p><a name="TreeMap.hs:treeMap"></a><pre id="TreeMap.hs:treeMap" class="programlisting">-- file: ch10/TreeMap.hs
+treeMap :: (a -&gt; b) -&gt; Tree a -&gt; Tree b
+treeMap f (Leaf a)   = Leaf (f a)
+treeMap f (Node l r) = Node (treeMap f l) (treeMap f r)</pre><p id="x_qR"><a name="x_qR"></a>As we might hope, <code class="function">treeLengths</code> and
+      <code class="function">treeMap length</code> give the same
+      results.</p><a name="functor.ghci:treeLengths"></a><pre id="functor.ghci:treeLengths" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let tree = Node (Leaf "foo") (Node (Leaf "x") (Leaf "quux"))</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>treeLengths tree</code></strong>
+Node (Leaf 3) (Node (Leaf 1) (Leaf 4))
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>treeMap length tree</code></strong>
+Node (Leaf 3) (Node (Leaf 1) (Leaf 4))
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>treeMap (odd . length) tree</code></strong>
+Node (Leaf True) (Node (Leaf True) (Leaf False))
+</pre><p id="x_rR"><a name="x_rR"></a>Haskell provides a well-known typeclass to further
+      generalise <code class="function">treeMap</code>.  This typeclass is
+      named <span class="type">Functor</span>, and it defines one function,
+      <code class="function">fmap</code>.</p><a name="TreeMap.hs:Functor"></a><pre id="TreeMap.hs:Functor" class="programlisting">-- file: ch10/TreeMap.hs
+class Functor f where
+    fmap :: (a -&gt; b) -&gt; f a -&gt; f b</pre><p id="x_sR"><a name="x_sR"></a>We can think of <code class="function">fmap</code> as a kind of
+      <span class="emphasis"><em>lifting</em></span> function, as we introduced in <a class="xref" href="io-case-study-a-library-for-searching-the-filesystem.html#find.predicate.lift" title="Avoiding boilerplate with lifting">the section called “Avoiding boilerplate with lifting”</a>.  It takes a function over
+      ordinary values <span class="type">a -&gt; b</span> and lifts it to become a
+      function over containers <span class="type">f a -&gt; f b</span>, where
+      <code class="varname">f</code> is the container type.</p><p id="x_tR"><a name="x_tR"></a>If we substitute <span class="type">Tree</span> for the type variable
+      <code class="varname">f</code>, for example, the type of
+      <code class="function">fmap</code> is identical to the type of
+      <code class="function">treeMap</code>, and in fact we can use
+      <code class="function">treeMap</code> as the implementation of
+      <code class="function">fmap</code> over <span class="type">Tree</span>s.</p><a name="TreeMap.hs:Functor.Tree"></a><pre id="TreeMap.hs:Functor.Tree" class="programlisting">-- file: ch10/TreeMap.hs
+instance Functor Tree where
+    fmap = treeMap</pre><p id="x_uR"><a name="x_uR"></a>We can also use <code class="function">map</code> as the
+      implementation of <code class="function">fmap</code> for lists.</p><a name="TreeMap.hs:Functor.List"></a><pre id="TreeMap.hs:Functor.List" class="programlisting">-- file: ch10/TreeMap.hs
+instance Functor [] where
+    fmap = map</pre><p id="x_vR"><a name="x_vR"></a>We can now use <code class="function">fmap</code> over different
+      container types.</p><a name="functor.ghci:fmap"></a><pre id="functor.ghci:fmap" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>fmap length ["foo","quux"]</code></strong>
+[3,4]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>fmap length (Node (Leaf "Livingstone") (Leaf "I presume"))</code></strong>
+Node (Leaf 11) (Leaf 9)
+</pre><p id="x_wR"><a name="x_wR"></a>The Prelude defines instances of
+      <span class="type">Functor</span> for several common types, notably lists and
+      <span class="type">Maybe</span>.</p><a name="TreeMap.hs:Functor.Maybe"></a><pre id="TreeMap.hs:Functor.Maybe" class="programlisting">-- file: ch10/TreeMap.hs
+instance Functor Maybe where
+    fmap _ Nothing  = Nothing
+    fmap f (Just x) = Just (f x)</pre><p id="x_xR"><a name="x_xR"></a>The instance for <span class="type">Maybe</span> makes it particularly
+      clear what an <code class="function">fmap</code> implementation needs to
+      do.  The implementation must have a sensible behaviour for each
+      of a type's constructors.  If a value is wrapped in
+      <code class="code">Just</code>, for example, the <code class="function">fmap</code>
+      implementation calls the function on the unwrapped value, then
+      rewraps it in <code class="code">Just</code>.</p><p id="x_yR"><a name="x_yR"></a>The definition of <span class="type">Functor</span> imposes a few obvious
+      restrictions on what we can do with <code class="function">fmap</code>.
+      For example, we can only make instances of
+      <code class="function">Functor</code> from types that have exactly one
+      type parameter.</p><p id="x_AS"><a name="x_AS"></a>We can't write an <code class="function">fmap</code> implementation
+      for <span class="type">Either a b</span> or <span class="type">(a, b)</span>, for example,
+      because these have two type parameters. We also can't write
+      one for <span class="type">Bool</span> or <span class="type">Int</span>, as they have no
+      type parameters.</p><p id="x_BS"><a name="x_BS"></a>In addition, we can't place any constraints on our type
+      definition.  What does this mean?  To illustrate, let's first
+      look at a normal <code class="literal">data</code> definition and its <code class="code">Functor</code>
+      instance.</p><a name="ValidFunctor.hs:Foo"></a><pre id="ValidFunctor.hs:Foo" class="programlisting">-- file: ch10/ValidFunctor.hs
+data Foo a = Foo a
+           
+instance Functor Foo where
+    fmap f (Foo a) = Foo (f a)</pre><p id="x_CS"><a name="x_CS"></a>When we define a new type, we can add a type
+      constraint just after the <code class="literal">data</code> keyword as follows.</p><a name="ValidFunctor.hs:Bar"></a><pre id="ValidFunctor.hs:Bar" class="programlisting">-- file: ch10/ValidFunctor.hs
+data Eq a =&gt; Bar a = Bar a
+
+instance Functor Bar where
+    fmap f (Bar a) = Bar (f a)</pre><p id="x_DS"><a name="x_DS"></a>This says that we can only put a type <code class="varname">a</code> into a <span class="type">Foo</span> if <code class="varname">a</code> is a member of the <code class="code">Eq</code>
+      typeclass.  However, the constraint renders it impossible to
+      write a <code class="code">Functor</code> instance for
+      <span class="type">Bar</span>.</p><a name="functor.ghci:invalid"></a><pre id="functor.ghci:invalid" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load ValidFunctor</code></strong>
+[1 of 1] Compiling Main             ( ValidFunctor.hs, interpreted )
+
+ValidFunctor.hs:13:12:
+    Could not deduce (Eq a) from the context (Functor Bar)
+      arising from a use of `Bar' at ValidFunctor.hs:13:12-16
+    Possible fix:
+      add (Eq a) to the context of the type signature for `fmap'
+    In the pattern: Bar a
+    In the definition of `fmap': fmap f (Bar a) = Bar (f a)
+    In the definition for method `fmap'
+
+ValidFunctor.hs:13:21:
+    Could not deduce (Eq b) from the context (Functor Bar)
+      arising from a use of `Bar' at ValidFunctor.hs:13:21-29
+    Possible fix:
+      add (Eq b) to the context of the type signature for `fmap'
+    In the expression: Bar (f a)
+    In the definition of `fmap': fmap f (Bar a) = Bar (f a)
+    In the definition for method `fmap'
+Failed, modules loaded: none.
+</pre><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id626723">Constraints on type definitions are bad</h3></div></div></div><p id="x_ES"><a name="x_ES"></a>Adding a constraint to a type definition is
+	essentially never a good idea.  It has the effect of forcing
+	you to add type constraints to <span class="emphasis"><em>every</em></span>
+	function that will operate on values of that type.  Let's say
+	that we need a stack data structure that we want to be able to
+	query to see whether its elements obey some ordering.  Here's
+	a naive definition of the data type.</p><a name="TypeConstraint.hs:OrdStack"></a><pre id="TypeConstraint.hs:OrdStack" class="programlisting">-- file: ch10/TypeConstraint.hs
+data (Ord a) =&gt; OrdStack a = Bottom
+                           | Item a (OrdStack a)
+                             deriving (Show)</pre><p id="x_FS"><a name="x_FS"></a>If we want to write a function that checks the
+	stack to see whether it is increasing (i.e. every element is
+	bigger than the element below it), we'll obviously need an
+	<code class="code">Ord</code> constraint to perform the pairwise
+	comparisons.</p><a name="TypeConstraint.hs:isIncreasing"></a><pre id="TypeConstraint.hs:isIncreasing" class="programlisting">-- file: ch10/TypeConstraint.hs
+isIncreasing :: (Ord a) =&gt; OrdStack a -&gt; Bool
+isIncreasing (Item a rest@(Item b _))
+    | a &lt; b     = isIncreasing rest
+    | otherwise = False
+isIncreasing _  = True</pre><p id="x_GS"><a name="x_GS"></a>However, because we wrote the type constraint on the type
+	definition, that constraint ends up infecting places where it
+	isn't needed: we need to add the <code class="code">Ord</code>
+	constraint to <code class="function">push</code>, which does not care
+	about the ordering of elements on the stack.</p><a name="TypeConstraint.hs:push"></a><pre id="TypeConstraint.hs:push" class="programlisting">-- file: ch10/TypeConstraint.hs
+push :: (Ord a) =&gt; a -&gt; OrdStack a -&gt; OrdStack a
+push a s = Item a s</pre><p id="x_HS"><a name="x_HS"></a>Try removing that <code class="code">Ord</code> constraint above, and
+	the definition of <code class="function">push</code> will fail to
+	typecheck.</p><p id="x_IS"><a name="x_IS"></a>This is why our attempt to write a <code class="code">Functor</code>
+	instance for <span class="type">Bar</span> failed earlier: it would have
+	required an <code class="code">Eq</code> constraint to somehow get
+	retroactively added to the signature of
+	<code class="function">fmap</code>.</p><p id="x_JS"><a name="x_JS"></a>Now that we've tentatively established that putting a type
+	constraint on a type definition is a misfeature of Haskell,
+	what's a more sensible alternative?  The answer is simply to
+	omit type constraints from type definitions, and instead place
+	them on the functions that need them.</p><p id="x_KS"><a name="x_KS"></a>In this example, we can drop the <code class="code">Ord</code>
+	constraints from <code class="code">OrdStack</code> and
+	<code class="function">push</code>.  It needs to stay on
+	<code class="function">isIncreasing</code>, which otherwise couldn't
+	call <code class="function">(&lt;)</code>.  We now have the
+	constraints where they actually matter.  This has the further
+	benefit of making the type signatures better document the true
+	requirements of each function.</p><p id="x_LS"><a name="x_LS"></a>Most Haskell container types follow this
+	pattern.  The <span class="type">Map</span> type in the
+	<code class="code">Data.Map</code> module requires that its keys be
+	ordered, but the type itself does not have such a constraint.
+	The constraint is expressed on functions like
+	<code class="function">insert</code>, where it's actually needed, and
+	not on <code class="function">size</code>, where ordering isn't
+	used.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="binary.fmap">Infix use of fmap</h3></div></div></div><p id="x_MS"><a name="x_MS"></a>Quite often, you'll see <code class="function">fmap</code> called
+	as an operator.</p><a name="functor.ghci:operator"></a><pre id="functor.ghci:operator" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>(1+) `fmap` [1,2,3] ++ [4,5,6]</code></strong>
+[2,3,4,4,5,6]
+</pre><p id="x_NS"><a name="x_NS"></a>Perhaps strangely, plain old <code class="function">map</code> is
+	almost never used in this way.</p><p id="x_OS"><a name="x_OS"></a>One possible reason for the stickiness of the
+	<code class="function">fmap</code>-as-operator meme is that this use
+	lets us omit parentheses from its second argument.  Fewer
+	parentheses leads to reduced mental juggling while reading a
+	function.</p><a name="functor.ghci:prefix"></a><pre id="functor.ghci:prefix" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>fmap (1+) ([1,2,3] ++ [4,5,6])</code></strong>
+[2,3,4,5,6,7]
+</pre><p id="x_PS"><a name="x_PS"></a>If you really want to use
+	<code class="function">fmap</code> as an operator, the
+	<code class="code">Control.Applicative</code> module contains an operator
+	<code class="function">(&lt;$&gt;)</code> that is an alias for
+	<code class="function">fmap</code>.  The <code class="code">$</code> in its name
+	appeals to the similarity between applying a function to its
+	arguments (using the <code class="function">($)</code> operator) and
+	lifting a function into a functor.  We will see that this
+	works well for parsing when we return to the code that we have
+	been writing.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id627053">Flexible instances</h3></div></div></div><p id="x_QS"><a name="x_QS"></a>You might hope that we could write a <span class="type">Functor</span>
+	instance for the type <span class="type">Either Int b</span>, which has one
+	type parameter.</p><a name="EitherInt.hs:Functor"></a><pre id="EitherInt.hs:Functor" class="programlisting">-- file: ch10/EitherInt.hs
+instance Functor (Either Int) where
+    fmap _ (Left n) = Left n
+    fmap f (Right r) = Right (f r)</pre><p id="x_RS"><a name="x_RS"></a>However, the type system of Haskell 98 cannot guarantee
+	that checking the constraints on such an instance will
+	terminate.  A non-terminating constraint check may send a
+	compiler into an infinite loop, so instances of this form are
+	forbidden.</p><a name="functor.ghci:EitherInt"></a><pre id="functor.ghci:EitherInt" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load EitherInt</code></strong>
+[1 of 1] Compiling Main             ( EitherInt.hs, interpreted )
+
+EitherInt.hs:2:0:
+    Illegal instance declaration for `Functor (Either Int)'
+        (All instance types must be of the form (T a1 ... an)
+         where a1 ... an are distinct type *variables*
+         Use -XFlexibleInstances if you want to disable this.)
+    In the instance declaration for `Functor (Either Int)'
+Failed, modules loaded: none.
+</pre><p id="x_SS"><a name="x_SS"></a><span class="application">GHC</span> has a more powerful type system than the base
+	Haskell 98 standard.  It operates in Haskell 98 compatibility
+	mode by default, for maximal portability.  We can instruct it
+	to allow more flexible instances using a special compiler
+	directive.</p><a name="EitherIntFlexible.hs:Functor"></a><pre id="EitherIntFlexible.hs:Functor" class="programlisting">-- file: ch10/EitherIntFlexible.hs
+{-# LANGUAGE FlexibleInstances #-}
+
+instance Functor (Either Int) where
+    fmap _ (Left n)  = Left n
+    fmap f (Right r) = Right (f r)</pre><p id="x_TS"><a name="x_TS"></a>The directive is embedded in the specially formatted
+	<code class="code">LANGUAGE</code> pragma.</p><p id="x_VS"><a name="x_VS"></a>With our <span class="type">Functor</span> instance in hand, let's try
+	out <code class="function">fmap</code> on <span class="type">Either
+	  Int</span>.</p><a name="functor.ghci:EitherIntFlexible"></a><pre id="functor.ghci:EitherIntFlexible" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:load EitherIntFlexible</code></strong>
+[1 of 1] Compiling Main             ( EitherIntFlexible.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>fmap (== "cheeseburger") (Left 1 :: Either Int String)</code></strong>
+Left 1
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>fmap (== "cheeseburger") (Right "fries" :: Either Int String)</code></strong>
+Right False
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="binary.functor.laws">Thinking more about functors</h3></div></div></div><p id="x_WS"><a name="x_WS"></a>We've made a few implicit assumptions about how functors
+	ought to work.  It's helpful to make these explicit and to
+	think of them as rules to follow, because this lets us treat
+	functors as uniform, well-behaved objects.  We have only two
+	rules to remember, and they're simple.</p><p id="x_XS"><a name="x_XS"></a>Our first rule is that a functor must preserve
+	<span class="emphasis"><em>identity</em></span>.  That is, applying <code class="code">fmap
+	  id</code> to a value should give us back an identical
+	value.</p><a name="functor.ghci:id"></a><pre id="functor.ghci:id" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>fmap id (Node (Leaf "a") (Leaf "b"))</code></strong>
+Node (Leaf "a") (Leaf "b")
+</pre><p id="x_YS"><a name="x_YS"></a>Our second rule is that functors must be
+	<span class="emphasis"><em>composable</em></span>. That is, composing two uses
+	of <code class="function">fmap</code> should give the same result as
+	one <code class="function">fmap</code> with the same functions
+	composed.</p><a name="functor.ghci:composition"></a><pre id="functor.ghci:composition" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>(fmap even . fmap length) (Just "twelve")</code></strong>
+Just True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>fmap (even . length) (Just "twelve")</code></strong>
+Just True
+</pre><p id="x_ZS"><a name="x_ZS"></a>Another way of looking at these two rules is that a
+	functor must preserve <span class="emphasis"><em>shape</em></span>.  The
+	structure of a collection should not be affected by a functor;
+	only the values that it contains should change.</p><a name="functor.ghci:shape"></a><pre id="functor.ghci:shape" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>fmap odd (Just 1)</code></strong>
+Just True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>fmap odd Nothing</code></strong>
+Nothing
+</pre><p id="x_aS"><a name="x_aS"></a>If you're writing a <span class="type">Functor</span> instance, it's
+	useful to keep these rules in mind, and indeed to test them,
+	because the compiler can't check the rules we've listed above.
+	On the other hand, if you're simply <span class="emphasis"><em>using</em></span>
+	functors, the rules are “<span class="quote">natural</span>” enough that
+	there's no need to memorise them.  They just formalize a few
+	intuitive notions of “<span class="quote">do what I mean</span>”.  Here is a
+	pseudocode representation of the expected behavior.</p><a name="FunctorLaws.hs:fmap"></a><pre id="FunctorLaws.hs:fmap" class="programlisting">-- file: ch10/FunctorLaws.hs
+fmap id       ==  id
+fmap (f . g)  ==  fmap f . fmap g</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id627398">Writing a functor instance for Parse</h2></div></div></div><p id="x_bS"><a name="x_bS"></a>For the types we have surveyed so far, the behaviour we
+      ought to expect of <code class="function">fmap</code> has been obvious.
+      This is a little less clear for <span class="type">Parse</span>, due to its
+      complexity.  A reasonable guess is that the function we're
+      <code class="function">fmap</code>ping should be applied to the current
+      result of a parse, and leave the parse state untouched.</p><a name="Parse.hs:Functor"></a><pre id="Parse.hs:Functor" class="programlisting">-- file: ch10/Parse.hs
+instance Functor Parse where
+    fmap f parser = parser ==&gt; \result -&gt;
+                    identity (f result)</pre><p id="x_cS"><a name="x_cS"></a>This definition is easy to read, so let's
+      perform a few quick experiments to see if we're following our
+      rules for functors.</p><p id="x_dS"><a name="x_dS"></a>First, we'll check that identity is preserved.  Let's try
+      this first on a parse that ought to fail: parsing a byte
+      from an empty string (remember that
+      <code class="function">(&lt;$&gt;)</code> is <code class="function">fmap</code>).</p><a name="parse.ghci:id.fail"></a><pre id="parse.ghci:id.fail" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse parseByte L.empty</code></strong>
+Left "byte offset 0: no more input"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (id &lt;$&gt; parseByte) L.empty</code></strong>
+Left "byte offset 0: no more input"
+</pre><p id="x_eS"><a name="x_eS"></a>Good.  Now for a parse that should succeed.</p><a name="parse.ghci:id.success"></a><pre id="parse.ghci:id.success" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let input = L8.pack "foo"</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>L.head input</code></strong>
+102
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse parseByte input</code></strong>
+Right 102
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (id &lt;$&gt; parseByte) input</code></strong>
+Right 102
+</pre><p id="x_fS"><a name="x_fS"></a>By inspecting the results above, we can also see that our
+      functor instance is obeying our second rule, that of preserving
+      shape.  Failure is preserved as failure, and success as
+      success.</p><p id="x_gS"><a name="x_gS"></a>Finally, we'll ensure that composability is
+      preserved.</p><a name="parse.ghci:compose"></a><pre id="parse.ghci:compose" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse ((chr . fromIntegral) &lt;$&gt; parseByte) input</code></strong>
+Right 'f'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (chr &lt;$&gt; fromIntegral &lt;$&gt; parseByte) input</code></strong>
+Right 'f'
+</pre><p id="x_hS"><a name="x_hS"></a>On the basis of this brief inspection, our
+      <span class="type">Functor</span> instance appears to be well behaved.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id627617">Using functors for parsing</h2></div></div></div><p id="x_iS"><a name="x_iS"></a>All this talk of functors had a purpose: they often
+      let us write tidy, expressive code.  Recall the
+      <code class="function">parseByte</code> function that we introduced
+      earlier.  In recasting our PGM parser to use our new parser
+      infrastructure, we'll often want to work with ASCII characters
+      instead of <span class="type">Word8</span> values.</p><p id="x_jS"><a name="x_jS"></a>While we could write a <code class="function">parseChar</code>
+      function that has a similar structure to
+      <code class="function">parseByte</code>, we can now avoid this code
+      duplication by taking advantage of the functor nature of
+      <span class="type">Parse</span>.  Our functor takes the result of a parse and
+      applies a function to it, so what we need is a function that
+      turns a <span class="type">Word8</span> into a <span class="type">Char</span>.</p><a name="Parse.hs:parseChar"></a><pre id="Parse.hs:parseChar" class="programlisting">-- file: ch10/Parse.hs
+w2c :: Word8 -&gt; Char
+w2c = chr . fromIntegral
+
+-- import Control.Applicative
+parseChar :: Parse Char
+parseChar = w2c &lt;$&gt; parseByte</pre><p id="x_kS"><a name="x_kS"></a>We can also use functors to write a compact
+      “<span class="quote">peek</span>” function.  This returns <code class="code">Nothing</code>
+      if we're at the end of the input string.  Otherwise, it returns
+      the next character without consuming it (i.e. it inspects, but
+      doesn't disturb, the current parsing state).</p><a name="Parse.hs:peekByte"></a><pre id="Parse.hs:peekByte" class="programlisting">-- file: ch10/Parse.hs
+peekByte :: Parse (Maybe Word8)
+peekByte = (fmap fst . L.uncons . string) &lt;$&gt; getState</pre><p id="x_lS"><a name="x_lS"></a>The same lifting trick that let us define
+      <code class="function">parseChar</code> lets us write a compact
+      definition for <code class="function">peekChar</code>.</p><a name="Parse.hs:peekChar"></a><pre id="Parse.hs:peekChar" class="programlisting">-- file: ch10/Parse.hs
+peekChar :: Parse (Maybe Char)
+peekChar = fmap w2c &lt;$&gt; peekByte</pre><p id="x_mS"><a name="x_mS"></a>Notice that <code class="function">peekByte</code> and
+      <code class="function">peekChar</code> each make two calls to
+      <code class="function">fmap</code>, one of which is disguised as
+      <code class="function">(&lt;$&gt;)</code>. This is necessary because the
+      type <span class="type">Parse (Maybe a)</span> is a functor within a functor.
+      We thus have to lift a function twice to “<span class="quote">get it
+	into</span>” the inner functor.</p><p id="x_nS"><a name="x_nS"></a>Finally, we'll write another generic combinator, which is
+      the <span class="type">Parse</span> analogue of the familiar
+      <code class="function">takeWhile</code>: it consumes its input while its
+      predicate returns <code class="function">True</code>.</p><a name="Parse.hs:parseWhile"></a><pre id="Parse.hs:parseWhile" class="programlisting">-- file: ch10/Parse.hs
+parseWhile :: (Word8 -&gt; Bool) -&gt; Parse [Word8]
+parseWhile p = (fmap p &lt;$&gt; peekByte) ==&gt; \mp -&gt;
+               if mp == Just True
+               then parseByte ==&gt; \b -&gt;
+                    (b:) &lt;$&gt; parseWhile p
+               else identity []</pre><p id="x_oS"><a name="x_oS"></a>Once again, we're using functors in several places (doubled
+      up, when necessary) to reduce the verbosity of our code.  Here's
+      a rewrite of the same function in a more direct style that does
+      not use functors.</p><a name="Parse.hs:parseWhileVerbose"></a><pre id="Parse.hs:parseWhileVerbose" class="programlisting">-- file: ch10/Parse.hs
+parseWhileVerbose p =
+    peekByte ==&gt; \mc -&gt;
+    case mc of
+      Nothing -&gt; identity []
+      Just c | p c -&gt;
+                 parseByte ==&gt; \b -&gt;
+                 parseWhileVerbose p ==&gt; \bs -&gt;
+                 identity (b:bs)
+             | otherwise -&gt;
+                 identity []</pre><p id="x_pS"><a name="x_pS"></a>The more verbose definition is likely easier to read when
+      you are less familiar with functors.  However, use of functors
+      is sufficiently common in Haskell code that the more compact
+      representation should become second nature (both to read and to
+      write) fairly quickly.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id627853">Rewriting our PGM parser</h2></div></div></div><p id="x_sS"><a name="x_sS"></a>With our new parsing code, what does the raw PGM parsing
+      function look like now?</p><a name="Parse.hs:parseRawPGM"></a><pre id="Parse.hs:parseRawPGM" class="programlisting">-- file: ch10/Parse.hs
+parseRawPGM =
+    parseWhileWith w2c notWhite ==&gt; \header -&gt; skipSpaces ==&gt;&amp;
+    assert (header == "P5") "invalid raw header" ==&gt;&amp;
+    parseNat ==&gt; \width -&gt; skipSpaces ==&gt;&amp;
+    parseNat ==&gt; \height -&gt; skipSpaces ==&gt;&amp;
+    parseNat ==&gt; \maxGrey -&gt;
+    parseByte ==&gt;&amp;
+    parseBytes (width * height) ==&gt; \bitmap -&gt;
+    identity (Greymap width height maxGrey bitmap)
+  where notWhite = (`notElem` " \r\n\t")</pre><p id="x_tS"><a name="x_tS"></a>This definition makes use of a few more helper functions
+      that we present here, following a pattern that should by now be
+      familiar.</p><a name="Parse.hs:helpers"></a><pre id="Parse.hs:helpers" class="programlisting">-- file: ch10/Parse.hs
+parseWhileWith :: (Word8 -&gt; a) -&gt; (a -&gt; Bool) -&gt; Parse [a]
+parseWhileWith f p = fmap f &lt;$&gt; parseWhile (p . f)
+
+parseNat :: Parse Int
+parseNat = parseWhileWith w2c isDigit ==&gt; \digits -&gt;
+           if null digits
+           then bail "no more input"
+           else let n = read digits
+                in if n &lt; 0
+                   then bail "integer overflow"
+                   else identity n
+
+(==&gt;&amp;) :: Parse a -&gt; Parse b -&gt; Parse b
+p ==&gt;&amp; f = p ==&gt; \_ -&gt; f
+
+skipSpaces :: Parse ()
+skipSpaces = parseWhileWith w2c isSpace ==&gt;&amp; identity ()
+
+assert :: Bool -&gt; String -&gt; Parse ()
+assert True  _   = identity ()
+assert False err = bail err</pre><p id="x_uS"><a name="x_uS"></a>The <code class="function">(==&gt;&amp;)</code> combinator chains
+      parsers like <code class="function">(==&gt;)</code>, but the right hand
+      side ignores the result from the left.  The
+      <code class="function">assert</code> function lets us check a property,
+      and abort parsing with a useful error message if the property is
+      <code class="code">False</code>.</p><p id="x_vS"><a name="x_vS"></a>Notice how few of the functions that we have written make
+      any reference to the current parsing state.  Most notably, where
+      our old <code class="function">parseP5</code> function explicitly passed
+      two-tuples down the chain of dataflow, all of the state
+      management in <code class="function">parseRawPGM</code> is hidden from
+      us.</p><p id="x_wS"><a name="x_wS"></a>Of course, we can't completely avoid inspecting and
+      modifying the parsing state.  Here's a case in point, the last
+      of the helper functions needed by
+      <code class="function">parseRawPGM</code>.</p><a name="Parse.hs:parseBytes"></a><pre id="Parse.hs:parseBytes" class="programlisting">-- file: ch10/Parse.hs
+parseBytes :: Int -&gt; Parse L.ByteString
+parseBytes n =
+    getState ==&gt; \st -&gt;
+    let n' = fromIntegral n
+        (h, t) = L.splitAt n' (string st)
+        st' = st { offset = offset st + L.length h, string = t }
+    in putState st' ==&gt;&amp;
+       assert (L.length h == n') "end of input" ==&gt;&amp;
+       identity h</pre></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id627990">Future directions</h2></div></div></div><p id="x_yS"><a name="x_yS"></a>Our main theme in this chapter has been
+      abstraction.  We found passing explicit state down a chain of
+      functions to be unsatisfactory, so we abstracted this detail
+      away.  We noticed some recurring needs as we worked out our
+      parsing code, and abstracted those into common functions.  Along
+      the way, we introduced the notion of a functor, which offers a
+      generalised way to map over a parameterised type.</p><p id="x_zS"><a name="x_zS"></a>We will revisit parsing in <a class="xref" href="using-parsec.html" title="Chapter 16. Using Parsec">Chapter 16, <i>Using Parsec</i></a>, to discuss Parsec, a widely used and
+      flexible parsing library.  And in <a class="xref" href="monads.html" title="Chapter 14. Monads">Chapter 14, <i>Monads</i></a>, we
+      will return to our theme of
+      abstraction, where we will find that much of the code that we
+      have developed in this chapter can be further simplified by the
+      use of monads.</p><p id="x_TF1"><a name="x_TF1"></a>For efficiently parsing binary data represented as a
+      <span class="type">ByteString</span>, a number of packages are available via
+      the Hackage package database.  At the time of writing, the most
+      popular is named <code class="code">binary</code>, which is easy to use and
+      offers high performance.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id628045">Exercises</h2></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id628055"></a><a name="id628057"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_AT"><a name="x_AT"></a>Write a parser for “<span class="quote">plain</span>” PGM
+	    files.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id628072"></a><a name="id628074"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_BT"><a name="x_BT"></a>In our description of “<span class="quote">raw</span>” PGM files, we
+	    omitted a small detail.  If the “<span class="quote">maximum
+	      grey</span>” value in the header is less than 256, each
+	    pixel is represented by a single byte.  However, it can
+	    range up to 65535, in which case each pixel will be
+	    represented by two bytes, in big endian order (most
+	    significant byte first).</p><p id="x_CT"><a name="x_CT"></a>Rewrite the raw PGM parser to accommodate both the
+	    single- and double-byte pixel formats.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id628103"></a><a name="id628105"></a><p><b>3.</b></p></td><td align="left" valign="top"><p id="x_DT"><a name="x_DT"></a>Extend your parser so that it can identify a raw or
+	    plain PGM file, and parse the appropriate file
+	    type.</p></td></tr></tbody></table></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="io-case-study-a-library-for-searching-the-filesystem.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="testing-and-quality-assurance.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 9. I/O case study: a library for searching the
+    filesystem </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 11. Testing and quality assurance</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

@@ -1,0 +1,1710 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 4. Functional programming</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="defining-types-streamlining-functions.html" title="Chapter 3. Defining Types, Streamlining Functions"><link rel="next" href="writing-a-library-working-with-json-data.html" title="Chapter 5. Writing a library: working with JSON data"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 4. Functional programming</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="defining-types-streamlining-functions.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="writing-a-library-working-with-json-data.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="fp"><div class="titlepage"><div><div><h2 class="title">Chapter 4. Functional programming</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="functional-programming.html#fp.thinking">Thinking in Haskell</a></span></dt><dt><span class="sect1"><a href="functional-programming.html#fp.framework">A simple command line framework</a></span></dt><dt><span class="sect1"><a href="functional-programming.html#fp.splitlines">Warming up: portably splitting lines of text</a></span></dt><dd><dl><dt><span class="sect2"><a href="functional-programming.html#id589136">A line ending conversion program</a></span></dt></dl></dd><dt><span class="sect1"><a href="functional-programming.html#fp.infix">Infix functions</a></span></dt><dt><span class="sect1"><a href="functional-programming.html#fp.lists">Working with lists</a></span></dt><dd><dl><dt><span class="sect2"><a href="functional-programming.html#fp.lists.basic">Basic list manipulation</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#fp.lists.safe">Safely and sanely working with crashy functions</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#id590211">Partial and total functions</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#id590283">More simple list manipulations</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#id590714">Working with sublists</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#fp.list.search">Searching lists</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#id591412">Working with several lists at once</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#fp.lists.strings">Special string-handling functions</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#id591678">Exercises</a></span></dt></dl></dd><dt><span class="sect1"><a href="functional-programming.html#fp.loop">How to think about loops</a></span></dt><dd><dl><dt><span class="sect2"><a href="functional-programming.html#fp.tailrecursion">Explicit recursion</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#id592265">Transforming every piece of input</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#id592470">Mapping over a list</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#fp.filter">Selecting pieces of input</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#id592937">Computing one answer over a collection</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#fp.foldl">The left fold</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#id593448">Why use folds, maps, and filters?</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#fp.foldr.filter">Folding from the right</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#id594142">Left folds, laziness, and space leaks</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#fp.fold.exercises">Exercises</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#id594881">Further reading</a></span></dt></dl></dd><dt><span class="sect1"><a href="functional-programming.html#fp.anonymous">Anonymous (lambda) functions</a></span></dt><dt><span class="sect1"><a href="functional-programming.html#fp.partialapp">Partial function application and currying</a></span></dt><dd><dl><dt><span class="sect2"><a href="functional-programming.html#id596329">Sections</a></span></dt></dl></dd><dt><span class="sect1"><a href="functional-programming.html#fp.aspattern">As-patterns</a></span></dt><dt><span class="sect1"><a href="functional-programming.html#fp.compose">Code reuse through composition</a></span></dt><dd><dl><dt><span class="sect2"><a href="functional-programming.html#id597329">Use your head wisely</a></span></dt></dl></dd><dt><span class="sect1"><a href="functional-programming.html#fp.readability">Tips for writing readable code</a></span></dt><dt><span class="sect1"><a href="functional-programming.html#fp.seq">Space leaks and strict evaluation</a></span></dt><dd><dl><dt><span class="sect2"><a href="functional-programming.html#id597540">Avoiding space leaks with seq</a></span></dt><dt><span class="sect2"><a href="functional-programming.html#id597688">Learning to use seq</a></span></dt></dl></dd></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="fp.thinking">Thinking in Haskell</h2></div></div></div><p id="x_V6"><a name="x_V6"></a>Our early learning of Haskell has two distinct
+      aspects.  The first is coming to terms with the shift in mindset
+      from imperative programming to functional: we have to replace
+      our programming habits from other languages.  We do this not
+      because imperative techniques are bad, but because in a
+      functional language other techniques work better.</p><p id="x_W6"><a name="x_W6"></a>Our second challenge is learning our way around
+      the standard Haskell libraries.  As in any language, the
+      libraries act as a lever, enabling us to multiply our problem
+      solving power. Haskell libraries tend to operate at a higher
+      level of abstraction than those in many other languages.  We'll
+      need to work a little harder to learn to use the libraries, but
+      in exchange they offer a lot of power.</p><p id="x_X6"><a name="x_X6"></a>In this chapter, we'll introduce a number of common
+      functional programming techniques.  We'll draw upon examples
+      from imperative languages to highlight the shift in thinking
+      that we'll need to make.  As we do so, we'll walk through some
+      of the fundamentals of Haskell's standard libraries.  We'll also
+      intermittently cover a few more language features along the
+      way.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="fp.framework">A simple command line framework</h2></div></div></div><p id="x_VC1"><a name="x_VC1"></a>In most of this chapter, we will concern ourselves with code
+      that has no interaction with the outside world.  To maintain our
+      focus on practical code, we will begin by developing a gateway
+      between our “<span class="quote">pure</span>” code and the outside world. Our
+      framework simply reads the contents of one file, applies a
+      function to the file, and writes the result to another
+      file.</p><a name="InteractWith.hs:main"></a><pre id="InteractWith.hs:main" class="programlisting">-- file: ch04/InteractWith.hs
+-- Save this in a source file, e.g. Interact.hs
+
+import System.Environment (getArgs)
+
+interactWith function inputFile outputFile = do
+  input &lt;- readFile inputFile
+  writeFile outputFile (function input)
+
+main = mainWith myFunction
+  where mainWith function = do
+          args &lt;- getArgs
+          case args of
+            [input,output] -&gt; interactWith function input output
+            _ -&gt; putStrLn "error: exactly two arguments needed"
+
+        -- replace "id" with the name of our function below
+        myFunction = id</pre><p id="x_WC1"><a name="x_WC1"></a>This is all we need to write simple, but complete, file
+      processing programs.  This is a complete program.  We can
+      compile it to an executable named
+      <code class="filename">InteractWith</code> as follows.</p><pre id="id588357" class="screen"><code class="prompt">$</code> <strong class="userinput"><code>ghc --make InteractWith</code></strong>
+[1 of 1] Compiling Main             ( InteractWith.hs, InteractWith.o )
+Linking InteractWith ...</pre><p id="x_XC1"><a name="x_XC1"></a>If we run this program from the shell or command prompt, it
+      will accept two file names: the name of a file to read, and the
+      name of a file to write.</p><pre id="id588382" class="screen"><code class="prompt">$</code> <strong class="userinput"><code>./Interact</code></strong>
+error: exactly two arguments needed
+<code class="prompt">$</code> <strong class="userinput"><code>./Interact hello-in.txt hello-out.txt</code></strong>
+<code class="prompt">$</code> <strong class="userinput"><code>cat hello-in.txt</code></strong>
+hello world
+<code class="prompt">$</code> <strong class="userinput"><code>cat hello-out.txt</code></strong>
+hello world</pre><p id="x_YC1"><a name="x_YC1"></a>Some of the notation in our source file is new.  The <code class="literal">do</code>
+      keyword introduces a block of <span class="emphasis"><em>actions</em></span> that
+      can cause effects in the real world, such as reading or writing
+      a file.  The <code class="code">&lt;-</code> operator is the equivalent of
+      assignment inside a <code class="literal">do</code> block.  This is enough explanation to
+      get us started.  We will talk in much more detail about these
+      details of notation, and I/O in general, in <a class="xref" href="io.html" title="Chapter 7. I/O">Chapter 7, <i>I/O</i></a>.</p><p id="x_ZC1"><a name="x_ZC1"></a>When we want to test a function that cannot talk to the
+      outside world, we simply replace the name
+      <code class="function">id</code> in the code above with the name of the
+      function we want to test.  Whatever our function does, it will
+      need to have the type <span class="type">String -&gt; String</span>: in other
+      words, it must accept a string, and return a string.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="fp.splitlines">Warming up: portably splitting lines of text</h2></div></div></div><p id="x_Y6"><a name="x_Y6"></a>Haskell provides a built-in function,
+      <code class="function">lines</code>, that lets us split a text string on
+      line boundaries.  It returns a list of strings with line
+      termination characters omitted.</p><a name="splitlines.ghci:lines"></a><pre id="splitlines.ghci:lines" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type lines</code></strong>
+lines :: String -&gt; [String]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>lines "line 1\nline 2"</code></strong>
+["line 1","line 2"]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>lines "foo\n\nbar\n"</code></strong>
+["foo","","bar"]
+</pre><p id="x_Z6"><a name="x_Z6"></a>While <code class="function">lines</code> looks useful, it
+      relies on us reading a file in “<span class="quote">text mode</span>” in order
+      to work.  Text mode is a feature common to many programming
+      languages: it provides a special behavior when we read and
+      write files on Windows.  When we read a file in text mode, the
+      file I/O library translates the line ending sequence
+      <code class="code">"\r\n"</code> (carriage return followed by newline) to
+      <code class="code">"\n"</code> (newline alone), and it does the reverse when
+      we write a file. On Unix-like systems, text mode does not
+      perform any translation. As a result of this difference, if we
+      read a file on one platform that was written on the other, the
+      line endings are likely to become a mess. (Both
+      <code class="function">readFile</code> and <code class="function">writeFile</code>
+      operate in text mode.)</p><a name="splitlines.ghci:lines.cr"></a><pre id="splitlines.ghci:lines.cr" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>lines "a\r\nb"</code></strong>
+["a\r","b"]
+</pre><p id="x_a6"><a name="x_a6"></a>The <code class="function">lines</code> function only
+      splits on newline characters, leaving carriage returns dangling
+      at the ends of lines.  If we read a Windows-generated text
+      file on a Linux or Unix box, we'll get trailing carriage returns
+      at the end of each line.</p><p id="x_b6"><a name="x_b6"></a>We have comfortably used Python's “<span class="quote">universal
+	newline</span>” support for years: this transparently handles Unix and
+      Windows line ending conventions for us.  We would like to
+      provide something similar in Haskell.</p><p id="x_d6"><a name="x_d6"></a>Since we are still early in our career of reading
+      Haskell code, we will discuss our Haskell implementation in
+      quite some detail.</p><a name="SplitLines.hs:splitLines.type"></a><pre id="SplitLines.hs:splitLines.type" class="programlisting">-- file: ch04/SplitLines.hs
+splitLines :: String -&gt; [String]</pre><p id="x_aC1"><a name="x_aC1"></a>Our function's type signature indicates that it accepts a
+      single string, the contents of a file with some unknown
+      line ending convention.  It returns a list of strings,
+      representing each line from the file.</p><a name="SplitLines.hs:splitLines"></a><pre id="SplitLines.hs:splitLines" class="programlisting">-- file: ch04/SplitLines.hs
+splitLines [] = []
+splitLines cs =
+    let (pre, suf) = break isLineTerminator cs
+    in  pre : case suf of 
+                ('\r':'\n':rest) -&gt; splitLines rest
+                ('\r':rest)      -&gt; splitLines rest
+                ('\n':rest)      -&gt; splitLines rest
+                _                -&gt; []
+
+isLineTerminator c = c == '\r' || c == '\n'</pre><p id="x_bC1"><a name="x_bC1"></a>Before we dive into detail, notice first how we have
+      organized our code.  We have presented the important pieces of
+      code first, keeping the definition of
+      <code class="function">isLineTerminator</code> until later. Because we
+      have given the helper function a readable name, we can guess
+      what it does even before we've read it, which eases the smooth
+      “<span class="quote">flow</span>” of reading the code.</p><p id="x_e6"><a name="x_e6"></a>The Prelude defines a function named
+      <code class="function">break</code> that we can use to partition a list
+      into two parts. It takes a function as its first parameter. That
+      function must examine an element of the list, and return a
+      <span class="type">Bool</span> to indicate whether to break the list at that
+      point.  The <code class="function">break</code> function returns a pair,
+      which consists of the sublist consumed before the predicate
+      returned <code class="code">True</code> (the <span class="emphasis"><em>prefix</em></span>),
+      and the rest of the list (the
+      <span class="emphasis"><em>suffix</em></span>).</p><a name="splitlines.ghci:break"></a><pre id="splitlines.ghci:break" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>break odd [2,4,5,6,8]</code></strong>
+([2,4],[5,6,8])
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Data.Char</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>break isUpper "isUpper"</code></strong>
+("is","Upper")
+</pre><p id="x_g6"><a name="x_g6"></a>Since we only need to match a single carriage
+      return or newline at a time, examining one element of the list
+      at a time is good enough for our needs.</p><p id="x_cC1"><a name="x_cC1"></a>The first equation of <code class="function">splitLines</code>
+      indicates that if we match an empty string, we have no further
+      work to do.</p><p id="x_h6"><a name="x_h6"></a>In the second equation, we first apply
+      <code class="function">break</code> to our input string.  The prefix is
+      the substring before a line terminator, and the suffix is the
+      remainder of the string.  The suffix will include the line
+      terminator, if any is present.</p><p id="x_dC1"><a name="x_dC1"></a>The “<span class="quote"><code class="code">pre :</code></span>” expression tells us
+      that we should add the <code class="varname">pre</code> value to the front
+      of the list of lines.  We then use a <code class="literal">case</code> expression to
+      inspect the suffix, so we can decide what to do next.  The
+      result of the <code class="literal">case</code> expression will be used as the second
+      argument to the <code class="function">(:)</code> list constructor.</p><p id="x_i6"><a name="x_i6"></a>The first pattern matches a string that begins
+      with a carriage return, followed by a newline.  The variable
+      <code class="varname">rest</code> is bound to the remainder of the string.
+      The other patterns are similar, so they ought to be
+      easy to follow.</p><p id="x_k6"><a name="x_k6"></a>A prose description of a Haskell function isn't
+      necessarily easy to follow.  We can gain a better understanding
+      by stepping into <span class="command"><strong>ghci</strong></span>, and oberving the behavior of the
+      function in different circumstances.</p><p id="x_l6"><a name="x_l6"></a>Let's start by partitioning a string that doesn't
+      contain any line terminators.</p><a name="splitlines.ghci:splitLines.foo"></a><pre id="splitlines.ghci:splitLines.foo" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>splitLines "foo"</code></strong>
+["foo"]
+</pre><p id="x_m6"><a name="x_m6"></a>Here, our application of
+      <code class="function">break</code> never finds a line terminator, so the
+      suffix it returns is empty.</p><a name="splitlines.ghci:break.foo"></a><pre id="splitlines.ghci:break.foo" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>break isLineTerminator "foo"</code></strong>
+("foo","")
+</pre><p id="x_n6"><a name="x_n6"></a>The <code class="literal">case</code> expression in
+      <code class="function">splitLines</code> must thus be matching on the
+      fourth branch, and we're finished.  What about a slightly more
+      interesting case?</p><a name="splitlines.ghci:splitLines.foobar"></a><pre id="splitlines.ghci:splitLines.foobar" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>splitLines "foo\r\nbar"</code></strong>
+["foo","bar"]
+</pre><p id="x_o6"><a name="x_o6"></a>Our first application of
+      <code class="function">break</code> gives us a non-empty suffix.</p><a name="splitlines.ghci:break.foobar"></a><pre id="splitlines.ghci:break.foobar" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>break isLineTerminator "foo\r\nbar"</code></strong>
+("foo","\r\nbar")
+</pre><p id="x_p6"><a name="x_p6"></a>Because the suffix begins with a carriage return, followed
+      by a newline, we match on the first branch of the
+      <code class="literal">case</code> expression.  This gives us
+      <code class="varname">pre</code> bound to <code class="code">"foo"</code>, and
+      <code class="varname">suf</code> bound to <code class="code">"bar"</code>.  We apply
+      <code class="function">splitLines</code> recursively, this time on
+      <code class="code">"bar"</code> alone.</p><a name="splitlines.ghci:splitLines.bar"></a><pre id="splitlines.ghci:splitLines.bar" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>splitLines "bar"</code></strong>
+["bar"]
+</pre><p id="x_q6"><a name="x_q6"></a>The result is that we construct a list whose head is
+      <code class="code">"foo"</code> and whose tail is
+      <code class="code">["bar"]</code>.</p><a name="splitlines.ghci:cons"></a><pre id="splitlines.ghci:cons" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"foo" : ["bar"]</code></strong>
+["foo","bar"]
+</pre><p id="x_eC1"><a name="x_eC1"></a>This sort of experimenting with <span class="command"><strong>ghci</strong></span> is a helpful way to
+      understand and debug the behavior of a piece of code.  It has
+      an even more important benefit that is almost accidental in
+      nature.  It can be tricky to test complicated code from
+      <span class="command"><strong>ghci</strong></span>, so we will tend to write smaller functions.  This can
+      further help the readability of our code.</p><p id="x_fC1"><a name="x_fC1"></a>This style of creating and reusing small, powerful pieces of
+      code is a fundamental part of functional programming.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id589136">A line ending conversion program</h3></div></div></div><p id="x_gC1"><a name="x_gC1"></a>Let's hook our <code class="function">splitLines</code> function
+	into the little framework we wrote earlier.  Make a copy of
+	the <code class="filename">Interact.hs</code> source file; let's call
+	the new file <code class="filename">FixLines.hs</code>.  Add the
+	<code class="function">splitLines</code> function to the new source
+	file.  Since our function must produce a single
+	<span class="type">String</span>, we must stitch the list of lines back
+	together.  The Prelude provides an
+	<code class="function">unlines</code> function that concatenates a list
+	of strings, adding a newline to the end of each.</p><a name="SplitLines.hs:fixLines"></a><pre id="SplitLines.hs:fixLines" class="programlisting">-- file: ch04/SplitLines.hs
+fixLines :: String -&gt; String
+fixLines input = unlines (splitLines input)</pre><p id="x_hC1"><a name="x_hC1"></a>If we replace the <code class="function">id</code> function with
+	<code class="function">fixLines</code>, we can compile an executable
+	that will convert a text file to our system's native line
+	ending.</p><pre id="id589217" class="screen"><code class="prompt">$</code> <strong class="userinput"><code>ghc --make FixLines</code></strong>
+[1 of 1] Compiling Main             ( FixLines.hs, FixLines.o )
+Linking FixLines ...</pre><p id="x_iC1"><a name="x_iC1"></a>If you are on a Windows system, find and download a text
+	file that was created on a Unix system (for example <a class="ulink" href="http://www.gnu.org/licenses/gpl-3.0.txt" target="_top">gpl-3.0.txt</a>). 
+	Open it in the standard Notepad text editor.  The lines should
+	all run together, making the file almost unreadable.  Process
+	the file using the <span class="command"><strong>FixLines</strong></span> command you
+	just created, and open the output file in Notepad.  The line
+	endings should now be fixed up.</p><p id="x_jC1"><a name="x_jC1"></a>On Unix-like systems, the standard pagers and editors hide
+	Windows line endings.  This makes it more difficult to verify
+	that <span class="command"><strong>FixLines</strong></span> is actually eliminating
+	them.  Here are a few commands that should help.</p><pre id="id589270" class="screen"><code class="prompt">$</code> <strong class="userinput"><code>file gpl-3.0.txt</code></strong>
+gpl-3.0.txt: ASCII English text
+<code class="prompt">$</code> <strong class="userinput"><code>unix2dos gpl-3.0.txt</code></strong>
+unix2dos: converting file gpl-3.0.txt to DOS format ...
+<code class="prompt">$</code> <strong class="userinput"><code>file gpl-3.0.txt</code></strong>
+gpl-3.0.txt: ASCII English text, with CRLF line terminators</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="fp.infix">Infix functions</h2></div></div></div><p id="x_K6"><a name="x_K6"></a>Usually, when we define or apply a function in
+      Haskell, we write the name of the function, followed by its
+      arguments.  This notation is referred to as
+      <span class="emphasis"><em>prefix</em></span>, because the name of the function
+      comes before its arguments.</p><p id="x_Rh"><a name="x_Rh"></a>If a function or constructor takes two or more
+      arguments, we have the option of using it in
+      <span class="emphasis"><em>infix</em></span> form, where we place it
+      <span class="emphasis"><em>between</em></span> its first and second arguments.
+      This allows us to use functions as infix operators.</p><p id="x_L6"><a name="x_L6"></a>To define or apply a function or value constructor
+      using infix notation, we enclose its name in backtick characters
+      (sometimes known as backquotes).  Here are simple infix
+      definitions of a function and a type.</p><a name="Plus.hs:plus"></a><pre id="Plus.hs:plus" class="programlisting">-- file: ch04/Plus.hs
+a `plus` b = a + b
+
+data a `Pair` b = a `Pair` b
+                  deriving (Show)
+
+-- we can use the constructor either prefix or infix
+foo = Pair 1 2
+bar = True `Pair` "quux"</pre><p id="x_M6"><a name="x_M6"></a>Since infix notation is purely a syntactic
+    convenience, it does not change a function's behavior.</p><a name="infix.ghci:plus"></a><pre id="infix.ghci:plus" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>1 `plus` 2</code></strong>
+3
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>plus 1 2</code></strong>
+3
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>True `Pair` "something"</code></strong>
+True `Pair` "something"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>Pair True "something"</code></strong>
+True `Pair` "something"
+</pre><p id="x_N6"><a name="x_N6"></a>Infix notation can often help readability.  For
+      instance, the Prelude defines a function,
+      <code class="function">elem</code>, that indicates whether a value is
+      present in a list. If we use <code class="function">elem</code> using
+      prefix notation, it is fairly easy to read.</p><a name="infix.ghci:prefix"></a><pre id="infix.ghci:prefix" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>elem 'a' "camogie"</code></strong>
+True
+</pre><p id="x_Q6"><a name="x_Q6"></a>If we switch to infix notation, the code
+      becomes even easier to understand. It is now clearer that we're
+      checking to see if the value on the left is present in the list
+      on the right.</p><a name="infix.ghci:infix"></a><pre id="infix.ghci:infix" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>3 `elem` [1,2,4,8]</code></strong>
+False
+</pre><p id="x_kC1"><a name="x_kC1"></a>We see a more pronounced improvement with some useful functions from the
+      <code class="code">Data.List</code> module.
+      The <code class="function">isPrefixOf</code> function tells us if one list
+      matches the beginning of another.</p><a name="infix.ghci:isPrefixOf"></a><pre id="infix.ghci:isPrefixOf" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Data.List</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"foo" `isPrefixOf` "foobar"</code></strong>
+True
+</pre><p id="x_lC1"><a name="x_lC1"></a>The <code class="function">isInfixOf</code> and
+    <code class="function">isSuffixOf</code> functions match anywhere in a list
+    and at its end, respectively.</p><a name="infix.ghci:isInfixOf"></a><pre id="infix.ghci:isInfixOf" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"needle" `isInfixOf` "haystack full of needle thingies"</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"end" `isSuffixOf` "the end"</code></strong>
+True
+</pre><p id="x_R6"><a name="x_R6"></a>There is no hard-and-fast rule that dictates when
+      you ought to use infix versus prefix notation, although prefix
+      notation is far more common.  It's best to choose whichever
+      makes your code more readable in a specific situation.</p><div class="note"><table border="0" summary="Note: Beware familiar notation in an unfamiliar
+	language"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Beware familiar notation in an unfamiliar
+	language</th></tr><tr><td align="left" valign="top"><p id="x_Sh"><a name="x_Sh"></a>A few other programming languages use backticks, but in
+	spite of the visual similarities, the purpose of backticks in
+	Haskell does not remotely resemble their meaning in, for
+	example, Perl, Python, or Unix shell scripts.</p><p id="x_S6"><a name="x_S6"></a>The only legal thing we can do with backticks in
+	Haskell is wrap them around the name of a function.  We can't,
+	for example, use them to enclose a complex expression whose
+	value is a function.  It might be convenient if
+	we could, but that's not how the language is today.</p></td></tr></table></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="fp.lists">Working with lists</h2></div></div></div><p id="x_r6"><a name="x_r6"></a>As the bread and butter of functional programming, lists
+      deserve some serious attention.  The standard prelude defines
+      dozens of functions for dealing with lists.  Many of these will
+      be indispensable tools, so it's important that we learn them
+      early on.</p><p id="x_PL"><a name="x_PL"></a>For better or worse, this section is going to read a bit
+      like a “<span class="quote">laundry list</span>” of functions.  Why present so
+      many functions at once?  These functions are both easy to learn
+      and absolutely ubiquitous.  If we don't have this toolbox at our
+      fingertips, we'll end up wasting time by reinventing simple
+      functions that are already present in the standard libraries.
+      So bear with us as we go through the list; the effort you'll
+      save will be huge.</p><p id="x_s6"><a name="x_s6"></a>The <code class="code">Data.List</code> module is the “<span class="quote">real</span>”
+      logical home of all standard list functions. The Prelude merely
+      re-exports a large subset of the functions exported by
+      <code class="code">Data.List</code>. Several useful functions in
+      <code class="code">Data.List</code> are <span class="emphasis"><em>not</em></span> re-exported
+      by the standard prelude.  As we walk through list functions in
+      the sections that follow, we will explicitly mention those that
+      are only in <code class="code">Data.List</code>.</p><a name="ch04.list.ghci:Data.List"></a><pre id="ch04.list.ghci:Data.List" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Data.List</code></strong>
+</pre><p id="x_t6"><a name="x_t6"></a>Because none of these functions is complex or takes more
+      than about three lines of Haskell to write, we'll be brief in
+      our descriptions of each.  In fact, a quick and useful learning
+      exercise is to write a definition of each function after you've
+      read about it.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="fp.lists.basic">Basic list manipulation</h3></div></div></div><p id="x_v6"><a name="x_v6"></a>The <code class="function">length</code> function tells us how many
+	elements are in a list.</p><a name="ch04.list.ghci:length"></a><pre id="ch04.list.ghci:length" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type length</code></strong>
+length :: [a] -&gt; Int
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>length []</code></strong>
+0
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>length [1,2,3]</code></strong>
+3
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>length "strings are lists, too"</code></strong>
+22
+</pre><p id="x_mC1"><a name="x_mC1"></a>If you need to determine whether a list is empty, use the
+	<code class="function">null</code> function.</p><a name="ch04.list.ghci:null"></a><pre id="ch04.list.ghci:null" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type null</code></strong>
+null :: [a] -&gt; Bool
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>null []</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>null "plugh"</code></strong>
+False
+</pre><p id="x_w6"><a name="x_w6"></a>To access the first element of a list, we use the
+	<code class="function">head</code> function.</p><a name="ch04.list.ghci:head"></a><pre id="ch04.list.ghci:head" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type head</code></strong>
+head :: [a] -&gt; a
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>head [1,2,3]</code></strong>
+1
+</pre><p id="x_x6"><a name="x_x6"></a>The converse, <code class="function">tail</code>, returns all
+	<span class="emphasis"><em>but</em></span> the head of a list.</p><a name="ch04.list.ghci:tail"></a><pre id="ch04.list.ghci:tail" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type tail</code></strong>
+tail :: [a] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>tail "foo"</code></strong>
+"oo"
+</pre><p id="x_y6"><a name="x_y6"></a>Another function, <code class="function">last</code>, returns the
+	very last element of a list.</p><a name="ch04.list.ghci:last"></a><pre id="ch04.list.ghci:last" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type last</code></strong>
+last :: [a] -&gt; a
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>last "bar"</code></strong>
+'r'
+</pre><p id="x_z6"><a name="x_z6"></a>The converse of <code class="function">last</code> is
+	<code class="function">init</code>, which returns a list of all but the
+	last element of its input.</p><a name="ch04.list.ghci:init"></a><pre id="ch04.list.ghci:init" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type init</code></strong>
+init :: [a] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>init "bar"</code></strong>
+"ba"
+</pre><p id="x_A7"><a name="x_A7"></a>Several of the functions above behave poorly on
+	empty lists, so be careful if you don't know whether or not a
+	list is empty.  What form does their misbehavior take?</p><a name="ch04.list.ghci:head.empty"></a><pre id="ch04.list.ghci:head.empty" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>head []</code></strong>
+*** Exception: Prelude.head: empty list
+</pre><p id="x_nC1"><a name="x_nC1"></a>Try each of the above functions in <span class="command"><strong>ghci</strong></span>.  Which ones
+	crash when given an empty list?</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="fp.lists.safe">Safely and sanely working with crashy functions</h3></div></div></div><p id="x_B7"><a name="x_B7"></a>When we want to use a function like
+	<code class="function">head</code>, where we know that it might blow up
+	on us if we pass in an empty list, the temptation might
+	initially be strong to check the length of the list before we
+	call <code class="function">head</code>.  Let's construct an
+	artificial example to illustrate our point.</p><a name="EfficientList.hs:myDumbExample"></a><pre id="EfficientList.hs:myDumbExample" class="programlisting">-- file: ch04/EfficientList.hs
+myDumbExample xs = if length xs &gt; 0
+                   then head xs
+                   else 'Z'</pre><p id="x_C7"><a name="x_C7"></a>If we're coming from a language like Perl or
+	Python, this might seem like a perfectly natural way to write
+	this test. Behind the scenes, Python lists are arrays; and
+	Perl arrays are, well, arrays.  So they necessarily know how
+	long they are, and calling <code class="code">len(foo)</code> or
+	<code class="code">scalar(@foo)</code> is a perfectly natural thing to do.
+	But as with many other things, it's not a good idea to blindly
+	transplant such an assumption into Haskell.</p><p id="x_D7"><a name="x_D7"></a>We've already seen the definition of the list
+	algebraic data type many times, and know that a list doesn't
+	store its own length explicitly.  Thus, the only way that
+	<code class="function">length</code> can operate is to walk the entire
+	list.</p><p id="x_E7"><a name="x_E7"></a>Therefore,  when we only care whether or not a
+	list is empty, calling <code class="function">length</code> isn't a
+	good strategy. It can potentially do a lot more work than we
+	want, if the list we're working with is finite.  Since Haskell lets
+	us easily create infinite lists, a careless use of
+	<code class="function">length</code> may even result in an infinite
+	loop.</p><p id="x_F7"><a name="x_F7"></a>A more appropriate function to call here instead
+	is <code class="function">null</code>, which runs in constant time.
+	Better yet, using <code class="function">null</code> makes our code
+	indicate what property of the list we really care about.  Here
+	are two improved ways of expressing
+	<code class="function">myDumbExample</code>.</p><a name="EfficientList.hs:mySmartExample"></a><pre id="EfficientList.hs:mySmartExample" class="programlisting">-- file: ch04/EfficientList.hs
+mySmartExample xs = if not (null xs)
+                    then head xs
+                    else 'Z'
+
+myOtherExample (x:_) = x
+myOtherExample [] = 'Z'</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id590211">Partial and total functions</h3></div></div></div><p id="x_G7"><a name="x_G7"></a>Functions that only have return values defined for a
+	subset of valid inputs are called <span class="emphasis"><em>partial</em></span>
+	functions (calling <code class="function">error</code> doesn't qualify
+	as returning a value!). We call functions that return valid
+	results over their entire input domains
+	<span class="emphasis"><em>total</em></span> functions.</p><p id="x_H7"><a name="x_H7"></a>It's always a good idea to know whether a function you're
+	using is partial or total.  Calling a partial function with an
+	input that it can't handle is probably the single biggest
+	source of straightforward, avoidable bugs in Haskell
+	programs.</p><p id="x_I7"><a name="x_I7"></a>Some Haskell programmers go so far as to give partial
+	functions names that begin with a prefix such as
+	<code class="code">unsafe</code>, so that they can't shoot themselves in
+	the foot accidentally.</p><p id="x_J7"><a name="x_J7"></a>It's arguably a deficiency of the standard prelude that
+	it defines quite a few “<span class="quote">unsafe</span>” partial
+	functions, like <code class="function">head</code>, without also
+	providing “<span class="quote">safe</span>” total equivalents.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id590283">More simple list manipulations</h3></div></div></div><p id="x_K7"><a name="x_K7"></a>Haskell's name for the “<span class="quote">append</span>” function is
+	<code class="function">(++)</code>.</p><a name="ch04.list.ghci:append"></a><pre id="ch04.list.ghci:append" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (++)</code></strong>
+(++) :: [a] -&gt; [a] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"foo" ++ "bar"</code></strong>
+"foobar"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>[] ++ [1,2,3]</code></strong>
+[1,2,3]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>[True] ++ []</code></strong>
+[True]
+</pre><p id="x_L7"><a name="x_L7"></a>The <code class="function">concat</code> function takes a list of
+	lists, all of the same type, and concatenates them
+	into a single list.</p><a name="ch04.list.ghci:concat"></a><pre id="ch04.list.ghci:concat" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type concat</code></strong>
+concat :: [[a]] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>concat [[1,2,3], [4,5,6]]</code></strong>
+[1,2,3,4,5,6]
+</pre><p id="x_M7"><a name="x_M7"></a>It removes one level of nesting.</p><a name="ch04.list.ghci:concat.multi"></a><pre id="ch04.list.ghci:concat.multi" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>concat [[[1,2],[3]], [[4],[5],[6]]]</code></strong>
+[[1,2],[3],[4],[5],[6]]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>concat (concat [[[1,2],[3]], [[4],[5],[6]]])</code></strong>
+[1,2,3,4,5,6]
+</pre><p id="x_N7"><a name="x_N7"></a>The <code class="function">reverse</code> function returns the
+	elements of a list in reverse order.</p><a name="ch04.list.ghci:reverse"></a><pre id="ch04.list.ghci:reverse" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type reverse</code></strong>
+reverse :: [a] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>reverse "foo"</code></strong>
+"oof"
+</pre><p id="x_O7"><a name="x_O7"></a>For lists of <span class="type">Bool</span>, the
+	<code class="function">and</code> and <code class="function">or</code> functions
+	generalise their two-argument
+	cousins,<code class="function">(&amp;&amp;)</code> and
+	<code class="function">(||)</code>, over lists.</p><a name="ch04.list.ghci:and.or"></a><pre id="ch04.list.ghci:and.or" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type and</code></strong>
+and :: [Bool] -&gt; Bool
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>and [True,False,True]</code></strong>
+False
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>and []</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type or</code></strong>
+or :: [Bool] -&gt; Bool
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>or [False,False,False,True,False]</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>or []</code></strong>
+False
+</pre><p id="x_P7"><a name="x_P7"></a>They have more useful cousins, <code class="function">all</code>
+	and <code class="function">any</code>, which operate on lists of any
+	type.  Each one takes a predicate as its first argument;
+	<code class="function">all</code> returns <code class="code">True</code> if that
+	predicate succeeds on every element of the list, while
+	<code class="function">any</code> returns <code class="code">True</code> if the
+	predicate succeeds on at least one element of the list.</p><a name="ch04.list.ghci:all.any"></a><pre id="ch04.list.ghci:all.any" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type all</code></strong>
+all :: (a -&gt; Bool) -&gt; [a] -&gt; Bool
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>all odd [1,3,5]</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>all odd [3,1,4,1,5,9,2,6,5]</code></strong>
+False
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>all odd []</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type any</code></strong>
+any :: (a -&gt; Bool) -&gt; [a] -&gt; Bool
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>any even [3,1,4,1,5,9,2,6,5]</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>any even []</code></strong>
+False
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id590714">Working with sublists</h3></div></div></div><p id="x_Q7"><a name="x_Q7"></a>The <code class="function">take</code> function, which we
+	already met in <a class="xref" href="types-and-functions.html#funcstypes.calling" title="Function application">the section called “Function application”</a>, returns a
+	sublist consisting of the first <span class="emphasis"><em>k</em></span>
+	elements from a list. Its converse, <code class="function">drop</code>,
+	drops <span class="emphasis"><em>k</em></span> elements from the start of the
+	list.</p><a name="ch04.list.ghci:take.drop"></a><pre id="ch04.list.ghci:take.drop" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type take</code></strong>
+take :: Int -&gt; [a] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>take 3 "foobar"</code></strong>
+"foo"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>take 2 [1]</code></strong>
+[1]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type drop</code></strong>
+drop :: Int -&gt; [a] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>drop 3 "xyzzy"</code></strong>
+"zy"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>drop 1 []</code></strong>
+[]
+</pre><p id="x_R7"><a name="x_R7"></a>The <code class="function">splitAt</code> function
+	combines the functions of <code class="function">take</code> and
+	<code class="function">drop</code>, returning a pair of the input list,
+	split at the given index.</p><a name="ch04.list.ghci:splitAt"></a><pre id="ch04.list.ghci:splitAt" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type splitAt</code></strong>
+splitAt :: Int -&gt; [a] -&gt; ([a], [a])
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>splitAt 3 "foobar"</code></strong>
+("foo","bar")
+</pre><p id="x_S7"><a name="x_S7"></a>The <code class="function">takeWhile</code> and
+	<code class="function">dropWhile</code> functions take predicates:
+	<code class="function">takeWhile</code> takes elements from the
+	beginning of a list as long as the predicate returns
+	<code class="code">True</code>, while <code class="function">dropWhile</code> drops
+	elements from the list as long as the predicate returns
+	<code class="code">True</code>.</p><a name="ch04.list.ghci:takeWhile.dropWhile"></a><pre id="ch04.list.ghci:takeWhile.dropWhile" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type takeWhile</code></strong>
+takeWhile :: (a -&gt; Bool) -&gt; [a] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>takeWhile odd [1,3,5,6,8,9,11]</code></strong>
+[1,3,5]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type dropWhile</code></strong>
+dropWhile :: (a -&gt; Bool) -&gt; [a] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>dropWhile even [2,4,6,7,9,10,12]</code></strong>
+[7,9,10,12]
+</pre><p id="x_T7"><a name="x_T7"></a>Just as <code class="function">splitAt</code> “<span class="quote">tuples
+	  up</span>” the results of <code class="function">take</code> and
+	<code class="function">drop</code>, the functions
+	<code class="function">break</code> (which we already saw in <a class="xref" href="functional-programming.html#fp.splitlines" title="Warming up: portably splitting lines of text">the section called “Warming up: portably splitting lines of text”</a>) and <code class="function">span</code>
+	tuple up the results of <code class="function">takeWhile</code> and
+	<code class="function">dropWhile</code>.</p><p id="x_U7"><a name="x_U7"></a>Each function takes a predicate;
+	<code class="function">break</code> consumes its input while its
+	predicate fails, while <code class="function">span</code> consumes
+	while its predicate succeeds.</p><a name="ch04.list.ghci:break.span"></a><pre id="ch04.list.ghci:break.span" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type span</code></strong>
+span :: (a -&gt; Bool) -&gt; [a] -&gt; ([a], [a])
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>span even [2,4,6,7,9,10,11]</code></strong>
+([2,4,6],[7,9,10,11])
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type break</code></strong>
+break :: (a -&gt; Bool) -&gt; [a] -&gt; ([a], [a])
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>break even [1,3,5,6,8,9,10]</code></strong>
+([1,3,5],[6,8,9,10])
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="fp.list.search">Searching lists</h3></div></div></div><p id="x_V7"><a name="x_V7"></a>As we've already seen, the
+	<code class="function">elem</code> function indicates whether a value
+	is present in a list.  It has a companion function,
+	<code class="function">notElem</code>.</p><a name="ch04.list.ghci:elem"></a><pre id="ch04.list.ghci:elem" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type elem</code></strong>
+elem :: (Eq a) =&gt; a -&gt; [a] -&gt; Bool
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>2 `elem` [5,3,2,1,1]</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>2 `notElem` [5,3,2,1,1]</code></strong>
+False
+</pre><p id="x_W7"><a name="x_W7"></a>For a more general search, <code class="function">filter</code>
+	takes a predicate, and returns every element of the list on
+	which the predicate succeeds.</p><a name="ch04.list.ghci:filter"></a><pre id="ch04.list.ghci:filter" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type filter</code></strong>
+filter :: (a -&gt; Bool) -&gt; [a] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>filter odd [2,4,1,3,6,8,5,7]</code></strong>
+[1,3,5,7]
+</pre><p id="x_X7"><a name="x_X7"></a>In <code class="code">Data.List</code>, three predicates,
+	<code class="function">isPrefixOf</code>,
+	<code class="function">isInfixOf</code>, and
+	<code class="function">isSuffixOf</code>, let us test for the presence
+	of sublists within a bigger list.  The easiest way to use them
+	is using infix notation.</p><p id="x_Y7"><a name="x_Y7"></a>The <code class="function">isPrefixOf</code> function tells us
+	whether its left argument matches the beginning of its right
+	argument.</p><a name="ch04.list.ghci:isPrefixOf"></a><pre id="ch04.list.ghci:isPrefixOf" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Data.List</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type isPrefixOf</code></strong>
+isPrefixOf :: (Eq a) =&gt; [a] -&gt; [a] -&gt; Bool
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"foo" `isPrefixOf` "foobar"</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>[1,2] `isPrefixOf` []</code></strong>
+False
+</pre><p id="x_Z7"><a name="x_Z7"></a>The <code class="function">isInfixOf</code> function indicates
+	whether its left argument is a sublist of its right.</p><a name="ch04.list.ghci:isInfixOf"></a><pre id="ch04.list.ghci:isInfixOf" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Data.List</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>[2,6] `isInfixOf` [3,1,4,1,5,9,2,6,5,3,5,8,9,7,9]</code></strong>
+True
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>"funk" `isInfixOf` "sonic youth"</code></strong>
+False
+</pre><p id="x_a7"><a name="x_a7"></a>The operation of <code class="function">isSuffixOf</code> shouldn't
+	need any explanation.</p><a name="ch04.list.ghci:isSuffixOf"></a><pre id="ch04.list.ghci:isSuffixOf" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Data.List</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>".c" `isSuffixOf` "crashme.c"</code></strong>
+True
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id591412">Working with several lists at once</h3></div></div></div><p id="x_b7"><a name="x_b7"></a>The <code class="function">zip</code> function takes two lists and
+	“<span class="quote">zips</span>” them into a single list of pairs.  The
+	resulting list is the same length as the shorter of the two
+	inputs.</p><a name="ch04.list.ghci:zip"></a><pre id="ch04.list.ghci:zip" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type zip</code></strong>
+zip :: [a] -&gt; [b] -&gt; [(a, b)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>zip [12,72,93] "zippity"</code></strong>
+[(12,'z'),(72,'i'),(93,'p')]
+</pre><p id="x_c7"><a name="x_c7"></a>More useful is <code class="function">zipWith</code>, which takes
+	two lists and applies a function to each pair of elements,
+	generating a list that is the same length as the shorter of
+	the two.</p><a name="ch04.list.ghci:zipWith"></a><pre id="ch04.list.ghci:zipWith" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type zipWith</code></strong>
+zipWith :: (a -&gt; b -&gt; c) -&gt; [a] -&gt; [b] -&gt; [c]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>zipWith (+) [1,2,3] [4,5,6]</code></strong>
+[5,7,9]
+</pre><p id="x_d7"><a name="x_d7"></a>Haskell's type system makes it an interesting challenge to
+	write functions that take variable numbers of
+	arguments<sup>[<a name="id591518" href="#ftn.id591518" class="footnote">8</a>]</sup>.  So
+	if we want to zip three lists together, we call
+	<code class="function">zip3</code> or <code class="function">zipWith3</code>,
+	and so on up to <code class="function">zip7</code> and
+	<code class="function">zipWith7</code>.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="fp.lists.strings">Special string-handling functions</h3></div></div></div><p id="x_e7"><a name="x_e7"></a>We've already encountered the standard
+	<code class="function">lines</code> function in <a class="xref" href="functional-programming.html#fp.splitlines" title="Warming up: portably splitting lines of text">the section called “Warming up: portably splitting lines of text”</a>, and its standard counterpart,
+	<code class="function">unlines</code>.  Notice that
+	<code class="function">unlines</code> always places a newline on the
+	end of its result.</p><a name="ch04.list.ghci:unlines"></a><pre id="ch04.list.ghci:unlines" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>lines "foo\nbar"</code></strong>
+["foo","bar"]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>unlines ["foo", "bar"]</code></strong>
+"foo\nbar\n"
+</pre><p id="x_f7"><a name="x_f7"></a>The <code class="function">words</code> function splits an input
+	string on any white space.  Its counterpart,
+	<code class="function">unwords</code>, uses a single space to join a
+	list of words.</p><a name="ch04.list.ghci:words.unwords"></a><pre id="ch04.list.ghci:words.unwords" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>words "the  \r  quick \t  brown\n\n\nfox"</code></strong>
+["the","quick","brown","fox"]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>unwords ["jumps", "over", "the", "lazy", "dog"]</code></strong>
+"jumps over the lazy dog"
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id591678">Exercises</h3></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id591688"></a><a name="id591691"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_g7"><a name="x_g7"></a>Write your own “<span class="quote">safe</span>” definitions of
+	      the standard partial list functions, but make sure that
+	      yours never fail.  As a hint, you might want to consider
+	      using the following types.</p><a name="ch04.exercises.hs:safe"></a><pre id="ch04.exercises.hs:safe" class="programlisting">-- file: ch04/ch04.exercises.hs
+safeHead :: [a] -&gt; Maybe a
+safeTail :: [a] -&gt; Maybe [a]
+safeLast :: [a] -&gt; Maybe a
+safeInit :: [a] -&gt; Maybe [a]</pre></td></tr><tr class="question"><td align="left" valign="top"><a name="id591719"></a><a name="id591721"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_h7"><a name="x_h7"></a>Write a function <code class="function">splitWith</code> that
+	      acts similarly to <code class="function">words</code>, but takes
+	      a predicate and a list of any type, and splits its input
+	      list on every element for which the predicate returns
+	      <code class="function">False</code>.</p><a name="ch04.exercises.hs:splitWith"></a><pre id="ch04.exercises.hs:splitWith" class="programlisting">-- file: ch04/ch04.exercises.hs
+splitWith :: (a -&gt; Bool) -&gt; [a] -&gt; [[a]]</pre></td></tr><tr class="question"><td align="left" valign="top"><a name="id591762"></a><a name="id591765"></a><p><b>3.</b></p></td><td align="left" valign="top"><p id="x_pC1"><a name="x_pC1"></a>Using the command framework from <a class="xref" href="functional-programming.html#fp.framework" title="A simple command line framework">the section called “A simple command line framework”</a>, write a program that prints the
+	    first word of each line of its input.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id591783"></a><a name="id591785"></a><p><b>4.</b></p></td><td align="left" valign="top"><p id="x_qC1"><a name="x_qC1"></a>Write a program that transposes the text in a file.
+	      For instance, it should convert
+	      <code class="code">"hello\nworld\n"</code> to
+	      <code class="code">"hw\neo\nlr\nll\nod\n"</code>.</p></td></tr></tbody></table></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="fp.loop">How to think about loops</h2></div></div></div><p id="x_i7"><a name="x_i7"></a>Unlike traditional languages, Haskell has neither a
+      <code class="code">for</code> loop nor a <code class="code">while</code> loop.  If we've
+      got a lot of data to process, what do we use instead?  There are
+      several possible answers to this question.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="fp.tailrecursion">Explicit recursion</h3></div></div></div><p id="x_j7"><a name="x_j7"></a>A straightforward way to make the jump from a language
+	that has loops to one that doesn't is to run through a few
+	examples, looking at the differences.  Here's a C function
+	that takes a string of decimal digits and turns them into an
+	integer.</p><a name="intparse.c:as_int"></a><pre id="intparse.c:as_int" class="programlisting">int as_int(char *str)
+{
+    int acc; /* accumulate the partial result */
+
+    for (acc = 0; isdigit(*str); str++) {
+	acc = acc * 10 + (*str - '0');
+    }
+
+    return acc;
+}</pre><p id="x_k7"><a name="x_k7"></a>Given that Haskell doesn't have any looping constructs,
+	how should we think about representing a fairly
+	straightforward piece of code like this?</p><p id="x_l7"><a name="x_l7"></a>We don't have to start off by writing a type signature,
+	but it helps to remind us of what we're working with.</p><a name="IntParse.hs:type"></a><pre id="IntParse.hs:type" class="programlisting">-- file: ch04/IntParse.hs
+import Data.Char (digitToInt) -- we'll need ord shortly
+
+asInt :: String -&gt; Int</pre><p id="x_m7"><a name="x_m7"></a>The C code computes the result incrementally as
+	it traverses the string; the Haskell code can do the same.
+	However, in Haskell, we can express the equivalent of a loop as a
+	function.   We'll call ours <code class="function">loop</code> just to
+	keep things nice and explicit.</p><a name="IntParse.hs:loop"></a><pre id="IntParse.hs:loop" class="programlisting">-- file: ch04/IntParse.hs
+loop :: Int -&gt; String -&gt; Int
+
+asInt xs = loop 0 xs</pre><p id="x_n7"><a name="x_n7"></a>That first parameter to <code class="function">loop</code> is the
+	accumulator variable we'll be using.  Passing zero into it is
+	equivalent to initialising the <code class="varname">acc</code> variable
+	in C at the beginning of the loop.</p><p id="x_o7"><a name="x_o7"></a>Rather than leap into blazing code, let's think about the
+	data we have to work with.  Our familiar <span class="type">String</span>
+	is just a synonym for <span class="type">[Char]</span>, a list of
+	characters.  The easiest way for us to get the traversal right
+	is to think about the structure of a list: it's either empty,
+	or a single element followed by the rest of the list.</p><p id="x_p7"><a name="x_p7"></a>We can express this structural thinking directly by
+	pattern matching on the list type's constructors.  It's often
+	handy to think about the easy cases first: here, that means we
+	will consider the empty-list case.</p><a name="IntParse.hs:base"></a><pre id="IntParse.hs:base" class="programlisting">-- file: ch04/IntParse.hs
+loop acc [] = acc</pre><p id="x_q7"><a name="x_q7"></a>An empty list doesn't just mean “<span class="quote">the input
+	  string is empty</span>”; it's also the case we'll encounter
+	when we traverse all the way to the end of a non-empty list.
+	So we don't want to “<span class="quote">error out</span>” if we see an
+	empty list.  Instead, we should do something sensible.  Here,
+	the sensible thing is to terminate the loop, and return our
+	accumulated value.</p><p id="x_r7"><a name="x_r7"></a>The other case we have to consider arises when the input
+	list is not empty.  We need to do something with the current
+	element of the list, and something with the rest of the
+	list.</p><a name="IntParse.hs:inductive"></a><pre id="IntParse.hs:inductive" class="programlisting">-- file: ch04/IntParse.hs
+loop acc (x:xs) = let acc' = acc * 10 + digitToInt x
+                  in loop acc' xs</pre><p id="x_s7"><a name="x_s7"></a>We compute a new value for the accumulator, and give it
+	the name <code class="varname">acc'</code>.  We then call the
+	<code class="function">loop</code> function again, passing it the
+	updated value <code class="varname">acc'</code> and the rest of the
+	input list; this is equivalent to the loop starting another
+	round in C.</p><div class="note"><table border="0" summary="Note: Single quotes in variable names"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">Single quotes in variable names</th></tr><tr><td align="left" valign="top"><p id="x_t7"><a name="x_t7"></a>Remember, a single quote is a legal character to use in
+	  a Haskell variable name, and is pronounced
+	  “<span class="quote">prime</span>”.  There's a common idiom in Haskell
+	  programs involving a variable, say <code class="varname">foo</code>,
+	  and another variable, say <code class="varname">foo'</code>.  We can
+	  usually assume that <code class="varname">foo'</code> is somehow
+	  related to <code class="varname">foo</code>.  It's often a new value
+	  for <code class="varname">foo</code>, as in our code above.</p><p id="x_u7"><a name="x_u7"></a>Sometimes we'll see this idiom extended, such
+	  as <code class="varname">foo''</code>.  Since keeping track of the
+	  number of single quotes tacked onto the end of a name
+	  rapidly becomes tedious, use of more than two in a row is
+	  thankfully rare.  Indeed, even one single quote can be easy
+	  to miss, which can lead to confusion on the part of readers.
+	  It might be better to think of the use of single quotes as a
+	  coding convention that you should be able to recognize, and
+	  less as one that you should actually follow.</p></td></tr></table></div><p id="x_v7"><a name="x_v7"></a>Each time the <code class="function">loop</code> function calls
+	itself, it has a new value for the accumulator, and it
+	consumes one element of the input list.  Eventually, it's
+	going to hit the end of the list, at which time the
+	<code class="code">[]</code> pattern will match, and the recursive calls
+	will cease.</p><p id="x_w7"><a name="x_w7"></a>How well does this function work?  For positive integers,
+	it's perfectly cromulent.</p><a name="intparse.ghci:example"></a><pre id="intparse.ghci:example" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt "33"</code></strong>
+33
+</pre><p id="x_x7"><a name="x_x7"></a>But because we were focusing on how to traverse lists, not
+	error handling, our poor function misbehaves if we try to feed
+	it nonsense.</p><a name="intparse.ghci:bad"></a><pre id="intparse.ghci:bad" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt ""</code></strong>
+0
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt "potato"</code></strong>
+*** Exception: Char.digitToInt: not a digit 'p'
+</pre><p id="x_y7"><a name="x_y7"></a>We'll defer fixing our function's shortcomings to <a class="xref" href="functional-programming.html#fp.asInt.fix" title="Question">Q: 1</a>.</p><p id="x_z7"><a name="x_z7"></a>Because the last thing that <code class="function">loop</code> does
+	is simply call itself, it's an example of a tail recursive
+	function. There's another common idiom in this code, too.
+	Thinking about the structure of the list, and handling the
+	empty and non-empty cases separately, is a kind of approach
+	called <span class="emphasis"><em>structural recursion</em></span>.</p><p id="x_A8"><a name="x_A8"></a>We call the non-recursive case (when the list is
+	empty) the <span class="emphasis"><em>base case</em></span> (sometimes the
+	<span class="emphasis"><em>terminating case</em></span>).  We'll see people
+	refer to the case where the function calls itself as the
+	recursive case (surprise!), or they might give a nod to
+	mathematical induction and call it the <span class="emphasis"><em>inductive
+	  case</em></span>.</p><p id="x_B8"><a name="x_B8"></a>As a useful technique, structural recursion is
+	not confined to lists; we can use it on other algebraic data
+	types, too.  We'll have more to say about it later.</p><div class="note"><table border="0" summary="Note: What's the big deal about tail recursion?"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">What's the big deal about tail recursion?</th></tr><tr><td align="left" valign="top"><p id="x_QL"><a name="x_QL"></a>In an imperative language, a loop executes in constant
+	  space.  Lacking loops, we use tail recursive functions in
+	  Haskell instead.  Normally, a recursive function allocates
+	  some space each time it applies itself, so it knows where to
+	  return to.</p><p id="x_RL"><a name="x_RL"></a>Clearly, a recursive function would be at a huge
+	  disadvantage relative to a loop if it allocated memory for
+	  every recursive application: this would require linear space
+	  instead of constant space.  However, functional language
+	  implementations detect uses of tail recursion, and
+	  transform tail recursive calls to run in constant space;
+	  this is called <span class="emphasis"><em>tail call
+	    optimisation</em></span>, abbreviated TCO.</p><p id="x_SL"><a name="x_SL"></a>Few imperative language implementations
+	  perform TCO; this is why using any kind of ambitiously
+	  functional style in an imperative language often leads to
+	  memory leaks and poor performance.</p></td></tr></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id592265">Transforming every piece of input</h3></div></div></div><p id="x_C8"><a name="x_C8"></a>Consider another C function, <code class="function">square</code>,
+	which squares every element in an array.</p><a name="map.c:square"></a><pre id="map.c:square" class="programlisting">void square(double *out, const double *in, size_t length)
+{
+    for (size_t i = 0; i &lt; length; i++) {
+	out[i] = in[i] * in[i];
+    }
+}</pre><p id="x_D8"><a name="x_D8"></a>This contains a straightforward and common kind of loop,
+	one that does exactly the same thing to every element of its
+	input array.  How might we write this loop in Haskell?</p><a name="Map.hs:square"></a><pre id="Map.hs:square" class="programlisting">-- file: ch04/Map.hs
+square :: [Double] -&gt; [Double]
+
+square (x:xs) = x*x : square xs
+square []     = []</pre><p id="x_E8"><a name="x_E8"></a>Our <code class="function">square</code> function consists of two
+	pattern matching equations.  The first
+	“<span class="quote">deconstructs</span>” the beginning of a non-empty list,
+	to get its head and tail.  It squares the first element, then
+	puts that on the front of a new list, which is constructed by
+	calling <code class="function">square</code> on the remainder of the
+	empty list.   The second equation ensures that
+	<code class="function">square</code> halts when it reaches the end of
+	the input list.</p><p id="x_F8"><a name="x_F8"></a>The effect of <code class="function">square</code> is to construct
+	a new list that's the same length as its input list, with
+	every element in the input list substituted with its square in
+	the output list.</p><p id="x_G8"><a name="x_G8"></a>Here's another such C loop, one that ensures that every
+	letter in a string is converted to uppercase.</p><a name="map.c:uppercase"></a><pre id="map.c:uppercase" class="programlisting">#include &lt;ctype.h&gt;
+
+char *uppercase(const char *in)
+{
+    char *out = strdup(in);
+    
+    if (out != NULL) {
+	for (size_t i = 0; out[i] != '\0'; i++) {
+	    out[i] = toupper(out[i]);
+	}
+    }
+
+    return out;
+}</pre><p id="x_H8"><a name="x_H8"></a>Let's look at a Haskell equivalent.</p><a name="Map.hs:upperCase"></a><pre id="Map.hs:upperCase" class="programlisting">-- file: ch04/Map.hs
+import Data.Char (toUpper)
+
+upperCase :: String -&gt; String
+
+upperCase (x:xs) = toUpper x : upperCase xs
+upperCase []     = []</pre><p id="x_I8"><a name="x_I8"></a>Here, we're importing the <code class="function">toUpper</code>
+	function from the standard <code class="code">Data.Char</code> module,
+	which contains lots of useful functions for working with
+	<span class="type">Char</span> data.</p><p id="x_J8"><a name="x_J8"></a>Our <code class="function">upperCase</code> function follows a
+	similar pattern to our earlier <code class="function">square</code>
+	function.  It terminates with an empty list when the input
+	list is empty; and when the input isn't empty, it calls
+	<code class="function">toUpper</code> on the first element, then
+	constructs a new list cell from that and the result of calling
+	itself on the rest of the input list.</p><p id="x_K8"><a name="x_K8"></a>These examples follow a common pattern for writing
+	recursive functions over lists in Haskell.  The <span class="emphasis"><em>base
+	  case</em></span> handles the situation where our input list
+	is empty.  The <span class="emphasis"><em>recursive case</em></span> deals with
+	a non-empty list; it does something with the head of the list,
+	and calls itself recursively on the tail.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id592470">Mapping over a list</h3></div></div></div><p id="x_L8"><a name="x_L8"></a>The <code class="function">square</code> and
+	<code class="function">upperCase</code> functions that we just defined
+	produce new lists that are the same lengths as their input
+	lists, and do only one piece of work per element.  This is
+	such a common pattern that Haskell's prelude defines a
+	function, <code class="function">map</code>, to make it easier.
+	<code class="function">map</code> takes a function, and applies it to
+	every element of a list, returning a new list constructed from
+	the results of these applications.</p><p id="x_M8"><a name="x_M8"></a>Here are our <code class="function">square</code> and
+	<code class="function">upperCase</code> functions rewritten to use
+	<code class="function">map</code>.</p><a name="Map.hs:map2"></a><pre id="Map.hs:map2" class="programlisting">-- file: ch04/Map.hs
+square2 xs = map squareOne xs
+    where squareOne x = x * x
+
+upperCase2 xs = map toUpper xs</pre><p id="x_N8"><a name="x_N8"></a>This is our first  close look at a function that
+	takes another function as its argument.  We can learn a lot
+	about what <code class="function">map</code> does by simply inspecting
+	its type.</p><a name="ch04.map.ghci:type"></a><pre id="ch04.map.ghci:type" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type map</code></strong>
+map :: (a -&gt; b) -&gt; [a] -&gt; [b]
+</pre><p id="x_O8"><a name="x_O8"></a>The signature tells us that <code class="function">map</code> takes
+	two arguments.  The first is a function that takes a value of
+	one type, <code class="varname">a</code>, and returns a
+	value of another type, <code class="varname">b</code>.</p><p id="x_P8"><a name="x_P8"></a>Since <code class="function">map</code> takes a function as
+	argument, we refer to it as a
+	<span class="emphasis"><em>higher-order</em></span> function.  (In spite of the
+	name, there's nothing mysterious about higher-order functions;
+	it's just a term for functions that take other functions as
+	arguments, or return functions.)</p><p id="x_Q8"><a name="x_Q8"></a>Since <code class="function">map</code> abstracts out the pattern
+	common to our <code class="function">square</code> and
+	<code class="function">upperCase</code> functions so that we can reuse
+	it with less boilerplate, we can look at what those functions
+	have in common and figure out how to implement it
+	ourselves.</p><a name="Map.hs:myMap"></a><pre id="Map.hs:myMap" class="programlisting">-- file: ch04/Map.hs
+myMap :: (a -&gt; b) -&gt; [a] -&gt; [b]
+
+myMap f (x:xs) = f x : myMap f xs
+myMap _ _      = []</pre><div class="note"><table border="0" summary="Note: What are those wild cards doing there?"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/support/figs/note.png"></td><th align="left">What are those wild cards doing there?</th></tr><tr><td align="left" valign="top"><p id="x_TL"><a name="x_TL"></a>If you're new to functional programming, the reasons for
+	  matching patterns in certain ways won't always be obvious.
+	  For example, in the definition of <code class="function">myMap</code>
+	  above, the first equation binds the function we're mapping
+	  to the variable <code class="varname">f</code>, but the second uses
+	  wild cards for both parameters.  What's going on?</p><p id="x_UL"><a name="x_UL"></a>We use a wild card in place of <code class="varname">f</code> to
+	  indicate that we aren't calling the function
+	  <code class="varname">f</code> on the right hand side of the equation.
+	  What about the list parameter?  The list type has two
+	  constructors.  We've already matched on the non-empty
+	  constructor in the first equation that defines
+	  <code class="function">myMap</code>.  By elimination, the constructor
+	  in the second equation is necessarily the empty list
+	  constructor, so there's no need to perform a match to
+	  see what its value really is.</p><p id="x_rC1"><a name="x_rC1"></a>As a matter of style, it is fine to use wild cards for
+	  well known simple types like lists and <span class="type">Maybe</span>.
+	  For more complicated or less familiar types, it can be safer
+	  and more readable to name constructors explicitly. </p></td></tr></table></div><p id="x_R8"><a name="x_R8"></a>We try out our <code class="function">myMap</code> function to give
+	ourselves some assurance that it behaves similarly to the
+	standard <code class="function">map</code>.</p><a name="ch04.map.ghci:inuse"></a><pre id="ch04.map.ghci:inuse" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Data.Char</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>map toLower "SHOUTING"</code></strong>
+"shouting"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>myMap toUpper "whispering"</code></strong>
+"WHISPERING"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>map negate [1,2,3]</code></strong>
+[-1,-2,-3]
+</pre><p id="x_S8"><a name="x_S8"></a>This pattern of spotting a repeated idiom, then
+	abstracting it so we can reuse (and write less!) code, is a
+	common aspect of Haskell programming.  While abstraction isn't
+	unique to Haskell, higher order functions make it remarkably
+	easy.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="fp.filter">Selecting pieces of input</h3></div></div></div><p id="x_T8"><a name="x_T8"></a>Another common operation on a sequence of data
+	is to comb through it for elements that satisfy some
+	criterion.  Here's a function that walks a list of numbers and
+	returns those that are odd. Our code has a recursive case
+	that's a bit more complex than our earlier functions: it only
+	puts a number in the list it returns if the number is odd.
+	Using a guard expresses this nicely.</p><a name="Filter.hs:oddList"></a><pre id="Filter.hs:oddList" class="programlisting">-- file: ch04/Filter.hs
+oddList :: [Int] -&gt; [Int]
+
+oddList (x:xs) | odd x     = x : oddList xs
+               | otherwise = oddList xs
+oddList _                  = []</pre><p id="x_V8"><a name="x_V8"></a>Let's see that in action.</p><a name="ch04.filter.ghci:oddList"></a><pre id="ch04.filter.ghci:oddList" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>oddList [1,1,2,3,5,8,13,21,34]</code></strong>
+[1,1,3,5,13,21]
+</pre><p id="x_W8"><a name="x_W8"></a>Once again, this idiom is so common that the
+	Prelude defines a function, <code class="function">filter</code>, which
+	we have already introduced.  It removes the need for
+	boilerplate code to recurse over the list.</p><a name="ch04.filter.ghci:filter"></a><pre id="ch04.filter.ghci:filter" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type filter</code></strong>
+filter :: (a -&gt; Bool) -&gt; [a] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>filter odd [3,1,4,1,5,9,2,6,5]</code></strong>
+[3,1,1,5,9,5]
+</pre><p id="x_X8"><a name="x_X8"></a>The <code class="function">filter</code> function takes a
+	predicate and applies it to every element in its input list,
+	returning a list of only those for which the predicate
+	evaluates to <code class="code">True</code>.  We'll revisit
+	<code class="function">filter</code> again soon, in <a class="xref" href="functional-programming.html#fp.foldr.filter" title="Folding from the right">the section called “Folding from the right”</a>.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id592937">Computing one answer over a collection</h3></div></div></div><p id="x_Z8"><a name="x_Z8"></a>Another common thing to do with a collection is
+	reduce it to a single value.  A simple example of this is
+	summing the values of a list.</p><a name="Sum.hs:mySum"></a><pre id="Sum.hs:mySum" class="programlisting">-- file: ch04/Sum.hs
+mySum xs = helper 0 xs
+    where helper acc (x:xs) = helper (acc + x) xs
+          helper acc _      = acc</pre><p id="x_a8"><a name="x_a8"></a>Our <code class="function">helper</code> function is tail
+	recursive, and uses an accumulator parameter,
+	<code class="varname">acc</code>, to hold the current partial sum of the
+	list.  As we already saw with <code class="function">asInt</code>, this
+	is a “<span class="quote">natural</span>” way to represent a loop in a pure
+	functional language.</p><p id="x_b8"><a name="x_b8"></a>For something a little more complicated, let's
+	take a look at the Adler-32 checksum.  This is a popular
+	checksum algorithm; it concatenates two 16-bit checksums into
+	a single 32-bit checksum.  The first checksum is the sum of
+	all input bytes, plus one.  The second is the sum of all
+	intermediate values of the first checksum.  In each case, the
+	sums are computed modulo 65521.  Here's a straightforward,
+	unoptimised Java implementation.  (It's safe to skip it if you
+	don't read Java.)</p><a name="Adler32.java:Adler32"></a><pre id="Adler32.java:Adler32" class="programlisting">public class Adler32 
+{
+    private static final int base = 65521;
+
+    public static int compute(byte[] data, int offset, int length)
+    {
+	int a = 1, b = 0;
+
+	for (int i = offset; i &lt; offset + length; i++) {
+	    a = (a + (data[i] &amp; 0xff)) % base;
+	    b = (a + b) % base;
+	}
+
+	return (b &lt;&lt; 16) | a;
+    }
+}</pre><p id="x_c8"><a name="x_c8"></a>Although Adler-32 is a simple checksum, this
+	code isn't particularly easy to read on account of the
+	bit-twiddling involved.  Can we do any better with a Haskell
+	implementation?</p><a name="Adler32.hs:adler32"></a><pre id="Adler32.hs:adler32" class="programlisting">-- file: ch04/Adler32.hs
+import Data.Char (ord)
+import Data.Bits (shiftL, (.&amp;.), (.|.))
+
+base = 65521
+
+adler32 xs = helper 1 0 xs
+    where helper a b (x:xs) = let a' = (a + (ord x .&amp;. 0xff)) `mod` base
+                                  b' = (a' + b) `mod` base
+                              in helper a' b' xs
+          helper a b _     = (b `shiftL` 16) .|. a</pre><p id="x_d8"><a name="x_d8"></a>This code isn't exactly easier to follow than
+	the Java code, but let's look at what's going on.  First of
+	all, we've introduced some new functions.  The
+	<code class="function">shiftL</code> function implements a logical
+	shift left; <code class="function">(.&amp;.)</code> provides bitwise
+	“<span class="quote">and</span>”; and <code class="function">(.|.)</code> provides
+	bitwise “<span class="quote">or</span>”.</p><p id="x_sC1"><a name="x_sC1"></a>Once again, our <code class="function">helper</code> function is
+	tail recursive.  We've turned the two variables we updated on
+	every loop iteration in Java into accumulator parameters.
+	When our recursion terminates on the end of the input list, we
+	compute our checksum and return it.</p><p id="x_e8"><a name="x_e8"></a>If we take a step back, we can restructure our
+	Haskell <code class="function">adler32</code> to more closely resemble
+	our earlier <code class="function">mySum</code> function.  Instead of
+	two accumulator parameters, we can use a pair as the
+	accumulator.</p><a name="Adler32.hs:adler32_try2"></a><pre id="Adler32.hs:adler32_try2" class="programlisting">-- file: ch04/Adler32.hs
+adler32_try2 xs = helper (1,0) xs
+    where helper (a,b) (x:xs) =
+              let a' = (a + (ord x .&amp;. 0xff)) `mod` base
+                  b' = (a' + b) `mod` base
+              in helper (a',b') xs
+          helper (a,b) _     = (b `shiftL` 16) .|. a</pre><p id="x_f8"><a name="x_f8"></a>Why would we want to make this seemingly
+	meaningless structural change?  Because as we've already seen
+	with <code class="function">map</code> and <code class="function">filter</code>,
+	we can extract the common behavior shared by
+	<code class="function">mySum</code> and
+	<code class="function">adler32_try2</code> into a higher-order
+	function.  We can describe this behavior as “<span class="quote">do
+	  something to every element of a list, updating an
+	  accumulator as we go, and returning the accumulator when
+	  we're done</span>”.</p><p id="x_g8"><a name="x_g8"></a>This kind of function is called a
+	<span class="emphasis"><em>fold</em></span>, because it “<span class="quote">folds up</span>”
+	a list.  There are two kinds of fold over lists,
+	<code class="function">foldl</code> for folding from the left (the
+	start) and <code class="function">foldr</code> for folding from the
+	right (the end).</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="fp.foldl">The left fold</h3></div></div></div><p id="x_cO1"><a name="x_cO1"></a>Here is the definition of <code class="function">foldl</code>.</p><a name="Fold.hs:foldl"></a><pre id="Fold.hs:foldl" class="programlisting">-- file: ch04/Fold.hs
+foldl :: (a -&gt; b -&gt; a) -&gt; a -&gt; [b] -&gt; a
+
+foldl step zero (x:xs) = foldl step (step zero x) xs
+foldl _    zero []     = zero</pre><p id="x_h8"><a name="x_h8"></a>The <code class="function">foldl</code> function takes a
+	“<span class="quote">step</span>” function, an initial value for its
+	accumulator, and a list.  The “<span class="quote">step</span>” takes an
+	accumulator and an element from the list, and returns a new
+	accumulator value. All <code class="function">foldl</code> does is call
+	the “<span class="quote">stepper</span>” on the current accumulator and an
+	element of the list, and passes the new accumulator value to
+	itself recursively to consume the rest of the list.</p><p id="x_i8"><a name="x_i8"></a>We refer to <code class="function">foldl</code> as a “<span class="quote">left
+	  fold</span>” because it consumes the list from left (the
+	head) to right.</p><p id="x_j8"><a name="x_j8"></a>Here's a rewrite of <code class="function">mySum</code> using
+	<code class="function">foldl</code>.</p><a name="Sum.hs:foldlSum"></a><pre id="Sum.hs:foldlSum" class="programlisting">-- file: ch04/Sum.hs
+foldlSum xs = foldl step 0 xs
+    where step acc x = acc + x</pre><p id="x_VL"><a name="x_VL"></a>That local function <code class="function">step</code> just adds two
+	numbers, so let's simply use the addition operator instead,
+	and eliminate the unnecessary <code class="code">where</code>
+	clause.</p><a name="Sum.hs:niceSum"></a><pre id="Sum.hs:niceSum" class="programlisting">-- file: ch04/Sum.hs
+niceSum :: [Integer] -&gt; Integer
+niceSum xs = foldl (+) 0 xs</pre><p id="x_k8"><a name="x_k8"></a>Notice how much simpler this code is than our
+	original <code class="function">mySum</code>?  We're no longer using
+	explicit recursion, because <code class="function">foldl</code> takes
+	care of that for us.  We've simplified our problem down to two
+	things: what the initial value of the accumulator should be
+	(the second parameter to <code class="function">foldl</code>), and how
+	to update the accumulator (the <code class="function">(+)</code>
+	function).  As an added bonus, our code is now shorter, too,
+	which makes it easier to understand.</p><p id="x_WL"><a name="x_WL"></a>Let's take a deeper look at what
+	<code class="function">foldl</code> is doing here, by manually writing
+	out each step in its evaluation when we call <code class="code">niceSum
+	  [1,2,3]</code>.</p><a name="Fold.hs:foldl.expand"></a><pre id="Fold.hs:foldl.expand" class="programlisting">-- file: ch04/Fold.hs
+foldl (+) 0 (1:2:3:[])
+          == foldl (+) (0 + 1)             (2:3:[])
+          == foldl (+) ((0 + 1) + 2)       (3:[])
+          == foldl (+) (((0 + 1) + 2) + 3) []
+          ==           (((0 + 1) + 2) + 3)</pre><p id="x_l8"><a name="x_l8"></a>We can rewrite <code class="function">adler32_try2</code>
+	using <code class="function">foldl</code> to let us focus on the
+	details that are important.</p><a name="Adler32.hs:adler32_foldl"></a><pre id="Adler32.hs:adler32_foldl" class="programlisting">-- file: ch04/Adler32.hs
+adler32_foldl xs = let (a, b) = foldl step (1, 0) xs
+                   in (b `shiftL` 16) .|. a
+    where step (a, b) x = let a' = a + (ord x .&amp;. 0xff)
+                          in (a' `mod` base, (a' + b) `mod` base)</pre><p id="x_m8"><a name="x_m8"></a>Here, our accumulator is a pair, so the result of
+	<code class="function">foldl</code> will be, too. We pull the final
+	accumulator apart when <code class="function">foldl</code> returns, and
+	bit-twiddle it into a “<span class="quote">proper</span>” checksum.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id593448">Why use folds, maps, and filters?</h3></div></div></div><p id="x_n8"><a name="x_n8"></a>A quick glance reveals that
+	<code class="function">adler32_foldl</code> isn't really any shorter
+	than <code class="function">adler32_try2</code>.  Why should we use a
+	fold in this case?  The advantage here lies in the fact that
+	folds are extremely common in Haskell, and they have regular,
+	predictable behavior.</p><p id="x_o8"><a name="x_o8"></a>This means that a reader with a little
+	experience will have an easier time understanding a use of a
+	fold than code that uses explicit recursion.  A fold isn't
+	going to produce any surprises, but the behavior of a function
+	that recurses explicitly isn't immediately obvious.  Explicit
+	recursion requires us to read closely to understand exactly
+	what's going on.</p><p id="x_p8"><a name="x_p8"></a>This line of reasoning applies to other
+	higher-order library functions, including those we've already
+	seen, <code class="function">map</code> and
+	<code class="function">filter</code>. Because they're library functions
+	with well-defined behavior, we only need to learn what they do
+	once, and we'll have an advantage when we need to understand
+	any code that uses them.  These improvements in readability
+	also carry over to writing code.  Once we start to think with
+	higher order functions in mind, we'll produce concise code
+	more quickly.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="fp.foldr.filter">Folding from the right</h3></div></div></div><p id="x_x8"><a name="x_x8"></a>The counterpart to <code class="function">foldl</code> is
+	<code class="function">foldr</code>, which folds from the right of a
+	list.</p><a name="Fold.hs:foldr"></a><pre id="Fold.hs:foldr" class="programlisting">-- file: ch04/Fold.hs
+foldr :: (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b
+
+foldr step zero (x:xs) = step x (foldr step zero xs)
+foldr _    zero []     = zero</pre><p id="x_XL"><a name="x_XL"></a>Let's follow the same manual evaluation process with
+	<code class="function">foldr (+) 0 [1,2,3]</code> as we did with
+	<code class="function">niceSum</code> in <a class="xref" href="functional-programming.html#fp.foldl" title="The left fold">the section called “The left fold”</a>.</p><a name="Fold.hs:foldr.expand"></a><pre id="Fold.hs:foldr.expand" class="programlisting">-- file: ch04/Fold.hs
+foldr (+) 0 (1:2:3:[])
+          == 1 +           foldr (+) 0 (2:3:[])
+          == 1 + (2 +      foldr (+) 0 (3:[])
+          == 1 + (2 + (3 + foldr (+) 0 []))
+          == 1 + (2 + (3 + 0))</pre><p id="x_YL"><a name="x_YL"></a>The difference between
+	<code class="function">foldl</code> and <code class="function">foldr</code>
+	should be clear from looking at where the parentheses and the
+	“<span class="quote">empty list</span>” elements show up.  With
+	<code class="function">foldl</code>, the empty list element is on the
+	left, and all the parentheses group to the left.  With
+	<code class="function">foldr</code>, the <code class="varname">zero</code> value
+	is on the right, and the parentheses group to the
+	right.</p><p id="x_ZL"><a name="x_ZL"></a>There is a lovely intuitive explanation of how
+	<code class="function">foldr</code> works: it replaces the empty list
+	with the <code class="varname">zero</code> value, and every constructor
+	in the list with an application of the step function.</p><a name="Fold.hs:foldr.sub"></a><pre id="Fold.hs:foldr.sub" class="programlisting">-- file: ch04/Fold.hs
+1 : (2 : (3 : []))
+1 + (2 + (3 + 0 ))</pre><p id="x_y8"><a name="x_y8"></a>At first glance, <code class="function">foldr</code> might seem
+	less useful than <code class="function">foldl</code>: what use is a
+	function that folds from the right?  But consider the
+	Prelude's <code class="function">filter</code> function, which we last
+	encountered in <a class="xref" href="functional-programming.html#fp.filter" title="Selecting pieces of input">the section called “Selecting pieces of input”</a>.  If we write
+	<code class="function">filter</code> using explicit recursion, it will
+	look something like this.</p><a name="Fold.hs:filter"></a><pre id="Fold.hs:filter" class="programlisting">-- file: ch04/Fold.hs
+filter :: (a -&gt; Bool) -&gt; [a] -&gt; [a]
+filter p []   = []
+filter p (x:xs)
+    | p x       = x : filter p xs
+    | otherwise = filter p xs</pre><p id="x_z8"><a name="x_z8"></a>Perhaps surprisingly, though, we can write
+	<code class="function">filter</code> as a fold, using
+	<code class="function">foldr</code>.</p><a name="Fold.hs:myFilter"></a><pre id="Fold.hs:myFilter" class="programlisting">-- file: ch04/Fold.hs
+myFilter p xs = foldr step [] xs
+    where step x ys | p x       = x : ys
+                    | otherwise = ys</pre><p id="x_A9"><a name="x_A9"></a>This is the sort of definition that could cause us a
+	headache, so let's examine it in a little depth.  Like
+	<code class="function">foldl</code>, <code class="function">foldr</code> takes a
+	function and a base case (what to do when the input list is
+	empty) as arguments.  From reading the type of
+	<code class="function">filter</code>, we know that our
+	<code class="function">myFilter</code> function must return a list of
+	the same type as it consumes, so the base case should be a
+	list of this type, and the <code class="function">step</code> helper
+	function must return a list.</p><p id="x_B9"><a name="x_B9"></a>Since we know that <code class="function">foldr </code> calls
+	<code class="function">step</code> on one element of the input list at
+	a time, with the accumulator as its second argument, what
+	<code class="function">step</code> does must be quite simple.  If the
+	predicate returns <code class="function">True</code>, it pushes that
+	element onto the accumulated list; otherwise, it leaves the
+	list untouched.</p><p id="x_C9"><a name="x_C9"></a>The class of functions that we can express using
+	<code class="function">foldr</code> is called <span class="emphasis"><em>primitive
+	  recursive</em></span>.  A surprisingly large number of list
+	manipulation functions are primitive recursive.  For example,
+	here's <code class="function">map</code> written in terms of
+	<code class="function">foldr</code>.</p><a name="Fold.hs:myMap"></a><pre id="Fold.hs:myMap" class="programlisting">-- file: ch04/Fold.hs
+myMap :: (a -&gt; b) -&gt; [a] -&gt; [b]
+
+myMap f xs = foldr step [] xs
+    where step x ys = f x : ys</pre><p id="x_D9"><a name="x_D9"></a>In fact, we can even write <code class="function">foldl</code>
+	using <code class="function">foldr</code>!</p><a name="Fold.hs:myFoldl"></a><pre id="Fold.hs:myFoldl" class="programlisting">-- file: ch04/Fold.hs
+myFoldl :: (a -&gt; b -&gt; a) -&gt; a -&gt; [b] -&gt; a
+
+myFoldl f z xs = foldr step id xs z
+    where step x g a = g (f a x)</pre><div class="tip"><table border="0" summary="Tip: Understanding foldl in terms of foldr"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Understanding foldl in terms of foldr</th></tr><tr><td align="left" valign="top"><p id="x_E9"><a name="x_E9"></a>If you want to set yourself a solid challenge,
+	  try to follow the above definition of
+	  <code class="function">foldl</code> using <code class="function">foldr</code>.
+	  Be warned: this is not trivial!  You might want to have the
+	  following tools at hand: some headache pills and a glass of
+	  water, <span class="command"><strong>ghci</strong></span> (so that you can find out what the
+	  <code class="function">id</code> function does), and a pencil and
+	  paper.</p><p id="x_aL"><a name="x_aL"></a>You will want to follow the same manual
+	  evaluation process as we outlined above to see what
+	  <code class="function">foldl</code> and <code class="function">foldr</code>
+	  were really doing.  If you get stuck, you may find the task
+	  easier after reading <a class="xref" href="functional-programming.html#fp.partialapp" title="Partial function application and currying">the section called “Partial function application and currying”</a>.</p></td></tr></table></div><p id="x_H9"><a name="x_H9"></a>Returning to our earlier intuitive explanation
+	of what <code class="function">foldr</code> does, another useful way to
+	think about it is that it <span class="emphasis"><em>transforms</em></span> its
+	input list.  Its first two arguments are “<span class="quote">what to do
+	  with each head/tail element of the list</span>”, and
+	“<span class="quote">what to substitute for the end of the
+	  list</span>”.</p><p id="x_I9"><a name="x_I9"></a>The “<span class="quote">identity</span>” transformation with
+	<code class="function">foldr</code> thus replaces the empty list with
+	itself, and applies the list constructor to each head/tail
+	pair:</p><a name="Fold.hs:identity"></a><pre id="Fold.hs:identity" class="programlisting">-- file: ch04/Fold.hs
+identity :: [a] -&gt; [a]
+identity xs = foldr (:) [] xs</pre><p id="x_J9"><a name="x_J9"></a>It transforms a list into a copy of itself.</p><a name="fold.ghci:identity"></a><pre id="fold.ghci:identity" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>identity [1,2,3]</code></strong>
+[1,2,3]
+</pre><p id="x_K9"><a name="x_K9"></a>If <code class="function">foldr</code> replaces the end
+	of a list with some other value, this gives us another way to
+	look at Haskell's list append function,
+	<code class="function">(++)</code>.</p><a name="fold.ghci:append.builtin"></a><pre id="fold.ghci:append.builtin" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>[1,2,3] ++ [4,5,6]</code></strong>
+[1,2,3,4,5,6]
+</pre><p id="x_L9"><a name="x_L9"></a>All we have to do to append a list onto another is
+	substitute that second list for the end of our first
+	list.</p><a name="Fold.hs:append"></a><pre id="Fold.hs:append" class="programlisting">-- file: ch04/Fold.hs
+append :: [a] -&gt; [a] -&gt; [a]
+append xs ys = foldr (:) ys xs</pre><p id="x_M9"><a name="x_M9"></a>Let's try this out.</p><a name="fold.ghci:append"></a><pre id="fold.ghci:append" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>append [1,2,3] [4,5,6]</code></strong>
+[1,2,3,4,5,6]
+</pre><p id="x_bL"><a name="x_bL"></a>Here, we replace each list constructor with another
+	list constructor, but we replace the empty list with the
+	list we want to append onto the end of our first list.</p><p id="x_P9"><a name="x_P9"></a>As our extended treatment of folds should
+	indicate, the <code class="function">foldr</code> function is nearly as
+	important a member of our list-programming toolbox as the more
+	basic list functions we saw in <a class="xref" href="functional-programming.html#fp.lists" title="Working with lists">the section called “Working with lists”</a>. It can consume and produce a list
+	incrementally, which makes it useful for writing lazy data
+	processing code.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id594142">Left folds, laziness, and space leaks</h3></div></div></div><p id="x_Q9"><a name="x_Q9"></a>To keep our initial discussion simple, we used
+	<code class="function">foldl</code> throughout most of this section.
+	This is convenient for testing, but we will never use
+	<code class="function">foldl</code> in practice.</p><p id="x_tC1"><a name="x_tC1"></a>The reason has to do with Haskell's non-strict evaluation.
+	If we apply <code class="code">foldl (+) [1,2,3]</code>, it evaluates to
+	the expression <code class="code">(((0 + 1) + 2) + 3)</code>.  We can see
+	this occur if we revisit the way in which the function gets
+	expanded.</p><pre id="id594184" class="programlisting">-- file: ch04/Fold.hs
+foldl (+) 0 (1:2:3:[])
+          == foldl (+) (0 + 1)             (2:3:[])
+          == foldl (+) ((0 + 1) + 2)       (3:[])
+          == foldl (+) (((0 + 1) + 2) + 3) []
+          ==           (((0 + 1) + 2) + 3)</pre><p id="x_uC1"><a name="x_uC1"></a>The final expression will not be evaluated to
+	<code class="code">6</code> until its value is demanded.  Before it is
+	evaluated, it must be stored as a thunk.  Not surprisingly, a
+	thunk is more expensive to store than a single number, and the
+	more complex the thunked expression, the more space it needs.
+	For something cheap like arithmetic, thunking an expresion is
+	more computationally expensive than evaluating it immediately.
+	We thus end up paying both in space and in time.</p><p id="x_vC1"><a name="x_vC1"></a>When <span class="application">GHC</span> is evaluating a thunked expression, it uses an
+	internal stack to do so.  Because a thunked expression could
+	potentially be infinitely large, <span class="application">GHC</span> places a fixed limit on
+	the maximum size of this stack.  Thanks to this limit, we can
+	try a large thunked expression in <span class="command"><strong>ghci</strong></span> without needing to
+	worry that it might consume all of memory.</p><a name="thunky.ghci:sum"></a><pre id="thunky.ghci:sum" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>foldl (+) 0 [1..1000]</code></strong>
+500500
+</pre><p id="x_wC1"><a name="x_wC1"></a>From looking at the expansion above, we can surmise that
+	this creates a thunk that consists of 1000 integers and 999
+	applications of <code class="function">(+)</code>.  That's a lot of
+	memory and effort to represent a single number! With a larger
+	expression, although the size is still modest, the results are
+	more dramatic.</p><a name="thunky.ghci:overflow"></a><pre id="thunky.ghci:overflow" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>foldl (+) 0 [1..1000000]</code></strong>
+*** Exception: stack overflow
+</pre><p id="x_xC1"><a name="x_xC1"></a>On small expressions, <code class="function">foldl</code> will work
+	correctly but slowly, due to the thunking overhead that it
+	incurs. We refer to this invisible thunking as a
+	<span class="emphasis"><em>space leak</em></span>, because our code is operating
+	normally, but using far more memory than it should.</p><p id="x_yC1"><a name="x_yC1"></a>On larger expressions, code with a space leak will simply
+	fail, as above.  A space leak with <code class="code">foldl</code> is a
+	classic roadblock for new Haskell programmers. Fortunately,
+	this is easy to avoid.</p><p id="x_zC1"><a name="x_zC1"></a>The <code class="code">Data.List</code> module defines a function named
+	<code class="function">foldl'</code> that is similar to
+	<code class="function">foldl</code>, but does not build up thunks.  The
+	difference in behavior between the two is immediately
+	obvious.</p><a name="thunky.ghci:strict"></a><pre id="thunky.ghci:strict" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>foldl  (+) 0 [1..1000000]</code></strong>
+*** Exception: stack overflow
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Data.List</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>foldl' (+) 0 [1..1000000]</code></strong>
+500000500000
+</pre><p id="x_AD1"><a name="x_AD1"></a>Due to the thunking behavior of
+	<code class="function">foldl</code>, it is wise to avoid this function
+	in real programs: even if it doesn't fail outright, it will be
+	unnecessarily inefficient. Instead, import
+	<code class="code">Data.List</code> and use
+	<code class="function">foldl'</code>.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="fp.fold.exercises">Exercises</h3></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id594420"></a><a name="fp.asInt.fix"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_R9"><a name="x_R9"></a>Use a fold (choosing the appropriate fold will make
+	      your code much simpler) to rewrite and improve upon the
+	      <code class="function">asInt</code> function from <a class="xref" href="functional-programming.html#fp.tailrecursion" title="Explicit recursion">the section called “Explicit recursion”</a>.</p><a name="ch04.exercises.hs:asInt_fold"></a><pre id="ch04.exercises.hs:asInt_fold" class="programlisting">-- file: ch04/ch04.exercises.hs
+asInt_fold :: String -&gt; Int</pre><p id="x_S9"><a name="x_S9"></a>Your function should behave as follows.</p><a name="ch04.exercises.ghci:asInt_fold"></a><pre id="ch04.exercises.ghci:asInt_fold" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt_fold "101"</code></strong>
+101
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt_fold "-31337"</code></strong>
+-31337
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt_fold "1798"</code></strong>
+1798
+</pre><p id="x_T9"><a name="x_T9"></a>Extend your function to handle the following kinds
+	      of exceptional conditions by calling
+	      <code class="function">error</code>.</p><a name="ch04.exercises.ghci:asInt_fold.errors"></a><pre id="ch04.exercises.ghci:asInt_fold.errors" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt_fold ""</code></strong>
+0
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt_fold "-"</code></strong>
+0
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt_fold "-3"</code></strong>
+-3
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt_fold "2.7"</code></strong>
+*** Exception: Char.digitToInt: not a digit '.'
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt_fold "314159265358979323846"</code></strong>
+564616105916946374
+</pre></td></tr><tr class="question"><td align="left" valign="top"><a name="id594584"></a><a name="id594587"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_U9"><a name="x_U9"></a>The <code class="function">asInt_fold</code> function uses
+	      <code class="function">error</code>, so its callers cannot handle
+	      errors.  Rewrite it to fix this problem.</p><a name="ch04.exercises.hs:asInt_either"></a><pre id="ch04.exercises.hs:asInt_either" class="programlisting">-- file: ch04/ch04.exercises.hs
+type ErrorMessage = String
+asInt_either :: String -&gt; Either ErrorMessage Int</pre><a name="ch04.exercises.ghci:asInt_either"></a><pre id="ch04.exercises.ghci:asInt_either" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt_either "33"</code></strong>
+Right 33
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>asInt_either "foo"</code></strong>
+Left "non-digit 'o'"
+</pre></td></tr><tr class="question"><td align="left" valign="top"><a name="id594652"></a><a name="id594654"></a><p><b>3.</b></p></td><td align="left" valign="top"><p id="x_V9"><a name="x_V9"></a>The Prelude function <code class="function">concat</code>
+	      concatenates a list of lists into a single list, and has
+	      the following type.</p><a name="ch04.exercises.hs:concat"></a><pre id="ch04.exercises.hs:concat" class="programlisting">-- file: ch04/ch04.exercises.hs
+concat :: [[a]] -&gt; [a]</pre><p id="x_W9"><a name="x_W9"></a>Write your own definition of
+	      <code class="function">concat</code> using
+	      <code class="function">foldr</code>.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id594702"></a><a name="id594704"></a><p><b>4.</b></p></td><td align="left" valign="top"><p id="x_X9"><a name="x_X9"></a>Write your own definition of the standard
+	      <code class="function">takeWhile</code> function, first using
+	      explicit recursion, then
+	      <code class="function">foldr</code>.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id594728"></a><a name="id594730"></a><p><b>5.</b></p></td><td align="left" valign="top"><p id="x_Z9"><a name="x_Z9"></a>The <code class="code">Data.List</code> module defines a
+	      function, <code class="function">groupBy</code>, which has the
+	      following type.</p><a name="ch04.exercises.hs:groupBy"></a><pre id="ch04.exercises.hs:groupBy" class="programlisting">-- file: ch04/ch04.exercises.hs
+groupBy :: (a -&gt; a -&gt; Bool) -&gt; [a] -&gt; [[a]]</pre><p id="x_a9"><a name="x_a9"></a>Use <span class="command"><strong>ghci</strong></span> to load the <code class="code">Data.List</code> module
+	      and figure out what <code class="function">groupBy</code> does,
+	      then write your own implementation using a fold.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id594786"></a><a name="id594788"></a><p><b>6.</b></p></td><td align="left" valign="top"><p id="x_b9"><a name="x_b9"></a>How many of the following Prelude
+	      functions can you rewrite using list folds?</p><div class="itemizedlist"><ul type="disc"><li><p id="x_BD1"><a name="x_BD1"></a><code class="function">any</code></p></li><li><p id="x_CD1"><a name="x_CD1"></a><code class="function">cycle</code></p></li><li><p id="x_DD1"><a name="x_DD1"></a><code class="function">words</code></p></li><li><p id="x_ED1"><a name="x_ED1"></a><code class="function">unlines</code></p></li></ul></div><p id="x_FD1"><a name="x_FD1"></a>For those functions where you can use either
+	      <code class="function">foldl'</code> or
+	      <code class="function">foldr</code>, which is more
+	      appropriate in each case?</p></td></tr></tbody></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id594881">Further reading</h3></div></div></div><p id="x_c9"><a name="x_c9"></a>The article [<span class="citation"><a href="bibliography.html#bib.hutton99" class="biblioref" title="[Hutton99]"><abbr class="abbrev">Hutton99</abbr></a></span>] is an excellent and
+	deep tutorial covering folds. It includes many examples of how
+	to use simple, systematic calculation techniques to turn
+	functions that use explicit recursion into folds.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="fp.anonymous">Anonymous (lambda) functions</h2></div></div></div><p id="x_d9"><a name="x_d9"></a>In many of the function definitions we've seen so far, we've
+      written short helper functions.</p><a name="Partial.hs:isInAny"></a><pre id="Partial.hs:isInAny" class="programlisting">-- file: ch04/Partial.hs
+isInAny needle haystack = any inSequence haystack
+    where inSequence s = needle `isInfixOf` s</pre><p id="x_e9"><a name="x_e9"></a>Haskell lets us write completely anonymous
+      functions, which we can use to avoid the need to give names to
+      our helper functions.  Anonymous functions are often called
+      “<span class="quote">lambda</span>” functions, in a nod to their heritage in
+      the lambda calculus.  We introduce an anonymous function with a
+      backslash character, <code class="code">\</code>, pronounced <span class="emphasis"><em>lambda</em></span><sup>[<a name="id594951" href="#ftn.id594951" class="footnote">9</a>]</sup>.  This is followed by the function's
+      arguments (which can include patterns), then an arrow
+      <code class="code">-&gt;</code> to introduce the function's body.</p><p id="x_f9"><a name="x_f9"></a>Lambdas are most easily illustrated by example.  Here's a
+      rewrite of <code class="function">isInAny</code> using an anonymous
+      function.</p><a name="Partial.hs:isInAny2"></a><pre id="Partial.hs:isInAny2" class="programlisting">-- file: ch04/Partial.hs
+isInAny2 needle haystack = any (\s -&gt; needle `isInfixOf` s) haystack</pre><p id="x_g9"><a name="x_g9"></a>We've wrapped the lambda in parentheses here so that Haskell
+      can tell where the function body ends.</p><p id="x_h9"><a name="x_h9"></a>Anonymous functions behave in every respect
+      identically to functions that have names, but Haskell places a
+      few important restrictions on how we can define them.  Most
+      importantly, while we can write a normal function using
+      multiple clauses containing different patterns and guards, a
+      lambda can only have a single clause in its definition.</p><p id="x_i9"><a name="x_i9"></a>The limitation to a single clause restricts how we can use
+      patterns in the definition of a lambda.  We'll usually write a
+      normal function with several clauses to cover different pattern
+      matching possibilities.</p><a name="Lambda.hs:safeHead"></a><pre id="Lambda.hs:safeHead" class="programlisting">-- file: ch04/Lambda.hs
+safeHead (x:_) = Just x
+safeHead _ = Nothing</pre><p id="x_j9"><a name="x_j9"></a>But as we can't write multiple clauses to define a lambda,
+      we must be certain that any patterns we use will match.</p><a name="Lambda.hs:unsafeHead"></a><pre id="Lambda.hs:unsafeHead" class="programlisting">-- file: ch04/Lambda.hs
+unsafeHead = \(x:_) -&gt; x</pre><p id="x_k9"><a name="x_k9"></a>This definition of <code class="function">unsafeHead</code> will
+      explode in our faces if we call it with a value on which pattern
+      matching fails.</p><a name="lambda.ghci:unsafeHead"></a><pre id="lambda.ghci:unsafeHead" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type unsafeHead</code></strong>
+unsafeHead :: [t] -&gt; t
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>unsafeHead [1]</code></strong>
+1
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>unsafeHead []</code></strong>
+*** Exception: Lambda.hs:7:13-23: Non-exhaustive patterns in lambda
+
+</pre><p id="x_l9"><a name="x_l9"></a>The definition typechecks, so it will compile, so the error
+      will occur at runtime.  The moral of this story is to be careful
+      in how you use patterns when defining an anonymous function:
+      make sure your patterns can't fail!</p><p id="x_m9"><a name="x_m9"></a>Another thing to notice about the
+      <code class="function">isInAny</code> and <code class="function">isInAny2</code>
+      functions we showed above is that the first version, using a
+      helper function that has a name, is a little easier to read than
+      the version that plops an anonymous function into the middle.
+      The named helper function doesn't disrupt the
+      “<span class="quote">flow</span>” of the function in which it's used, and the
+      judiciously chosen name gives us a little bit of information
+      about what the function is expected to do.</p><p id="x_n9"><a name="x_n9"></a>In contrast, when we run across a lambda in the middle of a
+      function body, we have to switch gears and read its definition
+      fairly carefully to understand what it does.  To help with
+      readability and maintainability, then, we tend to avoid lambdas
+      in many situations where we could use them to trim a few
+      characters from a function definition.  Very often, we'll use
+      a partially applied function instead, resulting in clearer and
+      more readable code than either a lambda or an explicit
+      function.  Don't know what a partially applied function is yet?
+      Read on!</p><p id="x_dL"><a name="x_dL"></a>We don't intend these caveats to suggest that lambdas are
+      useless, merely that we ought to be mindful of the potential
+      pitfalls when we're thinking of using them.  In later chapters,
+      we will see that they are often invaluable as
+      “<span class="quote">glue</span>”.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="fp.partialapp">Partial function application and currying</h2></div></div></div><p id="x_o9"><a name="x_o9"></a>You may wonder why the <code class="code">-&gt;</code> arrow is
+      used for what seems to be two purposes in the type signature of
+      a function.</p><a name="ch04.list.ghci:dropWhile"></a><pre id="ch04.list.ghci:dropWhile" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type dropWhile</code></strong>
+dropWhile :: (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</pre><p id="x_p9"><a name="x_p9"></a>It looks like the <code class="code">-&gt;</code> is separating
+      the arguments to <code class="function">dropWhile</code> from each other,
+      but that it also separates the arguments from the return type.
+      But in fact <code class="function">-&gt;</code> has only one meaning: it
+      denotes a function that takes an argument of the type on the
+      left, and returns a value of the type on the right.</p><p id="x_q9"><a name="x_q9"></a>The implication here is very important: in
+      Haskell, <span class="emphasis"><em>all functions take only one
+	argument</em></span>. While <code class="function">dropWhile</code>
+      <span class="emphasis"><em>looks</em></span> like a function that takes two
+      arguments, it is actually a function of one argument, which
+      returns a function that takes one argument. Here's a perfectly
+      valid Haskell expression.</p><a name="ch04.list.ghci:dropWhile.isSpace"></a><pre id="ch04.list.ghci:dropWhile.isSpace" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Data.Char</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type dropWhile isSpace</code></strong>
+dropWhile isSpace :: [Char] -&gt; [Char]
+</pre><p id="x_s9"><a name="x_s9"></a>Well, <span class="emphasis"><em>that</em></span> looks useful.  The
+      value <code class="code">dropWhile isSpace</code> is a function that strips
+      leading white space from a string.  How is this useful?  As one
+      example, we can use it as an argument to a higher order
+      function.</p><a name="ch04.list.ghci:dropWhile.isSpace.use"></a><pre id="ch04.list.ghci:dropWhile.isSpace.use" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>map (dropWhile isSpace) [" a","f","   e"]</code></strong>
+["a","f","e"]
+</pre><p id="x_t9"><a name="x_t9"></a>Every time we supply an argument to a function, we can
+      “<span class="quote">chop</span>” an element off the front of its type
+      signature.  Let's take <code class="function">zip3</code> as an example
+      to see what we mean; this is a function that zips three lists
+      into a list of three-tuples.</p><a name="ch04.list.ghci:zip3"></a><pre id="ch04.list.ghci:zip3" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type zip3</code></strong>
+zip3 :: [a] -&gt; [b] -&gt; [c] -&gt; [(a, b, c)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>zip3 "foo" "bar" "quux"</code></strong>
+[('f','b','q'),('o','a','u'),('o','r','u')]
+</pre><p id="x_u9"><a name="x_u9"></a>If we apply <code class="function">zip3</code> with just
+      one argument, we get a function that accepts two arguments.  No
+      matter what arguments we supply to this compound function, its
+      first argument will always be the fixed value we
+      specified.</p><a name="ch04.list.ghci:zip3foo"></a><pre id="ch04.list.ghci:zip3foo" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type zip3 "foo"</code></strong>
+zip3 "foo" :: [b] -&gt; [c] -&gt; [(Char, b, c)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let zip3foo = zip3 "foo"</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type zip3foo</code></strong>
+zip3foo :: [b] -&gt; [c] -&gt; [(Char, b, c)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(zip3 "foo") "aaa" "bbb"</code></strong>
+[('f','a','b'),('o','a','b'),('o','a','b')]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>zip3foo "aaa" "bbb"</code></strong>
+[('f','a','b'),('o','a','b'),('o','a','b')]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>zip3foo [1,2,3] [True,False,True]</code></strong>
+[('f',1,True),('o',2,False),('o',3,True)]
+</pre><p id="x_v9"><a name="x_v9"></a>When we pass fewer arguments to a function than the function
+      can accept, we call this <span class="emphasis"><em>partial
+	application</em></span> of the function: we're applying the
+      function to only some of its arguments.</p><p id="x_w9"><a name="x_w9"></a>In the example above, we have a partially applied function,
+      <code class="code">zip3 "foo"</code>, and a new function,
+      <code class="function">zip3foo</code>.  We can see that the type
+      signatures of the two and their behavior are identical.</p><p id="x_x9"><a name="x_x9"></a>This applies just as well if we fix two arguments, giving us
+      a function of just one argument.</p><a name="ch04.list.ghci:zip3foobar"></a><pre id="ch04.list.ghci:zip3foobar" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let zip3foobar = zip3 "foo" "bar"</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type zip3foobar</code></strong>
+zip3foobar :: [c] -&gt; [(Char, Char, c)]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>zip3foobar "quux"</code></strong>
+[('f','b','q'),('o','a','u'),('o','r','u')]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>zip3foobar [1,2]</code></strong>
+[('f','b',1),('o','a',2)]
+</pre><p id="x_y9"><a name="x_y9"></a>Partial function application lets us avoid writing
+      tiresome throwaway functions.  It's often more useful for this
+      purpose than the anonymous functions we introduced in <a class="xref" href="functional-programming.html#fp.anonymous" title="Anonymous (lambda) functions">the section called “Anonymous (lambda) functions”</a>.  Looking back at the
+      <code class="function">isInAny</code> function we defined there, here's
+      how we'd use a partially applied function instead of a named
+      helper function or a lambda.</p><a name="Partial.hs:isInAny3"></a><pre id="Partial.hs:isInAny3" class="programlisting">-- file: ch04/Partial.hs
+isInAny3 needle haystack = any (isInfixOf needle) haystack</pre><p id="x_z9"><a name="x_z9"></a>Here, the expression <code class="code">isInfixOf needle</code> is the
+      partially applied function.  We're taking the function
+      <code class="function">isInfixOf</code>, and “<span class="quote">fixing</span>” its
+      first argument to be the <code class="varname">needle</code> variable from
+      our parameter list.  This gives us a partially applied function
+      that has exactly the same type and behavior as the helper and
+      lambda in our earlier definitions.</p><p id="x_HD1"><a name="x_HD1"></a>Partial function application is named
+      <span class="emphasis"><em>currying</em></span>, after the logician Haskell
+      Curry (for whom the Haskell language is named).</p><p id="x_eL"><a name="x_eL"></a>As another example of currying in use, let's return to the
+      list-summing function we wrote in <a class="xref" href="functional-programming.html#fp.foldl" title="The left fold">the section called “The left fold”</a>.</p><pre id="id596294" class="programlisting">-- file: ch04/Sum.hs
+niceSum :: [Integer] -&gt; Integer
+niceSum xs = foldl (+) 0 xs</pre><p id="x_fL"><a name="x_fL"></a>We don't need to fully apply
+      <code class="function">foldl</code>; we can omit the list
+      <code class="varname">xs</code> from both the parameter list and the
+      parameters to <code class="function">foldl</code>, and we'll end up with
+      a more compact function that has the same type.</p><a name="Sum.hs:nicerSum"></a><pre id="Sum.hs:nicerSum" class="programlisting">-- file: ch04/Sum.hs
+nicerSum :: [Integer] -&gt; Integer
+nicerSum = foldl (+) 0</pre><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id596329">Sections</h3></div></div></div><p id="x_AA"><a name="x_AA"></a>Haskell provides a handy notational shortcut to let us
+	write a partially applied function in infix style.  If
+	we enclose an operator in parentheses, we can supply its left
+	or right argument inside the parentheses to get a partially
+	applied function.  This kind of partial application is called
+	a <span class="emphasis"><em>section</em></span>.</p><a name="partial.ghci:section"></a><pre id="partial.ghci:section" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>(1+) 2</code></strong>
+3
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>map (*3) [24,36]</code></strong>
+[72,108]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>map (2^) [3,5,7,9]</code></strong>
+[8,32,128,512]
+</pre><p id="x_BA"><a name="x_BA"></a>If we provide the left argument inside the section, then
+	calling the resulting function with one argument supplies the
+	operator's right argument.  And vice versa.</p><p id="x_CA"><a name="x_CA"></a>Recall that we can wrap a function name in backquotes to
+	use it as an infix operator.  This lets us use sections with
+	functions.</p><a name="partial.ghci:function"></a><pre id="partial.ghci:function" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (`elem` ['a'..'z'])</code></strong>
+(`elem` ['a'..'z']) :: Char -&gt; Bool
+</pre><p id="x_DA"><a name="x_DA"></a>The above definition fixes <code class="function">elem</code>'s
+	second argument, giving us a function that checks to see
+	whether its argument is a lowercase letter.</p><a name="partial.ghci:lower.letter"></a><pre id="partial.ghci:lower.letter" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>(`elem` ['a'..'z']) 'f'</code></strong>
+True
+</pre><p id="x_EA"><a name="x_EA"></a>Using this as an argument to
+	<code class="function">all</code>, we get a function that checks an
+	entire string to see if it's all lowercase.</p><a name="partial.ghci:lower.string"></a><pre id="partial.ghci:lower.string" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>all (`elem` ['a'..'z']) "Frobozz"</code></strong>
+False
+</pre><p id="x_ID1"><a name="x_ID1"></a>If we use this style, we can further improve the
+	readability of our earlier <code class="function">isInAny3</code>
+	function.</p><a name="Partial.hs:isInAny4"></a><pre id="Partial.hs:isInAny4" class="programlisting">-- file: ch04/Partial.hs
+isInAny4 needle haystack = any (needle `isInfixOf`) haystack</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="fp.aspattern">As-patterns</h2></div></div></div><p id="x_FA"><a name="x_FA"></a>Haskell's <code class="function">tails</code> function, in
+      the <code class="code">Data.List</code> module, generalises the
+      <code class="function">tail</code> function we introduced earlier.
+      Instead of returning one “<span class="quote">tail</span>” of a list, it
+      returns <span class="emphasis"><em>all</em></span> of them.</p><a name="suffix.ghci:tails"></a><pre id="suffix.ghci:tails" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m +Data.List</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>tail "foobar"</code></strong>
+"oobar"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>tail (tail "foobar")</code></strong>
+"obar"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>tails "foobar"</code></strong>
+["foobar","oobar","obar","bar","ar","r",""]
+</pre><p id="x_GA"><a name="x_GA"></a>Each of these strings is a <span class="emphasis"><em>suffix</em></span> of
+      the initial string, so <code class="function">tails</code> produces a
+      list of all suffixes, plus an extra empty list at the
+      end.  It always produces that extra empty list, even
+      when its input list is empty.</p><a name="suffix.ghci:tails.empty"></a><pre id="suffix.ghci:tails.empty" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>tails []</code></strong>
+[[]]
+</pre><p id="x_HA"><a name="x_HA"></a>What if we want a function that behaves like
+      <code class="function">tails</code>, but which <span class="emphasis"><em>only</em></span>
+      returns the non-empty suffixes?  One possibility would be for us
+      to write our own version by hand.  We'll use a new piece of
+      notation, the <code class="code">@</code> symbol.</p><a name="SuffixTree.hs:suffixes"></a><pre id="SuffixTree.hs:suffixes" class="programlisting">-- file: ch04/SuffixTree.hs
+suffixes :: [a] -&gt; [[a]]
+suffixes xs@(_:xs') = xs : suffixes xs'
+suffixes _ = []</pre><p id="x_JA"><a name="x_JA"></a>The pattern <code class="code">xs@(_:xs')</code> is called an
+      <span class="emphasis"><em>as-pattern</em></span>, and it means “<span class="quote">bind the
+	variable <code class="varname">xs</code> to the value that matches the
+	right side of the <code class="code">@</code> symbol</span>”.</p><p id="x_KA"><a name="x_KA"></a>In our example, if the pattern after the
+      “<span class="quote">@</span>” matches, <code class="varname">xs</code> will be bound to
+      the entire list that matched, and <code class="varname">xs'</code> to all
+      but the head of the list (we used the wild card <code class="code">_</code>
+      pattern to indicate that we're not interested in the value of
+      the head of the list).</p><a name="suffix.ghci:suffixes"></a><pre id="suffix.ghci:suffixes" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>tails "foo"</code></strong>
+["foo","oo","o",""]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>suffixes "foo"</code></strong>
+["foo","oo","o"]
+</pre><p id="x_LA"><a name="x_LA"></a>The as-pattern makes our code more readable. To
+      see how it helps, let us compare a definition that lacks an
+      as-pattern.</p><a name="SuffixTree.hs:noAsPattern"></a><pre id="SuffixTree.hs:noAsPattern" class="programlisting">-- file: ch04/SuffixTree.hs
+noAsPattern :: [a] -&gt; [[a]]
+noAsPattern (x:xs) = (x:xs) : noAsPattern xs
+noAsPattern _ = []</pre><p id="x_MA"><a name="x_MA"></a>Here, the list that we've deconstructed in the pattern
+	match just gets put right back together in the body of the
+	function.</p><p id="x_NA"><a name="x_NA"></a>As-patterns have a more practical use than simple
+      readability: they can help us to share data instead of copying
+      it.  In our definition of <code class="function">noAsPattern</code>, when
+      we match <code class="code">(x:xs)</code>, we construct a new copy of it in
+      the body of our function.  This causes us to allocate a new
+      list node at run time.  That may be cheap, but it isn't free.
+      In contrast, when we defined <code class="function">suffixes</code>, we
+      reused the value <code class="varname">xs</code> that we matched with our
+      as-pattern.  Since we reuse an existing value, we avoid a little
+      allocation.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="fp.compose">Code reuse through composition</h2></div></div></div><p id="x_OA"><a name="x_OA"></a>It seems a shame to introduce a new function,
+      <code class="function">suffixes</code>, that does almost the same thing
+      as the existing <code class="function">tails</code> function.  Surely we
+      can do better?</p><p id="x_PA"><a name="x_PA"></a>Recall the <code class="function">init</code> function we
+      introduced in <a class="xref" href="functional-programming.html#fp.lists" title="Working with lists">the section called “Working with lists”</a>: it returns all but
+      the last element of a list.</p><a name="SuffixTree.hs:suffixes2"></a><pre id="SuffixTree.hs:suffixes2" class="programlisting">-- file: ch04/SuffixTree.hs
+suffixes2 xs = init (tails xs)</pre><p id="x_QA"><a name="x_QA"></a>This <code class="function">suffixes2</code> function
+      behaves identically to <code class="function">suffixes</code>, but it's a
+      single line of code.</p><a name="suffix.ghci:suffixes2"></a><pre id="suffix.ghci:suffixes2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>suffixes2 "foo"</code></strong>
+["foo","oo","o"]
+</pre><p id="x_RA"><a name="x_RA"></a>If we take a step back, we see the glimmer of a
+      pattern here: we're applying a function, then applying another
+      function to its result.  Let's turn that pattern into a function
+      definition.</p><a name="SuffixTree.hs:compose"></a><pre id="SuffixTree.hs:compose" class="programlisting">-- file: ch04/SuffixTree.hs
+compose :: (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+compose f g x = f (g x)</pre><p id="x_SA"><a name="x_SA"></a>We now have a function,
+      <code class="function">compose</code>, that we can use to
+      “<span class="quote">glue</span>” two other functions together.</p><a name="SuffixTree.hs:suffixes3"></a><pre id="SuffixTree.hs:suffixes3" class="programlisting">-- file: ch04/SuffixTree.hs
+suffixes3 xs = compose init tails xs</pre><p id="x_TA"><a name="x_TA"></a>Haskell's automatic currying lets us drop the
+      <code class="varname">xs</code> variable, so we can make our definition
+      even shorter.</p><a name="SuffixTree.hs:suffixes4"></a><pre id="SuffixTree.hs:suffixes4" class="programlisting">-- file: ch04/SuffixTree.hs
+suffixes4 = compose init tails</pre><p id="x_UA"><a name="x_UA"></a>Fortunately, we don't need to write our own
+      <code class="function">compose</code> function.  Plugging functions into
+      each other like this is so common that the Prelude provides
+      function composition via the <code class="function">(.)</code>
+      operator.</p><a name="SuffixTree.hs:suffixes5"></a><pre id="SuffixTree.hs:suffixes5" class="programlisting">-- file: ch04/SuffixTree.hs
+suffixes5 = init . tails</pre><p id="x_VA"><a name="x_VA"></a>The <code class="function">(.)</code> operator isn't a
+      special piece of language syntax; it's just a normal
+      operator.</p><a name="suffix.ghci:types"></a><pre id="suffix.ghci:types" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (.)</code></strong>
+(.) :: (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type suffixes</code></strong>
+suffixes :: [a] -&gt; [[a]]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type suffixes5</code></strong>
+suffixes5 :: [a] -&gt; [[a]]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>suffixes5 "foo"</code></strong>
+["foo","oo","o"]
+</pre><p id="x_WA"><a name="x_WA"></a>We can create new functions at any time by writing
+      chains of composed functions, stitched together with
+      <code class="function">(.)</code>, so long (of course) as the result type
+      of the function on the right of each <code class="function">(.)</code>
+      matches the type of parameter that the function on the left can
+      accept.</p><p id="x_JD1"><a name="x_JD1"></a>As an example, let's solve a simple puzzle: counting the
+      number of words in a string that begin with a capital
+      letter.</p><a name="suffix.ghci:dotty"></a><pre id="suffix.ghci:dotty" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:module +Data.Char</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let capCount = length . filter (isUpper . head) . words</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>capCount "Hello there, Mom!"</code></strong>
+2
+</pre><p id="x_KD1"><a name="x_KD1"></a>We can understand what this composed function does by
+      examining its pieces.  The <code class="function">(.)</code> function is
+      right associative, so we will proceed from right to left.</p><a name="suffix.ghci:words.type"></a><pre id="suffix.ghci:words.type" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type words</code></strong>
+words :: String -&gt; [String]
+</pre><p id="x_LD1"><a name="x_LD1"></a>The <code class="function">words</code> function has a result type of
+      <span class="type">[String]</span>, so whatever is on the left side of
+      <code class="function">(.)</code> must accept a compatible
+      argument.</p><a name="suffix.ghci:capped.type"></a><pre id="suffix.ghci:capped.type" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type isUpper . head</code></strong>
+isUpper . head :: [Char] -&gt; Bool
+</pre><p id="x_MD1"><a name="x_MD1"></a>This function returns <code class="code">True</code> if a word begins
+      with a capital letter (try it in <span class="command"><strong>ghci</strong></span>), so <code class="code">filter
+	(isUpper . head)</code> returns a list of <span class="type">String</span>s
+      containing only words that begin with capital letters.</p><a name="suffix.ghci:capfilt.type"></a><pre id="suffix.ghci:capfilt.type" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type filter (isUpper . head)</code></strong>
+filter (isUpper . head) :: [[Char]] -&gt; [[Char]]
+</pre><p id="x_ND1"><a name="x_ND1"></a>Since this expression returns a list, all that remains is
+      calculate the length of the list, which we do with another
+      composition.</p><p id="x_XA"><a name="x_XA"></a>Here's another example, drawn from a real
+      application.  We want to extract a list of macro names from a C
+      header file shipped with <code class="code">libpcap</code>, a popular network
+      packet filtering library.  The header file contains a large
+      number definitions of the following form.</p><pre id="id597123" class="programlisting">
+#define DLT_EN10MB      1       /* Ethernet (10Mb) */
+#define DLT_EN3MB       2       /* Experimental Ethernet (3Mb) */
+#define DLT_AX25        3       /* Amateur Radio AX.25 */</pre><p id="x_OD1"><a name="x_OD1"></a>Our goal is to extract names such as <code class="code">DLT_EN10MB</code>
+      and <code class="code">DLT_AX25</code>.</p><a name="dlts.hs:dlts"></a><pre id="dlts.hs:dlts" class="programlisting">-- file: ch04/dlts.hs
+import Data.List (isPrefixOf)
+
+dlts :: String -&gt; [String]
+
+dlts = foldr step [] . lines</pre><p id="x_YA"><a name="x_YA"></a>We treat an entire file as a string, split it up
+      with <code class="function">lines</code>, then apply <code class="code">foldr step
+	[]</code> to the resulting list of lines. The
+      <code class="function">step</code> helper function operates on a single
+      line.</p><a name="dlts.hs:step"></a><pre id="dlts.hs:step" class="programlisting">-- file: ch04/dlts.hs
+  where step l ds
+          | "#define DLT_" `isPrefixOf` l = secondWord l : ds
+          | otherwise                     = ds
+        secondWord = head . tail . words</pre><p id="x_ZA"><a name="x_ZA"></a>If we match a macro definition with our guard
+      expression, we cons the name of the macro onto the head of the
+      list we're returning; otherwise, we leave the list
+      untouched.</p><p id="x_aA"><a name="x_aA"></a>While the individual functions in the body of
+      <code class="function">secondWord</code> are by now familiar to us, it
+      can take a little practice to piece together a chain of
+      compositions like this.  Let's walk through the
+      procedure.</p><p id="x_bA"><a name="x_bA"></a>Once again, we proceed from right to left.  The
+      first function is <code class="function">words</code>.</p><a name="dlts.ghci:words"></a><pre id="dlts.ghci:words" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type words</code></strong>
+words :: String -&gt; [String]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>words "#define DLT_CHAOS    5"</code></strong>
+["#define","DLT_CHAOS","5"]
+</pre><p id="x_cA"><a name="x_cA"></a>We then apply <code class="code">tail</code> to the result of
+      <code class="function">words</code>.</p><a name="dlts.ghci:drop1"></a><pre id="dlts.ghci:drop1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type tail</code></strong>
+tail :: [a] -&gt; [a]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>tail ["#define","DLT_CHAOS","5"]</code></strong>
+["DLT_CHAOS","5"]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type tail . words</code></strong>
+tail . words :: String -&gt; [String]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(tail . words) "#define DLT_CHAOS    5"</code></strong>
+["DLT_CHAOS","5"]
+</pre><p id="x_eA"><a name="x_eA"></a>Finally, applying <code class="function">head</code> to the
+      result of <code class="code">drop 1 . words</code> will give us the name of
+      our macro.</p><a name="dlts.ghci:head.drop1.words"></a><pre id="dlts.ghci:head.drop1.words" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type head . tail . words</code></strong>
+head . tail . words :: String -&gt; String
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(head . tail . words) "#define DLT_CHAOS    5"</code></strong>
+"DLT_CHAOS"
+</pre><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id597329">Use your head wisely</h3></div></div></div><p id="x_fA"><a name="x_fA"></a>After warning against unsafe list functions in
+	  <a class="xref" href="functional-programming.html#fp.lists.safe" title="Safely and sanely working with crashy functions">the section called “Safely and sanely working with crashy functions”</a>, here we are calling both
+	<code class="function">head</code> and <code class="function">tail</code>, two
+	of those unsafe list functions.  What gives?</p><p id="x_gA"><a name="x_gA"></a>In this case, we can assure ourselves by
+	inspection that we're safe from a runtime failure.  The
+	pattern guard in the definition of <code class="function">step</code>
+	contains two words, so when we apply
+	<code class="function">words</code> to any string that makes it past
+	the guard, we'll have a list of at least two elements,
+	<code class="code">"#define"</code> and some macro beginning with
+	<code class="code">"DLT_"</code>.</p><p id="x_hA"><a name="x_hA"></a>This the kind of reasoning we ought to do to
+	convince ourselves that our code won't explode when we call
+	partial functions.  Don't forget our earlier admonition:
+	calling unsafe functions like this requires care, and can
+	often make our code more fragile in subtle ways.  If we for
+	some reason modified the pattern guard to only contain one
+	word, we could expose ourselves to the possibility of a crash,
+	as the body of the function assumes that it will receive two
+	words.</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="fp.readability">Tips for writing readable code</h2></div></div></div><p id="x_gL"><a name="x_gL"></a>So far in this chapter, we've come across two tempting
+      looking features of Haskell: tail recursion and anonymous
+      functions.  As nice as these are, we don't often want to use
+      them.</p><p id="x_hL"><a name="x_hL"></a>Many list manipulation operations can be most
+      easily expressed using combinations of library functions such as
+      <code class="function">map</code>, <code class="function">take</code>, and
+      <code class="function">filter</code>.  Without a doubt, it takes some
+      practice to get used to using these.  In return for our initial
+      investment, we can write and read code more quickly, and with
+      fewer bugs.</p><p id="x_iL"><a name="x_iL"></a>The reason for this is simple.  A tail recursive
+      function definition has the same problem as a loop in an
+      imperative language: it's completely general.  It might perform
+      some filtering, some mapping, or who knows what else. We are
+      forced to look in detail at the entire definition of the
+      function to see what it's really doing.  In contrast,
+      <code class="function">map</code> and most other list manipulation
+      functions do only <span class="emphasis"><em>one</em></span> thing.  We can take
+      for granted what these simple building blocks do, and focus on
+      the idea the code is trying to express, not the minute details
+      of how it's manipulating its inputs.</p><p id="x_jL"><a name="x_jL"></a>In the middle ground between tail recursive
+      functions (with complete generality) and our toolbox of list
+      manipulation functions (each of which does one thing) lie the
+      folds.  A fold takes more effort to understand than, say, a
+      composition of <code class="function">map</code> and
+      <code class="function">filter</code> that does the same thing, but it
+      behaves more regularly and predictably than a tail recursive
+      function.  As a general rule, don't use a fold if you can
+      compose some library functions, but otherwise try to use a fold
+      in preference to a hand-rolled a tail recursive loop.</p><p id="x_kL"><a name="x_kL"></a>As for anonymous functions, they tend to interrupt
+      the “<span class="quote">flow</span>” of reading a piece of code.  It is very
+      often as easy to write a local function definition in a
+      <code class="code">let</code> or <code class="code">where</code> clause, and use that, as
+      it is to put an anonymous function into place.  The relative
+      advantages of a named function are twofold: we don't need to
+      understand the function's definition when we're reading the code
+      that uses it; and a well chosen function name acts as a tiny
+      piece of local documentation.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="fp.seq">Space leaks and strict evaluation</h2></div></div></div><p id="x_PD1"><a name="x_PD1"></a>The <code class="function">foldl</code> function that we discussed
+      earlier is not the only place where space leaks can arise in
+      Haskell code.  We will use it to illustrate how non-strict
+      evaluation can sometimes be problematic, and how to solve the
+      difficulties that can arise.</p><div class="tip"><table border="0" summary="Tip: Do you need to know all of this right now?"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Do you need to know all of this right now?</th></tr><tr><td align="left" valign="top"><p id="x_QD1"><a name="x_QD1"></a>It is perfectly reasonable to skip this section until you
+	encounter a space leak “<span class="quote">in the wild</span>”.  Provided
+	you use <code class="function">foldr</code> if you are generating a
+	list, and <code class="function">foldl'</code> instead of
+	<code class="function">foldl</code> otherwise, space leaks are unlikely
+	to bother you in practice for a while.</p></td></tr></table></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id597540">Avoiding space leaks with seq</h3></div></div></div><p id="x_RD1"><a name="x_RD1"></a>We refer to an expression that is not evaluated lazily as
+	<span class="emphasis"><em>strict</em></span>, so <code class="function">foldl'</code> is
+	a strict left fold. It bypasses Haskell's usual non-strict
+	evaluation through the use of a special function named
+	<code class="function">seq</code>.</p><a name="Fold.hs:strict"></a><pre id="Fold.hs:strict" class="programlisting">-- file: ch04/Fold.hs
+foldl' _    zero []     = zero
+foldl' step zero (x:xs) =
+    let new = step zero x
+    in  new `seq` foldl' step new xs</pre><p id="x_SD1"><a name="x_SD1"></a>This <code class="function">seq</code> function has a peculiar
+	type, hinting that it is not playing by the usual
+	rules.</p><a name="thunky.ghci:seq"></a><pre id="thunky.ghci:seq" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type seq</code></strong>
+seq :: a -&gt; t -&gt; t
+</pre><p id="x_TD1"><a name="x_TD1"></a>It operates as follows: when a <code class="function">seq</code>
+	expression is evaluated, it forces its first argument to be
+	evaluated, then returns its second argument.  It doesn't
+	actually do anything with the first argument:
+	<code class="function">seq</code> exists solely as a way to force that
+	value to be evaluated. Let's walk through a brief application
+	to see what happens.</p><a name="Fold.hs:step1"></a><pre id="Fold.hs:step1" class="programlisting">-- file: ch04/Fold.hs
+foldl' (+) 1 (2:[])</pre><p id="x_UD1"><a name="x_UD1"></a>This expands as follows.</p><a name="Fold.hs:step2"></a><pre id="Fold.hs:step2" class="programlisting">-- file: ch04/Fold.hs
+let new = 1 + 2
+in new `seq` foldl' (+) new []</pre><p id="x_VD1"><a name="x_VD1"></a>The use of <code class="function">seq</code> forcibly evaluates
+	<code class="varname">new</code> to <code class="code">3</code>, and returns its
+	second argument.</p><a name="Fold.hs:step3"></a><pre id="Fold.hs:step3" class="programlisting">-- file: ch04/Fold.hs
+foldl' (+) 3 []</pre><p id="x_WD1"><a name="x_WD1"></a>We end up with the following result.</p><a name="Fold.hs:step4"></a><pre id="Fold.hs:step4" class="programlisting">-- file: ch04/Fold.hs
+3</pre><p id="x_XD1"><a name="x_XD1"></a>Thanks to <code class="function">seq</code>, there are no thunks in
+	sight.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id597688">Learning to use seq</h3></div></div></div><p id="x_YD1"><a name="x_YD1"></a>Without some direction, there is an element of mystery
+	to using <code class="function">seq</code> effectively.
+	Here are some useful rules for using it well.</p><p id="x_ZD1"><a name="x_ZD1"></a>To have any effect, a <code class="function">seq</code>
+	expression must be the first thing evaluated in an
+	expression.</p><a name="Fold.hs:hiddenInside"></a><pre id="Fold.hs:hiddenInside" class="programlisting">-- file: ch04/Fold.hs
+-- incorrect: seq is hidden by the application of someFunc
+-- since someFunc will be evaluated first, seq may occur too late
+hiddenInside x y = someFunc (x `seq` y)
+
+-- incorrect: a variation of the above mistake
+hiddenByLet x y z = let a = x `seq` someFunc y
+                    in anotherFunc a z
+
+-- correct: seq will be evaluated first, forcing evaluation of x
+onTheOutside x y = x `seq` someFunc y</pre><p id="x_aD1"><a name="x_aD1"></a>To strictly evaluate several values, chain
+	applications of <code class="function">seq</code> together.</p><a name="Fold.hs:chained"></a><pre id="Fold.hs:chained" class="programlisting">-- file: ch04/Fold.hs
+chained x y z = x `seq` y `seq` someFunc z</pre><p id="x_bD1"><a name="x_bD1"></a>A common mistake is to try to use <code class="function">seq</code>
+	with two unrelated expressions.</p><a name="Fold.hs:badExpression"></a><pre id="Fold.hs:badExpression" class="programlisting">-- file: ch04/Fold.hs
+badExpression step zero (x:xs) =
+    seq (step zero x)
+        (badExpression step (step zero x) xs)</pre><p id="x_cD1"><a name="x_cD1"></a>Here, the apparent intention is to evaluate <code class="code">step
+	  zero x</code> strictly.  Since the expression is duplicated
+	in the body of the function, strictly evaluating the first
+	instance of it will have no effect on the second.  The use of
+	<code class="literal">let</code> from the definition of <code class="function">foldl'</code> above
+	shows how to achieve this effect correctly.</p><p id="x_dD1"><a name="x_dD1"></a>When evaluating an expression, <code class="function">seq</code>
+	stops as soon as it reaches a constructor.  For simple types
+	like numbers, this means that it will evaluate them
+	completely.  Algebraic data types are a different story.
+	Consider the value <code class="code">(1+2):(3+4):[]</code>.  If we apply
+	<code class="function">seq</code> to this, it will evaluate the
+	<code class="code">(1+2)</code> thunk.  Since it will stop when it reaches
+	the first <code class="code">(:)</code> constructor, it will have no effect
+	on the second thunk.  The same is true for tuples: <code class="code">seq
+	  ((1+2),(3+4)) True</code> will do nothing to the thunks
+	inside the pair, since it immediately hits the pair's
+	constructor.</p><p id="x_eD1"><a name="x_eD1"></a>If necessary, we can use normal functional programming
+	techniques to work around these limitations.</p><a name="Fold.hs:strictPair"></a><pre id="Fold.hs:strictPair" class="programlisting">-- file: ch04/Fold.hs
+strictPair (a,b) = a `seq` b `seq` (a,b)
+
+strictList (x:xs) = x `seq` x : strictList xs
+strictList []     = []</pre><p id="x_fD1"><a name="x_fD1"></a>It is important to understand that
+	<code class="function">seq</code> isn't free: it has to perform a check
+	at runtime to see if an expression has been evaluated. Use it
+	sparingly.  For instance, while our
+	<code class="function">strictPair</code> function evaluates the
+	contents of a pair up to the first constructor, it adds the
+	overheads of pattern matching, two applications of
+	<code class="function">seq</code>, and the construction of a new tuple.
+	If we were to measure its performance in the inner loop of a
+	benchmark, we might find it to slow the program down.</p><p id="x_gD1"><a name="x_gD1"></a>Aside from its performance cost if overused,
+	<code class="function">seq</code> is not a miracle cure-all for memory
+	consumption problems.  Just because you
+	<span class="emphasis"><em>can</em></span> evaluate something strictly doesn't
+	mean you <span class="emphasis"><em>should</em></span>.  Careless use of
+	<code class="function">seq</code> may do nothing at all; move existing
+	space leaks around; or introduce new leaks.</p><p id="x_hD1"><a name="x_hD1"></a>The best guides to whether <code class="function">seq</code> is
+	necessary, and how well it is working, are performance
+	measurement and profiling, which we will cover in <a class="xref" href="profiling-and-optimization.html" title="Chapter 25. Profiling and optimization">Chapter 25, <i>Profiling and optimization</i></a>.  From a base of empirical
+	measurement, you will develop a reliable sense of when
+	<code class="function">seq</code> is most useful.</p></div></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id591518" href="#id591518" class="para">8</a>] </sup>Unfortunately, we do not have room to address that
+	    challenge in this book.</p></div><div class="footnote"><p><sup>[<a name="ftn.id594951" href="#id594951" class="para">9</a>] </sup>The backslash was chosen for its visual
+	  resemblance to the Greek letter lambda,
+	  <code class="code">λ</code>.  Although <span class="application">GHC</span> can accept Unicode
+	  input, it correctly treats <code class="code">λ</code> as a
+	  letter, not as a synonym for <code class="code">\</code>.</p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="defining-types-streamlining-functions.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="writing-a-library-working-with-json-data.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 3. Defining Types, Streamlining Functions </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 5. Writing a library: working with JSON data</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

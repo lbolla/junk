@@ -1,0 +1,1249 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 13. Data Structures</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="barcode-recognition.html" title="Chapter 12. Barcode recognition"><link rel="next" href="monads.html" title="Chapter 14. Monads"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 13. Data Structures</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="barcode-recognition.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="monads.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="data"><div class="titlepage"><div><div><h2 class="title">Chapter 13. Data Structures</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="data-structures.html#data.assoc">Association Lists</a></span></dt><dt><span class="sect1"><a href="data-structures.html#data.map">Maps</a></span></dt><dt><span class="sect1"><a href="data-structures.html#data.funcs">Functions Are Data, Too</a></span></dt><dt><span class="sect1"><a href="data-structures.html#data.passwd">Extended Example: /etc/passwd</a></span></dt><dt><span class="sect1"><a href="data-structures.html#data.num">Extended example: Numeric Types</a></span></dt><dd><dl><dt><span class="sect2"><a href="data-structures.html#id635992">First Steps</a></span></dt><dt><span class="sect2"><a href="data-structures.html#id636312">Completed Code</a></span></dt><dt><span class="sect2"><a href="data-structures.html#id636979">Exercises</a></span></dt></dl></dd><dt><span class="sect1"><a href="data-structures.html#data.dlist">Taking advantage of functions as data</a></span></dt><dd><dl><dt><span class="sect2"><a href="data-structures.html#id637423">Turning difference lists into a proper library</a></span></dt><dt><span class="sect2"><a href="data-structures.html#id637702">Lists, difference lists, and monoids</a></span></dt></dl></dd><dt><span class="sect1"><a href="data-structures.html#data.seq">General purpose sequences</a></span></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="data.assoc">Association Lists</h2></div></div></div><p id="x_NI"><a name="x_NI"></a>
+      Often, we have to deal with data that is unordered but is
+      indexed by a key.  For instance, a Unix administrator might have
+      a list of numeric UIDs (user IDs) and the textual usernames that
+      they correspond to.  The value of this list lies in being able
+      to look up a textual username for a given UID, not in the order
+      of the data.  In other words, the UID is a key into a database.
+    </p><p id="x_OI"><a name="x_OI"></a>
+      In Haskell, there are several ways to handle data that is structured in
+      this way.  The two most common are association lists and the
+      <span class="type">Map</span> type provided by
+      <code class="literal">Data.Map</code> module.  Association lists are handy
+      because they are simple.  They are standard Haskell lists, so all the
+      familiar list functions work with association lists.  However,
+      for large data sets, <span class="type">Map</span> will have a
+      considerable performance advantage over association lists.  We'll
+      use both in this chapter.
+    </p><p id="x_PI"><a name="x_PI"></a>
+      An association list is just a normal list containing (key, value)
+      tuples.  The type of a list of mappings from UID to username might be
+      <code class="literal">[(Integer, String)]</code>.  We could use just about any
+      type<sup>[<a name="id634459" href="#ftn.id634459" class="footnote">31</a>]</sup>for both the key and the value.
+    </p><p id="x_rI"><a name="x_rI"></a>
+      We can build association lists just we do any other
+      list.  Haskell comes with one built-in function called 
+      <code class="literal">Data.List.lookup</code> to look up data in an association
+      list.  Its type is <code class="literal">Eq a =&gt; a -&gt; [(a, b)] -&gt; Maybe b</code>.
+      Can you guess how it works from that type?  Let's take a look in
+      <span class="command"><strong>ghci</strong></span>.
+    </p><a name="lookup.ghci:lookup1"></a><pre id="lookup.ghci:lookup1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let al = [(1, "one"), (2, "two"), (3, "three"), (4, "four")]</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>lookup 1 al</code></strong>
+Just "one"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>lookup 5 al</code></strong>
+Nothing
+</pre><p id="x_sI"><a name="x_sI"></a>
+      The <code class="literal">lookup</code> function is really simple.  Here's
+      one way we could write it:
+    </p><a name="lookup.hs:standalone"></a><pre id="lookup.hs:standalone" class="programlisting">-- file: ch13/lookup.hs
+myLookup :: Eq a =&gt; a -&gt; [(a, b)] -&gt; Maybe b
+myLookup _ [] = Nothing
+myLookup key ((thiskey,thisval):rest) =
+    if key == thiskey
+       then Just thisval
+       else myLookup key rest</pre><p id="x_tI"><a name="x_tI"></a>
+      This function returns <code class="literal">Nothing</code> if passed the empty list.  Otherwise,
+      it compares the key with the key we're looking for.  If a match is
+      found, the corresponding value is returned.  Otherwise, it searches
+      the rest of the list.
+    </p><p id="x_uI"><a name="x_uI"></a>
+      Let's take a look at a more complex example of association
+      lists. On Unix/Linux machines, there is a file called
+      <code class="filename">/etc/passwd</code> that stores usernames, UIDs,
+      home directories, and various other data.  We will write a program
+      that parses such a file, creates an association list, and lets
+      the user look up a username by giving a UID.
+    </p><a name="passwd-al.hs:all"></a><pre id="passwd-al.hs:all" class="programlisting">-- file: ch13/passwd-al.hs
+import Data.List
+import System.IO
+import Control.Monad(when)
+import System.Exit
+import System.Environment(getArgs)
+
+main = do
+    -- Load the command-line arguments
+    args &lt;- getArgs
+
+    -- If we don't have the right amount of args, give an error and abort
+    when (length args /= 2) $ do
+        putStrLn "Syntax: passwd-al filename uid"
+        exitFailure
+
+    -- Read the file lazily
+    content &lt;- readFile (args !! 0)
+
+    -- Compute the username in pure code
+    let username = findByUID content (read (args !! 1))
+
+    -- Display the result
+    case username of 
+         Just x -&gt; putStrLn x
+         Nothing -&gt; putStrLn "Could not find that UID"
+
+-- Given the entire input and a UID, see if we can find a username.
+findByUID :: String -&gt; Integer -&gt; Maybe String
+findByUID content uid =
+    let al = map parseline . lines $ content
+        in lookup uid al
+
+-- Convert a colon-separated line into fields
+parseline :: String -&gt; (Integer, String)
+parseline input =
+    let fields = split ':' input
+        in (read (fields !! 2), fields !! 0)
+
+{- | Takes a delimiter and a list.  Break up the list based on the
+-  delimiter. -}
+split :: Eq a =&gt; a -&gt; [a] -&gt; [[a]]
+
+-- If the input is empty, the result is a list of empty lists.
+split _ [] = [[]]
+split delim str =
+    let -- Find the part of the list before delim and put it in "before".
+        -- The rest of the list, including the leading delim, goes
+        -- in "remainder".
+        (before, remainder) = span (/= delim) str
+        in
+        before : case remainder of
+                      [] -&gt; []
+                      x -&gt; -- If there is more data to process,
+                           -- call split recursively to process it
+                           split delim (tail x)</pre><p id="x_vI"><a name="x_vI"></a>
+      Let's look at this program.  The heart of it is
+      <code class="literal">findByUID</code>, which is a simple function that parses
+      the input one line at a time, then calls <code class="literal">lookup</code> over
+      the result.  The remaining program is concerned with parsing the input.
+      The input file looks like this:
+    </p><pre id="id634659" class="programlisting">
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/bin/sh
+bin:x:2:2:bin:/bin:/bin/sh
+sys:x:3:3:sys:/dev:/bin/sh
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/bin/sh
+man:x:6:12:man:/var/cache/man:/bin/sh
+lp:x:7:7:lp:/var/spool/lpd:/bin/sh
+mail:x:8:8:mail:/var/mail:/bin/sh
+news:x:9:9:news:/var/spool/news:/bin/sh
+jgoerzen:x:1000:1000:John Goerzen,,,:/home/jgoerzen:/bin/bash
+    </pre><p id="x_rF1"><a name="x_rF1"></a>
+      Its fields are separated by colons, and include a username,
+      numeric user ID, numeric group ID, full name, home directory,
+      and shell.  No field may contain an internal colon.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="data.map">Maps</h2></div></div></div><p id="x_wI"><a name="x_wI"></a>
+      The <code class="literal">Data.Map</code> module provides a
+      <span class="type">Map</span> type with behavior that is similar to
+      association lists, but has much better performance.</p><p id="x_sF1"><a name="x_sF1"></a>
+      Maps give us the same capabilities as hash tables do in other
+      languages.  Internally, a map is implemented as a balanced
+      binary tree.  Compared to a hash table, this is a much more
+      efficient representation in a language with immutable data. This
+      is the most visible example of how deeply pure functional
+      programming affects how we write code: we choose data structures
+      and algorithms that we can express cleanly and that perform
+      efficiently, but our choices for specific tasks are often
+      different their counterparts in imperative languages.</p><p id="x_tF1"><a name="x_tF1"></a>Some functions in the <code class="code">Data.Map</code> module have the
+      same names as those in the Prelude. Therefore, we will import it
+      with <code class="literal">import qualified Data.Map as Map</code> and use
+      <code class="literal">Map.<em class="replaceable"><code>name</code></em></code> to refer
+      to names in that module. Let's start our tour of
+      <code class="literal">Data.Map</code> by taking a look at some ways to
+      build a map.
+    </p><a name="buildmap.hs:all"></a><pre id="buildmap.hs:all" class="programlisting">-- file: ch13/buildmap.hs
+import qualified Data.Map as Map
+
+-- Functions to generate a Map that represents an association list
+-- as a map
+
+al = [(1, "one"), (2, "two"), (3, "three"), (4, "four")]
+
+{- | Create a map representation of 'al' by converting the association
+-  list using Map.fromList -}
+mapFromAL =
+    Map.fromList al
+
+{- | Create a map representation of 'al' by doing a fold -}
+mapFold =
+    foldl (\map (k, v) -&gt; Map.insert k v map) Map.empty al
+
+{- | Manually create a map with the elements of 'al' in it -}
+mapManual =
+    Map.insert 2 "two" . 
+    Map.insert 4 "four" .
+    Map.insert 1 "one" .
+    Map.insert 3 "three" $ Map.empty</pre><p id="x_xI"><a name="x_xI"></a>
+      Functions like <code class="literal">Map.insert</code> work in the usual
+      Haskell way: they return a copy of the input data, with the
+      requested change applied.  This is quite handy with maps.  It
+      means that you can use <code class="literal">foldl</code> to build up a
+      map as in the <code class="literal">mapFold</code> example.  Or, you can
+      chain together calls to <code class="literal">Map.insert</code> as in the
+      <code class="literal">mapManual</code> example.  Let's use <span class="command"><strong>ghci</strong></span> to
+      verify that all of these maps are as expected:
+    </p><a name="buildmap.ghci:all"></a><pre id="buildmap.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l buildmap.hs</code></strong>
+[1 of 1] Compiling Main             ( buildmap.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>al</code></strong>
+Loading package array-0.1.0.0 ... linking ... done.
+Loading package containers-0.1.0.1 ... linking ... done.
+[(1,"one"),(2,"two"),(3,"three"),(4,"four")]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>mapFromAL</code></strong>
+fromList [(1,"one"),(2,"two"),(3,"three"),(4,"four")]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>mapFold</code></strong>
+fromList [(1,"one"),(2,"two"),(3,"three"),(4,"four")]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>mapManual</code></strong>
+fromList [(1,"one"),(2,"two"),(3,"three"),(4,"four")]
+</pre><p id="x_yI"><a name="x_yI"></a>
+      Notice that the output from <code class="literal">mapManual</code> differs
+      from the order of the list we used to construct the map.  Maps do
+      not guarantee that they will preserve the original ordering.
+    </p><p id="x_zI"><a name="x_zI"></a>
+      Maps operate similarly in concept to association lists.  The
+      <code class="literal">Data.Map</code> module provides functions for adding
+      and removing data from maps.  It also lets us filter them,
+      modify them, fold over them, and convert to and from association
+      lists.  The library documentation for this module is good, so
+      instead of going into detail on each function, we will present
+      an example that ties together many of the concepts we've
+      discussed in this chapter.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="data.funcs">Functions Are Data, Too</h2></div></div></div><p id="x_rL"><a name="x_rL"></a>
+      Part of Haskell's power is the ease with which it lets us create and manipulate functions.  Let's take a look at a
+      record that stores a function as one of its fields:
+    </p><a name="funcrecs.hs:all"></a><pre id="funcrecs.hs:all" class="programlisting">-- file: ch13/funcrecs.hs
+{- | Our usual CustomColor type to play with -}
+data CustomColor =
+  CustomColor {red :: Int,
+               green :: Int,
+               blue :: Int}
+  deriving (Eq, Show, Read)
+
+{- | A new type that stores a name and a function.
+
+The function takes an Int, applies some computation to it, and returns
+an Int along with a CustomColor -}
+data FuncRec =
+    FuncRec {name :: String,
+             colorCalc :: Int -&gt; (CustomColor, Int)}
+
+plus5func color x = (color, x + 5)
+
+purple = CustomColor 255 0 255
+
+plus5 = FuncRec {name = "plus5", colorCalc = plus5func purple}
+always0 = FuncRec {name = "always0", colorCalc = \_ -&gt; (purple, 0)}</pre><p id="x_sL"><a name="x_sL"></a>
+      Notice the type of the <code class="literal">colorCalc</code> field: it's a
+      function.  It takes an <code class="literal">Int</code> and returns a tuple of
+      <code class="literal">(CustomColor, Int)</code>.  We create two
+      <code class="literal">FuncRec</code> records: <code class="literal">plus5</code> and
+      <code class="literal">always0</code>.  Notice that the
+      <code class="literal">colorCalc</code> for both of them will always return the
+      color purple.  <code class="literal">FuncRec</code> itself has no field to store
+      the color in, yet that value somehow becomes part of the function
+      itself.  This is called a <span class="emphasis"><em>closure</em></span>.  Let's play
+      with this a bit:
+    </p><a name="funcrecs.ghci:all"></a><pre id="funcrecs.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l funcrecs.hs</code></strong>
+[1 of 1] Compiling Main             ( funcrecs.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t plus5</code></strong>
+plus5 :: FuncRec
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>name plus5</code></strong>
+"plus5"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t colorCalc plus5</code></strong>
+colorCalc plus5 :: Int -&gt; (CustomColor, Int)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(colorCalc plus5) 7</code></strong>
+(CustomColor {red = 255, green = 0, blue = 255},12)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t colorCalc always0</code></strong>
+colorCalc always0 :: Int -&gt; (CustomColor, Int)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(colorCalc always0) 7</code></strong>
+(CustomColor {red = 255, green = 0, blue = 255},0)
+</pre><p id="x_tL"><a name="x_tL"></a>
+      That worked well enough, but you might wonder how to do something
+      more advanced, such as making a piece of data available in multiple places.
+      A type construction function can be helpful.  Here's an example:
+    </p><a name="funcrecs2.hs:all"></a><pre id="funcrecs2.hs:all" class="programlisting">-- file: ch13/funcrecs2.hs
+data FuncRec =
+    FuncRec {name :: String,
+             calc :: Int -&gt; Int,
+             namedCalc :: Int -&gt; (String, Int)}
+
+mkFuncRec :: String -&gt; (Int -&gt; Int) -&gt; FuncRec
+mkFuncRec name calcfunc =
+    FuncRec {name = name,
+             calc = calcfunc,
+             namedCalc = \x -&gt; (name, calcfunc x)}
+
+plus5 = mkFuncRec "plus5" (+ 5)
+always0 = mkFuncRec "always0" (\_ -&gt; 0)</pre><p id="x_uL"><a name="x_uL"></a>
+      Here we have a function called <code class="literal">mkFuncRec</code> that
+      takes a <code class="literal">String</code> and another function as parameters, and returns
+      a new <code class="literal">FuncRec</code> record.  Notice how both parameters to
+      <code class="literal">mkFuncRec</code> are used in multiple places.  Let's try it
+      out:
+    </p><a name="funcrecs2.ghci:all"></a><pre id="funcrecs2.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l funcrecs2.hs</code></strong>
+[1 of 1] Compiling Main             ( funcrecs2.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t plus5</code></strong>
+plus5 :: FuncRec
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>name plus5</code></strong>
+"plus5"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(calc plus5) 5</code></strong>
+10
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(namedCalc plus5) 5</code></strong>
+("plus5",10)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let plus5a = plus5 {name = "PLUS5A"}</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>name plus5a</code></strong>
+"PLUS5A"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(namedCalc plus5a) 5</code></strong>
+("plus5",10)
+</pre><p id="x_vL"><a name="x_vL"></a>
+      Notice the creation of <code class="literal">plus5a</code>.  We changed the
+      <code class="literal">name</code> field, but not the <code class="literal">namedCalc</code>
+      field.  That's why <code class="literal">name</code> has the new name, but
+      <code class="literal">namedCalc</code> still returns the name that was passed to
+      <code class="literal">mkFuncRec</code>; it doesn't change unless we explicitly
+      change it.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="data.passwd">Extended Example: /etc/passwd</h2></div></div></div><p id="x_AJ"><a name="x_AJ"></a>
+      In order to illustrate the usage of a number of different data
+      structures together, we've prepared an extended example.  This example
+      parses and stores entries from files in the format of
+      a typical <code class="literal">/etc/passwd</code> file.
+    </p><a name="passwdmap.hs:all"></a><pre id="passwdmap.hs:all" class="programlisting">-- file: ch13/passwdmap.hs
+import Data.List
+import qualified Data.Map as Map
+import System.IO
+import Text.Printf(printf)
+import System.Environment(getArgs)
+import System.Exit
+import Control.Monad(when)
+
+{- | The primary piece of data this program will store.
+   It represents the fields in a POSIX /etc/passwd file -}
+data PasswdEntry = PasswdEntry {
+    userName :: String,
+    password :: String,
+    uid :: Integer,
+    gid :: Integer,
+    gecos :: String,
+    homeDir :: String,
+    shell :: String}
+    deriving (Eq, Ord)
+
+{- | Define how we get data to a 'PasswdEntry'. -}
+instance Show PasswdEntry where
+    show pe = printf "%s:%s:%d:%d:%s:%s:%s" 
+                (userName pe) (password pe) (uid pe) (gid pe)
+                (gecos pe) (homeDir pe) (shell pe)
+
+{- | Converting data back out of a 'PasswdEntry'. -}
+instance Read PasswdEntry where
+    readsPrec _ value =
+        case split ':' value of
+             [f1, f2, f3, f4, f5, f6, f7] -&gt;
+                 -- Generate a 'PasswdEntry' the shorthand way:
+                 -- using the positional fields.  We use 'read' to convert
+                 -- the numeric fields to Integers.
+                 [(PasswdEntry f1 f2 (read f3) (read f4) f5 f6 f7, [])]
+             x -&gt; error $ "Invalid number of fields in input: " ++ show x
+        where 
+        {- | Takes a delimiter and a list.  Break up the list based on the
+        -  delimiter. -}
+        split :: Eq a =&gt; a -&gt; [a] -&gt; [[a]]
+
+        -- If the input is empty, the result is a list of empty lists.
+        split _ [] = [[]]
+        split delim str =
+            let -- Find the part of the list before delim and put it in
+                -- "before".  The rest of the list, including the leading 
+                -- delim, goes in "remainder".
+                (before, remainder) = span (/= delim) str
+                in
+                before : case remainder of
+                              [] -&gt; []
+                              x -&gt; -- If there is more data to process,
+                                   -- call split recursively to process it
+                                   split delim (tail x)
+
+-- Convenience aliases; we'll have two maps: one from UID to entries
+-- and the other from username to entries
+type UIDMap = Map.Map Integer PasswdEntry
+type UserMap = Map.Map String PasswdEntry
+
+{- | Converts input data to maps.  Returns UID and User maps. -}
+inputToMaps :: String -&gt; (UIDMap, UserMap)
+inputToMaps inp =
+    (uidmap, usermap)
+    where
+    -- fromList converts a [(key, value)] list into a Map
+    uidmap = Map.fromList . map (\pe -&gt; (uid pe, pe)) $ entries
+    usermap = Map.fromList . 
+              map (\pe -&gt; (userName pe, pe)) $ entries
+    -- Convert the input String to [PasswdEntry]
+    entries = map read (lines inp)
+
+main = do
+    -- Load the command-line arguments
+    args &lt;- getArgs
+
+    -- If we don't have the right number of args,
+    -- give an error and abort
+
+    when (length args /= 1) $ do
+        putStrLn "Syntax: passwdmap filename"
+        exitFailure
+
+    -- Read the file lazily
+    content &lt;- readFile (head args)
+    let maps = inputToMaps content
+    mainMenu maps
+
+mainMenu maps@(uidmap, usermap) = do
+    putStr optionText
+    hFlush stdout
+    sel &lt;- getLine
+    -- See what they want to do.  For every option except 4,
+    -- return them to the main menu afterwards by calling
+    -- mainMenu recursively
+    case sel of
+         "1" -&gt; lookupUserName &gt;&gt; mainMenu maps
+         "2" -&gt; lookupUID &gt;&gt; mainMenu maps
+         "3" -&gt; displayFile &gt;&gt; mainMenu maps
+         "4" -&gt; return ()
+         _ -&gt; putStrLn "Invalid selection" &gt;&gt; mainMenu maps
+
+    where 
+    lookupUserName = do
+        putStrLn "Username: "
+        username &lt;- getLine
+        case Map.lookup username usermap of
+             Nothing -&gt; putStrLn "Not found."
+             Just x -&gt; print x
+    lookupUID = do
+        putStrLn "UID: "
+        uidstring &lt;- getLine
+        case Map.lookup (read uidstring) uidmap of
+             Nothing -&gt; putStrLn "Not found."
+             Just x -&gt; print x
+    displayFile = 
+        putStr . unlines . map (show . snd) . Map.toList $ uidmap
+    optionText = 
+          "\npasswdmap options:\n\
+           \\n\
+           \1   Look up a user name\n\
+           \2   Look up a UID\n\
+           \3   Display entire file\n\
+           \4   Quit\n\n\
+           \Your selection: "</pre><p id="x_BJ"><a name="x_BJ"></a>
+      This example maintains two maps: one from username to
+      <code class="literal">PasswdEntry</code> and another one from UID to
+      <code class="literal">PasswdEntry</code>.  Database developers may find it
+      convenient to think of this as having two different indices into the
+      data to speed searching on different fields.
+    </p><p id="x_CJ"><a name="x_CJ"></a>
+      Take a look at the <code class="literal">Show</code> and <code class="literal">Read</code> instances for
+      <code class="literal">PasswdEntry</code>.  There is already a standard format for
+      rendering data of this type as a string: the colon-separated version
+      already used by the system.  So our <code class="literal">Show</code> function displays a
+      <code class="literal">PasswdEntry</code> in the format, and <code class="literal">Read</code> parses that
+      format.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="data.num">Extended example: Numeric Types</h2></div></div></div><p id="x_wL"><a name="x_wL"></a>
+      We've told you how powerful and expressive Haskell's type system is.
+      We've shown you a lot of ways to use that power.  Here's a chance to
+      really see that in action.
+    </p><p id="x_xL"><a name="x_xL"></a>
+      Back in <a class="xref" href="using-typeclasses.html#typeclasses.wellknown.numeric" title="Numeric Types">the section called “Numeric Types”</a>, we showed
+      the numeric typeclasses that come with Haskell.  Let's see what we can
+      do by defining new types and utilizing the numeric typeclasses to
+      integrate them with basic mathematics in Haskell.
+    </p><p id="x_yL"><a name="x_yL"></a>
+      Let's start by thinking through what we'd like to see out of <span class="command"><strong>ghci</strong></span>
+      when we interact with our new types.  To start with, it might be nice
+      to render numeric expressions as strings, making sure to indicate
+      proper precedence.  Perhaps we could create a function called
+      <code class="literal">prettyShow</code> to do that.  We'll show you how to
+      write it in a bit, but first we'll look at how we might use it.
+    </p><a name="num.ghci:prettyshow"></a><pre id="num.ghci:prettyshow" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l num.hs</code></strong>
+[1 of 1] Compiling Main             ( num.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>5 + 1 * 3</code></strong>
+8
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>prettyShow $ 5 + 1 * 3</code></strong>
+"5+(1*3)"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>prettyShow $ 5 * 1 + 3</code></strong>
+"(5*1)+3"
+</pre><p id="x_zL"><a name="x_zL"></a>
+      That looks nice, but it wasn't all that smart.  We could easily
+      simplify out the <code class="literal">1 *</code> part of the expression.  How
+      about a function to do some very basic simplification?
+    </p><a name="num.ghci:simplify"></a><pre id="num.ghci:simplify" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>prettyShow $ simplify $ 5 + 1 * 3</code></strong>
+"5+3"
+</pre><p id="x_AM"><a name="x_AM"></a>
+      How about converting a numeric expression to Reverse Polish Notation
+      (RPN)?  RPN is a postfix notation that never requires parentheses, and
+      is commonly found on HP calculators.  RPN is a stack-based notation.
+      We push numbers onto the stack, and when we enter operations, they
+      pop the most recent numbers off the stack and place the result on the
+      stack.
+    </p><a name="num.ghci:rpnshow"></a><pre id="num.ghci:rpnshow" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>rpnShow $ 5 + 1 * 3</code></strong>
+"5 1 3 * +"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>rpnShow $ simplify $ 5 + 1 * 3</code></strong>
+"5 3 +"
+</pre><p id="x_BM"><a name="x_BM"></a>
+      Maybe it would be nice to be able to represent simple expressions with
+      symbols for the unknowns.
+    </p><a name="num.ghci:symbols"></a><pre id="num.ghci:symbols" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>prettyShow $ 5 + (Symbol "x") * 3</code></strong>
+"5+(x*3)"
+</pre><p id="x_CM"><a name="x_CM"></a>
+      It's often important to track units of measure when working with
+      numbers.  For instance, when you see the number 5, does it mean 5
+      meters, 5 feet, or 5 bytes?  Of course, if you divide 5 meters by 2
+      seconds, the system ought to be able to figure out the appropriate
+      units.  Moreover, it should stop you from adding 2 seconds to 5 meters.
+    </p><a name="num.ghci:units"></a><pre id="num.ghci:units" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>5 / 2</code></strong>
+2.5
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(units 5 "m") / (units 2 "s")</code></strong>
+2.5_m/s
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(units 5 "m") + (units 2 "s")</code></strong>
+*** Exception: Mis-matched units in add
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(units 5 "m") + (units 2 "m")</code></strong>
+7_m
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(units 5 "m") / 2</code></strong>
+2.5_m
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>10 * (units 5 "m") / (units 2 "s")</code></strong>
+25.0_m/s
+</pre><p id="x_DM"><a name="x_DM"></a>
+      If we define an expression or a function that is valid for all numbers,
+      we should be able to calculate the result, or render the expression.
+      For instance, if we define <code class="literal">test</code> to have type
+      <code class="literal">Num a =&gt; a</code>, and say <code class="literal">test = 2 * 5 +
+        3</code>, then we ought to be able to do this:
+    </p><a name="num.ghci:func"></a><pre id="num.ghci:func" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>test</code></strong>
+13
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>rpnShow test</code></strong>
+"2 5 * 3 +"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>prettyShow test</code></strong>
+"(2*5)+3"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>test + 5</code></strong>
+18
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>prettyShow (test + 5)</code></strong>
+"((2*5)+3)+5"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>rpnShow (test + 5)</code></strong>
+"2 5 * 3 + 5 +"
+</pre><p id="x_EM"><a name="x_EM"></a>
+      Since we have units, we should be able to handle some basic
+      trigonometry as well.  Many of these operations operate on angles.
+      Let's make sure that we can handle both degrees and radians.
+    </p><a name="num.ghci:trig"></a><pre id="num.ghci:trig" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>sin (pi / 2)</code></strong>
+1.0
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>sin (units (pi / 2) "rad")</code></strong>
+1.0_1.0
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>sin (units 90 "deg")</code></strong>
+1.0_1.0
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(units 50 "m") * sin (units 90 "deg")</code></strong>
+50.0_m
+</pre><p id="x_FM"><a name="x_FM"></a>
+      Finally, we ought to be able to put all this together and combine
+      different kinds of expressions together.
+    </p><a name="num.ghci:final"></a><pre id="num.ghci:final" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>((units 50 "m") * sin (units 90 "deg")) :: Units (SymbolicManip Double)</code></strong>
+50.0*sin(((2.0*pi)*90.0)/360.0)_m
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>prettyShow $ dropUnits $ (units 50 "m") * sin (units 90 "deg")</code></strong>
+"50.0*sin(((2.0*pi)*90.0)/360.0)"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>rpnShow $ dropUnits $ (units 50 "m") * sin (units 90 "deg")</code></strong>
+"50.0 2.0 pi * 90.0 * 360.0 / sin *"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(units (Symbol "x") "m") * sin (units 90 "deg")</code></strong>
+x*sin(((2.0*pi)*90.0)/360.0)_m
+</pre><p id="x_HM"><a name="x_HM"></a>
+      Everything you've just seen is possible with Haskell types and classes.
+      In fact, you've been reading a real <span class="command"><strong>ghci</strong></span> session demonstrating
+      <code class="literal">num.hs</code>, which you'll see shortly.
+    </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id635992">First Steps</h3></div></div></div><p id="x_IM"><a name="x_IM"></a>
+        Let's think about how we would accomplish everything shown above.  To
+        start with, we might use <span class="command"><strong>ghci</strong></span> to check the type of
+        <code class="literal">(+)</code>, which is <code class="literal">Num a =&gt; a -&gt; a -&gt;
+          a</code>.  If we want to make possible some custom behavior for
+        the plus operator, then we will have to define a new type and make it
+        an instance of <code class="literal">Num</code>.  This type will need to store an expression
+        symbolically.  We can start by thinking of operations such as addition.
+        To store that, we will need to store the operation itself, its left
+        side, and its right side.  The left and right sides could themselves be
+        expressions.
+      </p><p id="x_JM"><a name="x_JM"></a>
+        We can therefore think of an expression as a sort of tree.  Let's start
+        with some simple types.
+      </p><a name="numsimple.hs:all"></a><pre id="numsimple.hs:all" class="programlisting">-- file: ch13/numsimple.hs
+-- The "operators" that we're going to support
+data Op = Plus | Minus | Mul | Div | Pow
+        deriving (Eq, Show)
+
+{- The core symbolic manipulation type -}
+data SymbolicManip a = 
+          Number a           -- Simple number, such as 5
+        | Arith Op (SymbolicManip a) (SymbolicManip a)
+          deriving (Eq, Show)
+
+{- SymbolicManip will be an instance of Num.  Define how the Num
+operations are handled over a SymbolicManip.  This will implement things
+like (+) for SymbolicManip. -}
+instance Num a =&gt; Num (SymbolicManip a) where
+    a + b = Arith Plus a b
+    a - b = Arith Minus a b
+    a * b = Arith Mul a b
+    negate a = Arith Mul (Number (-1)) a
+    abs a = error "abs is unimplemented"
+    signum _ = error "signum is unimplemented"
+    fromInteger i = Number (fromInteger i)</pre><p id="x_KM"><a name="x_KM"></a>
+        First, we define a type called <code class="literal">Op</code>.  This type
+        simply represents some of the operations we will support.
+        Next, there is a definition for <code class="literal">SymbolicManip a</code>.
+        Because of the <code class="literal">Num a</code> constraint, any
+        <code class="literal">Num</code> can be used for the <code class="literal">a</code>.  So
+        a full type may be something like <code class="literal">SymbolicManip
+          Int</code>.
+      </p><p id="x_LM"><a name="x_LM"></a>
+        A <code class="literal">SymbolicManip</code> type can be a plain number, or it
+        can be some arithmetic operation.  The type for the
+        <code class="literal">Arith</code> constructor is recursive, which is perfectly
+        legal in Haskell.  <code class="literal">Arith</code> creates a
+        <code class="literal">SymbolicManip</code> out of an <code class="literal">Op</code> and
+        two other <code class="literal">SymbolicManip</code> items.  Let's look at an
+        example:
+      </p><a name="numsimple.ghci:all"></a><pre id="numsimple.ghci:all" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l numsimple.hs</code></strong>
+[1 of 1] Compiling Main             ( numsimple.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>Number 5</code></strong>
+Number 5
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t Number 5</code></strong>
+Number 5 :: (Num t) =&gt; SymbolicManip t
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:t Number (5::Int)</code></strong>
+Number (5::Int) :: SymbolicManip Int
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>Number 5 * Number 10</code></strong>
+Arith Mul (Number 5) (Number 10)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(5 * 10)::SymbolicManip Int</code></strong>
+Arith Mul (Number 5) (Number 10)
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>(5 * 10 + 2)::SymbolicManip Int</code></strong>
+Arith Plus (Arith Mul (Number 5) (Number 10)) (Number 2)
+</pre><p id="x_MM"><a name="x_MM"></a>
+        You can see that we already have a very basic representation of
+        expressions working.  Notice how Haskell "converted" <code class="literal">5 * 10
+          + 2</code> into a <code class="literal">SymbolicManip</code>, and even
+        handled order of evaluation properly.  This wasn't really a true
+        conversion; <code class="literal">SymbolicManip</code> is a first-class number
+        now.  Integer numeric literals are internally treated as being wrapped 
+        in <code class="literal">fromInteger</code> anyway, so <code class="literal">5</code> is just as valid as
+        a <code class="literal">SymbolicManip Int</code> as it as an
+        <code class="literal">Int</code>.
+      </p><p id="x_NM"><a name="x_NM"></a>
+        From here, then, our task is simple: extend the
+        <code class="literal">SymbolicManip</code> type to be able to represent all the
+        operations we will want to perform, implement instances of it for the
+        other numeric typeclasses, and implement our own instance of <code class="literal">Show</code>
+        for <code class="literal">SymbolicManip</code> that renders this tree in a more
+        accessible fashion.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id636312">Completed Code</h3></div></div></div><p id="x_OM"><a name="x_OM"></a>
+        Here is the completed <code class="literal">num.hs</code>, which was used with
+        the <span class="command"><strong>ghci</strong></span> examples at the beginning of this chapter.  Let's
+        look at this code one piece at a time.
+      </p><a name="num.hs:beginning"></a><pre id="num.hs:beginning" class="programlisting">-- file: ch13/num.hs
+import Data.List
+
+--------------------------------------------------
+-- Symbolic/units manipulation
+--------------------------------------------------
+
+-- The "operators" that we're going to support
+data Op = Plus | Minus | Mul | Div | Pow
+        deriving (Eq, Show)
+
+{- The core symbolic manipulation type.  It can be a simple number,
+a symbol, a binary arithmetic operation (such as +), or a unary
+arithmetic operation (such as cos)
+
+Notice the types of BinaryArith and UnaryArith: it's a recursive
+type.  So, we could represent a (+) over two SymbolicManips. -}
+data SymbolicManip a = 
+          Number a           -- Simple number, such as 5
+        | Symbol String      -- A symbol, such as x
+        | BinaryArith Op (SymbolicManip a) (SymbolicManip a)
+        | UnaryArith String (SymbolicManip a)
+          deriving (Eq)</pre><p id="x_uF1"><a name="x_uF1"></a>
+        In this section of code, we define an <code class="literal">Op</code>
+        that is identical to the one we used before.  We also define
+        <code class="literal">SymbolicManip</code>, which is similar to what we
+        used before.  In this version, we now support unary arithmetic
+        operations (those which take only one parameter) such as
+        <code class="literal">abs</code> or <code class="literal">cos</code>.  Next we
+        define our instance of <code class="literal">Num</code>.
+      </p><a name="num.hs:numinstance"></a><pre id="num.hs:numinstance" class="programlisting">-- file: ch13/num.hs
+{- SymbolicManip will be an instance of Num.  Define how the Num
+operations are handled over a SymbolicManip.  This will implement things
+like (+) for SymbolicManip. -}
+instance Num a =&gt; Num (SymbolicManip a) where
+    a + b = BinaryArith Plus a b
+    a - b = BinaryArith Minus a b
+    a * b = BinaryArith Mul a b
+    negate a = BinaryArith Mul (Number (-1)) a
+    abs a = UnaryArith "abs" a
+    signum _ = error "signum is unimplemented"
+    fromInteger i = Number (fromInteger i)</pre><p id="x_vF1"><a name="x_vF1"></a>
+        This is pretty straightforward and also similar to our earlier
+        code.  Note that earlier we weren't able to properly support
+        <code class="literal">abs</code>, but now with the
+        <code class="literal">UnaryArith</code> constructor, we can.  Next we
+        define some more instances.
+      </p><a name="num.hs:moreinstances"></a><pre id="num.hs:moreinstances" class="programlisting">-- file: ch13/num.hs
+{- Make SymbolicManip an instance of Fractional -}
+instance (Fractional a) =&gt; Fractional (SymbolicManip a) where
+    a / b = BinaryArith Div a b
+    recip a = BinaryArith Div (Number 1) a
+    fromRational r = Number (fromRational r)
+
+{- Make SymbolicManip an instance of Floating -}
+instance (Floating a) =&gt; Floating (SymbolicManip a) where
+    pi = Symbol "pi"
+    exp a = UnaryArith "exp" a
+    log a = UnaryArith "log" a
+    sqrt a = UnaryArith "sqrt" a
+    a ** b = BinaryArith Pow a b
+    sin a = UnaryArith "sin" a
+    cos a = UnaryArith "cos" a
+    tan a = UnaryArith "tan" a
+    asin a = UnaryArith "asin" a
+    acos a = UnaryArith "acos" a
+    atan a = UnaryArith "atan" a
+    sinh a = UnaryArith "sinh" a
+    cosh a = UnaryArith "cosh" a
+    tanh a = UnaryArith "tanh" a
+    asinh a = UnaryArith "asinh" a
+    acosh a = UnaryArith "acosh" a
+    atanh a = UnaryArith "atanh" a</pre><p id="x_wF1"><a name="x_wF1"></a>
+        This section of code defines some fairly straightforward
+        instances of <code class="literal">Fractional</code> and <code class="literal">Floating</code>.  Now let's work on
+        converting our expressions to strings for display.
+      </p><a name="num.hs:prettyShow"></a><pre id="num.hs:prettyShow" class="programlisting">-- file: ch13/num.hs
+{- Show a SymbolicManip as a String, using conventional
+algebraic notation -}
+prettyShow :: (Show a, Num a) =&gt; SymbolicManip a -&gt; String
+
+-- Show a number or symbol as a bare number or serial
+prettyShow (Number x) = show x
+prettyShow (Symbol x) = x
+
+prettyShow (BinaryArith op a b) =
+    let pa = simpleParen a
+        pb = simpleParen b
+        pop = op2str op
+        in pa ++ pop ++ pb
+prettyShow (UnaryArith opstr a) = 
+    opstr ++ "(" ++ show a ++ ")"
+
+op2str :: Op -&gt; String
+op2str Plus = "+"
+op2str Minus = "-"
+op2str Mul = "*"
+op2str Div = "/"
+op2str Pow = "**"
+
+{- Add parenthesis where needed.  This function is fairly conservative
+and will add parenthesis when not needed in some cases.
+    
+Haskell will have already figured out precedence for us while building
+up the SymbolicManip. -}
+simpleParen :: (Show a, Num a) =&gt; SymbolicManip a -&gt; String
+simpleParen (Number x) = prettyShow (Number x)
+simpleParen (Symbol x) = prettyShow (Symbol x)
+simpleParen x@(BinaryArith _ _ _) = "(" ++ prettyShow x ++ ")"
+simpleParen x@(UnaryArith _ _) = prettyShow x
+
+{- Showing a SymbolicManip calls the prettyShow function on it -}
+instance (Show a, Num a) =&gt; Show (SymbolicManip a) where
+    show a = prettyShow a</pre><p id="x_xF1"><a name="x_xF1"></a>
+        We start by defining a function
+        <code class="literal">prettyShow</code>.  It renders an expression using
+        conventional style.  The algorithm is fairly simple: bare
+        numbers and symbols are rendered bare; binary arithmetic is
+        rendered with the two sides plus the operator in the middle,
+        and of course we handle the unary operators as well.
+        <code class="literal">op2str</code> simply converts an
+        <code class="literal">Op</code> to a <code class="literal">String</code>.  In
+        <code class="literal">simpleParen</code>, we have a quite conservative
+        algorithm that adds parenthesis to keep precedence clear in
+        the result.  Finally, we make <code class="literal">SymbolicManip</code>
+        an instance of <code class="literal">Show</code> and use <code class="literal">prettyShow</code> to
+        accomplish that.  Now let's implement an algorithm that
+        converts an expression to s string in RPN format.
+      </p><a name="num.hs:rpnShow"></a><pre id="num.hs:rpnShow" class="programlisting">-- file: ch13/num.hs
+{- Show a SymbolicManip using RPN.  HP calculator users may
+find this familiar. -}
+rpnShow :: (Show a, Num a) =&gt; SymbolicManip a -&gt; String
+rpnShow i =
+    let toList (Number x) = [show x]
+        toList (Symbol x) = [x]
+        toList (BinaryArith op a b) = toList a ++ toList b ++
+           [op2str op]
+        toList (UnaryArith op a) = toList a ++ [op]
+        join :: [a] -&gt; [[a]] -&gt; [a]
+        join delim l = concat (intersperse delim l)
+    in join " " (toList i)</pre><p id="x_yF1"><a name="x_yF1"></a>
+        Fans of RPN will note how much simpler this algorithm is
+        compared to the algorithm to render with conventional
+        notation.  In particular, we didn't have to worry about where
+        to add parenthesis, because RPN can, by definition, only be
+        evaluated one way.  Next, let's see how we might implement a
+        function to do some rudimentary simplification on expressions.
+      </p><a name="num.hs:simplify"></a><pre id="num.hs:simplify" class="programlisting">-- file: ch13/num.hs
+{- Perform some basic algebraic simplifications on a SymbolicManip. -}
+simplify :: (Num a) =&gt; SymbolicManip a -&gt; SymbolicManip a
+simplify (BinaryArith op ia ib) = 
+    let sa = simplify ia
+        sb = simplify ib
+        in
+        case (op, sa, sb) of 
+                (Mul, Number 1, b) -&gt; b
+                (Mul, a, Number 1) -&gt; a
+                (Mul, Number 0, b) -&gt; Number 0
+                (Mul, a, Number 0) -&gt; Number 0
+                (Div, a, Number 1) -&gt; a
+                (Plus, a, Number 0) -&gt; a
+                (Plus, Number 0, b) -&gt; b
+                (Minus, a, Number 0) -&gt; a
+                _ -&gt; BinaryArith op sa sb
+simplify (UnaryArith op a) = UnaryArith op (simplify a)
+simplify x = x</pre><p id="x_zF1"><a name="x_zF1"></a>
+        This function is pretty simple.  For certain binary arithmetic
+        operations -- for instance, multiplying any value by 1 -- we
+        are able to easily simplify the situation.  We begin by
+        obtaining simplified versions of both sides of the calculation
+        (this is where recursion hits) and then simplify the result.
+        We have little to do with unary operators, so we just simplify
+        the expression they act upon.
+      </p><p id="x_AG1"><a name="x_AG1"></a>
+        From here on, we will add support for units of measure to our
+        established library.  This will let us represent quantities
+        such as "5 meters".  We start, as before, by defining a type.
+      </p><a name="num.hs:units"></a><pre id="num.hs:units" class="programlisting">-- file: ch13/num.hs
+{- New data type: Units.  A Units type contains a number
+and a SymbolicManip, which represents the units of measure.
+A simple label would be something like (Symbol "m") -}
+data Num a =&gt; Units a = Units a (SymbolicManip a)
+           deriving (Eq)</pre><p id="x_BG1"><a name="x_BG1"></a>
+        So, a <code class="literal">Units</code> contains a number and a label.
+        The label is itself a <code class="literal">SymbolicManip</code>.  Next,
+        it will probably come as no surprise to see an instance of
+        <code class="literal">Num</code> for <code class="literal">Units</code>.
+      </p><a name="num.hs:unitsnum"></a><pre id="num.hs:unitsnum" class="programlisting">-- file: ch13/num.hs
+{- Implement Units for Num.  We don't know how to convert between
+arbitrary units, so we generate an error if we try to add numbers with
+different units.  For multiplication, generate the appropriate
+new units. -}
+instance (Num a) =&gt; Num (Units a) where
+    (Units xa ua) + (Units xb ub) 
+        | ua == ub = Units (xa + xb) ua
+        | otherwise = error "Mis-matched units in add or subtract"
+    (Units xa ua) - (Units xb ub) = (Units xa ua) + (Units (xb * (-1)) ub)
+    (Units xa ua) * (Units xb ub) = Units (xa * xb) (ua * ub)
+    negate (Units xa ua) = Units (negate xa) ua
+    abs (Units xa ua) = Units (abs xa) ua
+    signum (Units xa _) = Units (signum xa) (Number 1)
+    fromInteger i = Units (fromInteger i) (Number 1)</pre><p id="x_CG1"><a name="x_CG1"></a>
+        Now it may become clear why we use a
+        <code class="literal">SymbolicManip</code> instead of a <code class="literal">String</code> to
+        store the unit of measure.  As calculations such as
+        multiplication occur, the unit of measure also changes.  For
+        instance, if we multiply 5 meters by 2 meters, we obtain 10
+        square meters.  We force the units for addition to match, and
+        implement subtraction in terms of addition.  Let's look at
+        more typeclass instances for <code class="literal">Units</code>.
+      </p><a name="num.hs:unitsinst"></a><pre id="num.hs:unitsinst" class="programlisting">-- file: ch13/num.hs
+{- Make Units an instance of Fractional -}
+instance (Fractional a) =&gt; Fractional (Units a) where
+    (Units xa ua) / (Units xb ub) = Units (xa / xb) (ua / ub)
+    recip a = 1 / a
+    fromRational r = Units (fromRational r) (Number 1)
+
+{- Floating implementation for Units.
+
+Use some intelligence for angle calculations: support deg and rad
+-}
+instance (Floating a) =&gt; Floating (Units a) where
+    pi = (Units pi (Number 1))
+    exp _ = error "exp not yet implemented in Units"
+    log _ = error "log not yet implemented in Units"
+    (Units xa ua) ** (Units xb ub) 
+        | ub == Number 1 = Units (xa ** xb) (ua ** Number xb)
+        | otherwise = error "units for RHS of ** not supported"
+    sqrt (Units xa ua) = Units (sqrt xa) (sqrt ua)
+    sin (Units xa ua) 
+        | ua == Symbol "rad" = Units (sin xa) (Number 1)
+        | ua == Symbol "deg" = Units (sin (deg2rad xa)) (Number 1)
+        | otherwise = error "Units for sin must be deg or rad"
+    cos (Units xa ua) 
+        | ua == Symbol "rad" = Units (cos xa) (Number 1)
+        | ua == Symbol "deg" = Units (cos (deg2rad xa)) (Number 1)
+        | otherwise = error "Units for cos must be deg or rad"
+    tan (Units xa ua)
+        | ua == Symbol "rad" = Units (tan xa) (Number 1)
+        | ua == Symbol "deg" = Units (tan (deg2rad xa)) (Number 1)
+        | otherwise = error "Units for tan must be deg or rad"
+    asin (Units xa ua) 
+        | ua == Number 1 = Units (rad2deg $ asin xa) (Symbol "deg")
+        | otherwise = error "Units for asin must be empty"
+    acos (Units xa ua)
+        | ua == Number 1 = Units (rad2deg $ acos xa) (Symbol "deg")
+        | otherwise = error "Units for acos must be empty"
+    atan (Units xa ua)
+        | ua == Number 1 = Units (rad2deg $ atan xa) (Symbol "deg")
+        | otherwise = error "Units for atan must be empty"
+    sinh = error "sinh not yet implemented in Units"
+    cosh = error "cosh not yet implemented in Units"
+    tanh = error "tanh not yet implemented in Units"
+    asinh = error "asinh not yet implemented in Units"
+    acosh = error "acosh not yet implemented in Units"
+    atanh = error "atanh not yet implemented in Units"</pre><p id="x_DG1"><a name="x_DG1"></a>
+        We didn't supply implementations for every function, but quite
+        a few have been defined.  Now let's define a few utility
+        functions for working with units.
+      </p><a name="num.hs:unitsutil"></a><pre id="num.hs:unitsutil" class="programlisting">-- file: ch13/num.hs
+{- A simple function that takes a number and a String and returns an
+appropriate Units type to represent the number and its unit of measure -}
+units :: (Num z) =&gt; z -&gt; String -&gt; Units z
+units a b = Units a (Symbol b)
+
+{- Extract the number only out of a Units type -}
+dropUnits :: (Num z) =&gt; Units z -&gt; z
+dropUnits (Units x _) = x
+                                                    
+{- Utilities for the Unit implementation -}
+deg2rad x = 2 * pi * x / 360
+rad2deg x = 360 * x / (2 * pi)</pre><p id="x_EG1"><a name="x_EG1"></a>
+        First, we have <code class="literal">units</code>, which makes it easy
+        to craft simple expressions.  It's faster to say
+        <code class="literal">units 5 "m"</code> than <code class="literal">Units 5 (Symbol
+        "m")</code>.  We also have a corresponding
+        <code class="literal">dropUnits</code>, which discards the unit of
+        measure and returns the embedded bare <code class="literal">Num</code>.  Finally, we
+        define some functions for use by our earlier instances to
+        convert between degrees and radians.  Next, we just define a
+        <code class="literal">Show</code> instance for <code class="literal">Units</code>.
+      </p><a name="num.hs:unitsshow"></a><pre id="num.hs:unitsshow" class="programlisting">-- file: ch13/num.hs
+{- Showing units: we show the numeric component, an underscore,
+then the prettyShow version of the simplified units -}
+instance (Show a, Num a) =&gt; Show (Units a) where
+    show (Units xa ua) = show xa ++ "_" ++ prettyShow (simplify ua)</pre><p id="x_FG1"><a name="x_FG1"></a>
+        That was simple.  For one last piece, we define a variable
+        <code class="literal">test</code> to experiment with.
+      </p><a name="num.hs:test"></a><pre id="num.hs:test" class="programlisting">-- file: ch13/num.hs
+test :: (Num a) =&gt; a
+test = 2 * 5 + 3</pre><p id="x_PM"><a name="x_PM"></a>
+        So, looking back over all this code, we have done what we set out to accomplish: implemented more
+        instances for <code class="literal">SymbolicManip</code>.  We have also
+        introduced another type called <code class="literal">Units</code> which stores
+        a number and a unit of measure.  We implement several show-like
+        functions which render the <code class="literal">SymbolicManip</code> or
+        <code class="literal">Units</code> in different ways.  
+      </p><p id="x_QM"><a name="x_QM"></a>
+        There is one other point that this example drives home.  Every language
+        -- even those with objects and overloading -- has
+        some parts of the language that are special in some way.  In Haskell,
+        the "special" bits are extremely small.  We have just developed a new
+        representation for something as fundamental as a number, and it has
+        been really quite easy.  Our new type is a first-class type,
+        and the compiler knows what functions to use with it at
+        compile time.  Haskell takes code reuse and
+        interchangability to the extreme.  It is easy to make code generic
+        and work on things of many different types.  It's also easy to make
+        up new types and make them automatically be 
+        first-class features of the system.
+      </p><p id="x_GG1"><a name="x_GG1"></a>
+        Remember our <span class="command"><strong>ghci</strong></span> examples at the beginning of the chapter?  All of
+        them were made with the code in this example.  You might want
+        to try them out for yourself and see how they work.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id636979">Exercises</h3></div></div></div><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id636989"></a><a name="id636991"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_HG1"><a name="x_HG1"></a>Extend the <code class="function">prettyShow</code> function
+	      to remove unnecessary parentheses.</p></td></tr></tbody></table></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="data.dlist">Taking advantage of functions as data</h2></div></div></div><p id="x_Hq"><a name="x_Hq"></a>In an imperative language, appending two lists is cheap and
+      easy.  Here's a simple C structure in which we maintain a
+      pointer to the head and tail of a list.</p><a name="list.c:list"></a><pre id="list.c:list" class="programlisting">struct list {
+    struct node *head, *tail;
+};</pre><p id="x_Iq"><a name="x_Iq"></a>When we have one list, and want to append another
+      list onto its end, we modify the last node of the existing list
+      to point to its <code class="code">head</code> node, then update its
+      <code class="code">tail</code> pointer to point to its <code class="code">tail</code>
+      node.</p><p id="x_Jq"><a name="x_Jq"></a>Obviously, this approach is off limits to us in Haskell if
+      we want to stay pure.  Since pure data is immutable, we can't go
+      around modifying lists in place.  Haskell's
+      <code class="function">(++)</code> operator appends two lists by creating
+      a new one.</p><a name="Append.hs:append"></a><pre id="Append.hs:append" class="programlisting">-- file: ch13/Append.hs
+(++) :: [a] -&gt; [a] -&gt; [a]
+(x:xs) ++ ys = x : xs ++ ys
+_      ++ ys = ys</pre><p id="x_Kq"><a name="x_Kq"></a>From inspecting the code, we can see that the cost of
+      creating a new list depends on the length of the initial
+      list<sup>[<a name="id637094" href="#ftn.id637094" class="footnote">32</a>]</sup>
+.</p><p id="x_Lq"><a name="x_Lq"></a>We often need to append lists over and over, to construct
+      one big list.  For instance, we might be generating the contents
+      of a web page as a <span class="type">String</span>, emitting a chunk at a
+      time as we traverse some data structure.  Each time we have a
+      chunk of markup to add to the page, we will naturally want to
+      append it onto the end of our existing
+      <span class="type">String</span>.</p><p id="x_Mq"><a name="x_Mq"></a>If a single append has a cost proportional to the length of
+      the initial list, and each repeated append makes the initial
+      list longer, we end up in an unhappy situation: the cost of all
+      of the repeated appends is proportional to the
+      <span class="emphasis"><em>square</em></span> of the length of the final
+      list.</p><p id="x_Nq"><a name="x_Nq"></a>To understand this, let's dig in a little.  The
+      <code class="function">(++)</code> operator is right associative.</p><a name="append.ghci:info"></a><pre id="append.ghci:info" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:info (++)</code></strong>
+(++) :: [a] -&gt; [a] -&gt; [a] 	-- Defined in GHC.Base
+infixr 5 ++
+</pre><p id="x_Oq"><a name="x_Oq"></a>This means that a Haskell implementation will evaluate the
+      expression <code class="code">"a" ++ "b" ++ "c"</code> as if we had put
+      parentheses around it as follows: <code class="code">"a" ++ ("b" ++
+	"c")</code>.  This makes good performance sense, because it
+      keeps the left operand as short as possible.</p><p id="x_Pq"><a name="x_Pq"></a>When we repeatedly append onto the end of a list, we defeat
+      this associativity.  Let's say we start with the list
+      <code class="code">"a"</code> and append <code class="code">"b"</code>, and save the
+      result as our new list.  If we later append <code class="code">"c"</code>
+      onto this new list, our left operand is now <code class="code">"ab"</code>.
+      In this scheme, every time we append, our left operand gets
+      longer.</p><p id="x_Qq"><a name="x_Qq"></a>Meanwhile, the imperative programmers are cackling with
+      glee, because the cost of <span class="emphasis"><em>their</em></span> repeated
+      appends only depends on the number of them that they perform.
+      They have linear performance; ours is quadratic.</p><p id="x_Rq"><a name="x_Rq"></a>When something as common as repeated appending of lists
+      imposes such a performance penalty, it's time to look at the
+      problem from another angle.</p><p id="x_Sq"><a name="x_Sq"></a>The expression <code class="code">("a"++)</code> is a section, a
+      partially applied function.  What is its type?</p><a name="append.ghci:section"></a><pre id="append.ghci:section" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type ("a" ++)</code></strong>
+("a" ++) :: [Char] -&gt; [Char]
+</pre><p id="x_Tq"><a name="x_Tq"></a>Since this is a function, we can use the
+      <code class="function">(.)</code> operator to compose it with another
+      section, let's say <code class="code">("b"++)</code>.</p><a name="append.ghci:compose"></a><pre id="append.ghci:compose" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type ("a" ++) . ("b" ++)</code></strong>
+("a" ++) . ("b" ++) :: [Char] -&gt; [Char]
+</pre><p id="x_Uq"><a name="x_Uq"></a>Our new function has the same type.  What happens if we stop
+      composing functions, and instead provide a <span class="type">String</span>
+      to the function we've created?</p><a name="append.ghci:apply"></a><pre id="append.ghci:apply" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let f = ("a" ++) . ("b" ++)</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>f []</code></strong>
+"ab"
+</pre><p id="x_Vq"><a name="x_Vq"></a>We've appended the strings!  We're using these partially
+      applied functions to store data, which we can retrieve by
+      providing an empty list.  Each partial application of
+      <code class="function">(++)</code> and <code class="function">(.)</code>
+      <span class="emphasis"><em>represents</em></span> an append, but it doesn't
+      actually <span class="emphasis"><em>perform</em></span> the append.</p><p id="x_Wq"><a name="x_Wq"></a>There are two very interesting things about this approach.
+      The first is that the cost of a partial application is constant,
+      so the cost of many partial applications is linear.  The second
+      is that when we finally provide a <code class="code">[]</code> value to
+      unlock the final list from its chain of partial applications,
+      application proceeds from right to left.  This keeps the left
+      operand of <code class="function">(++)</code> small, and so the overall
+      cost of all of these appends is linear, not quadratic.</p><p id="x_Xq"><a name="x_Xq"></a>By choosing an unfamiliar data representation, we've avoided
+      a nasty performance quagmire, while gaining a new perspective on
+      the usefulness of treating functions as data.  By the way, this
+      is an old trick, and it's usually called a <span class="emphasis"><em>difference
+	list</em></span>.</p><p id="x_Yq"><a name="x_Yq"></a>We're not yet finished, though.  As appealing as difference
+      lists are in theory, ours won't be very pleasant in practice if
+      we leave all the plumbing of <code class="function">(++)</code>,
+      <code class="function">(.)</code>, and partial application exposed.  We
+      need to turn this mess into something pleasant to work
+      with.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id637423">Turning difference lists into a proper library</h3></div></div></div><p id="x_Zq"><a name="x_Zq"></a>Our first step is to use a <code class="code">newtype</code> declaration to hide
+	the underlying type from our users.  We'll create a new type,
+	and call it <span class="type">DList</span>.  Like a regular list, it will
+	be a parameterised type.</p><a name="DList.hs:newtype"></a><pre id="DList.hs:newtype" class="programlisting">-- file: ch13/DList.hs
+newtype DList a = DL {
+      unDL :: [a] -&gt; [a]
+    }</pre><p id="x_aq"><a name="x_aq"></a>The <code class="function">unDL</code> function is our
+	deconstructor, which removes the <code class="code">DL</code> constructor.
+	When we go back and decide what we want to export from our
+	module, we will omit our data constructor and deconstruction
+	function, so the <span class="type">DList</span> type will be completely
+	opaque to our users.  They'll only be able to work with the
+	type using the other functions we export.</p><a name="DList.hs:append"></a><pre id="DList.hs:append" class="programlisting">-- file: ch13/DList.hs
+append :: DList a -&gt; DList a -&gt; DList a
+append xs ys = DL (unDL xs . unDL ys)</pre><p id="x_bq"><a name="x_bq"></a>Our <code class="function">append</code> function may seem a little
+	complicated, but it's just performing some book-keeping
+	around the same use of the <code class="function">(.)</code> operator that
+	we demonstrated earlier.  To compose our functions, we must
+	first unwrap them from their <span class="type">DL</span> constructor,
+	hence the uses of <code class="function">unDL</code>.  We then re-wrap
+	the resulting function with the <span class="type">DL</span> constructor so
+	that it will have the right type.</p><p id="x_cq"><a name="x_cq"></a>Here's another way of writing the same function, in which
+	we perform the unwrapping of <code class="varname">xs</code> and
+	<code class="varname">ys</code> via pattern matching.</p><a name="DList.hs:appendP"></a><pre id="DList.hs:appendP" class="programlisting">-- file: ch13/DList.hs
+append' :: DList a -&gt; DList a -&gt; DList a
+append' (DL xs) (DL ys) = DL (xs . ys)</pre><p id="x_dq"><a name="x_dq"></a>Our <span class="type">DList</span> type won't be much use if we can't
+	convert back and forth between the <span class="type">DList</span>
+	representation and a regular list.</p><a name="DList.hs:list"></a><pre id="DList.hs:list" class="programlisting">-- file: ch13/DList.hs
+fromList :: [a] -&gt; DList a
+fromList xs = DL (xs ++)
+
+toList :: DList a -&gt; [a]
+toList (DL xs) = xs []</pre><p id="x_eq"><a name="x_eq"></a>Once again, compared to the original versions of these
+	functions that we wrote, all we're doing is a little
+	book-keeping to hide the plumbing.</p><p id="x_fq"><a name="x_fq"></a>If we want to make <span class="type">DList</span> useful as a
+	substitute for regular lists, we need to provide some more of
+	the common list operations.</p><a name="DList.hs:common"></a><pre id="DList.hs:common" class="programlisting">-- file: ch13/DList.hs
+empty :: DList a
+empty = DL id
+
+-- equivalent of the list type's (:) operator
+cons :: a -&gt; DList a -&gt; DList a
+cons x (DL xs) = DL ((x:) . xs)
+infixr `cons`
+
+dfoldr :: (a -&gt; b -&gt; b) -&gt; b -&gt; DList a -&gt; b
+dfoldr f z xs = foldr f z (toList xs)</pre><p id="x_gq"><a name="x_gq"></a>Although the <span class="type">DList</span> approach makes
+	appends cheap, not all list-like operations are easily
+	available.  The <code class="function">head</code> function has
+	constant cost for lists.  Our <span class="type">DList</span> equivalent
+	requires that we convert the entire <span class="type">DList</span> to a
+	regular list, so it is much more expensive than its list
+	counterpart: its cost is linear in the number of appends we
+	have performed to construct the <span class="type">DList</span>.</p><a name="DList.hs:safeHead"></a><pre id="DList.hs:safeHead" class="programlisting">-- file: ch13/DList.hs
+safeHead :: DList a -&gt; Maybe a
+safeHead xs = case toList xs of
+                (y:_) -&gt; Just y
+                _ -&gt; Nothing</pre><p id="x_hq"><a name="x_hq"></a>To support an equivalent of <code class="function">map</code>, we
+	can make our <span class="type">DList</span> type a functor.</p><a name="DList.hs:Functor"></a><pre id="DList.hs:Functor" class="programlisting">-- file: ch13/DList.hs
+dmap :: (a -&gt; b) -&gt; DList a -&gt; DList b
+dmap f = dfoldr go empty
+    where go x xs = cons (f x) xs
+
+instance Functor DList where
+    fmap = dmap</pre><p id="x_iq"><a name="x_iq"></a>Once we decide that we have written enough equivalents of
+	list functions, we go back to the top of our source file, and
+	add a module header.</p><a name="DList.hs:module"></a><pre id="DList.hs:module" class="programlisting">-- file: ch13/DList.hs
+module DList
+    (
+      DList
+    , fromList
+    , toList
+    , empty
+    , append
+    , cons
+    , dfoldr
+    ) where</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id637702">Lists, difference lists, and monoids</h3></div></div></div><p id="x_jq"><a name="x_jq"></a>In abstract algebra, there exists a simple
+	abstract structure called a <span class="emphasis"><em>monoid</em></span>.  Many
+	mathematical objects are monoids, because the “<span class="quote">bar to
+	  entry</span>” is very low.  In order to be considered a
+	monoid, an object must have two properties.</p><div class="itemizedlist"><ul type="disc"><li><p id="x_kq"><a name="x_kq"></a>An associative binary operator.  Let's call it
+	    <code class="function">(*)</code>: the expression <code class="code">a * (b *
+	      c)</code> must give the same result as <code class="code">(a * b) *
+	      c</code>.</p></li><li><p id="x_lq"><a name="x_lq"></a>An identity value.  If we call this
+	    <code class="varname">e</code>, it must obey two rules: <code class="code">a * e
+	      == a</code> and <code class="code">e * a == a</code>.</p></li></ul></div><p id="x_mq"><a name="x_mq"></a>The rules for monoids don't say what the binary operator
+	must do, merely that such an operator must exist. Because of
+	this, lots of mathematical objects are monoids. If we take
+	addition as the binary operator and zero as the identity
+	value, integers form a monoid.  With multiplication as the
+	binary operator and one as the identity value, integers form a
+	different monoid.</p><p id="x_nq"><a name="x_nq"></a>Monoids are ubiquitous in Haskell<sup>[<a name="id637789" href="#ftn.id637789" class="footnote">33</a>]</sup>.  The <span class="type">Monoid</span> typeclass is defined in
+	the <code class="code">Data.Monoid</code> module.</p><a name="Monoid.hs:Monoid"></a><pre id="Monoid.hs:Monoid" class="programlisting">-- file: ch13/Monoid.hs
+class Monoid a where
+    mempty  :: a                -- the identity
+    mappend :: a -&gt; a -&gt; a      -- associative binary operator</pre><p id="x_oq"><a name="x_oq"></a>If we take <code class="function">(++)</code> as the binary
+	operator and <code class="code">[]</code> as the identity, lists form a
+	monoid.</p><a name="Monoid.hs:list"></a><pre id="Monoid.hs:list" class="programlisting">-- file: ch13/Monoid.hs
+instance Monoid [a] where
+    mempty  = []
+    mappend = (++)</pre><p id="x_pq"><a name="x_pq"></a>Since lists and <span class="type">DList</span>s are so closely
+	related, it follows that our <span class="type">DList</span> type must be a
+	monoid, too.</p><a name="DList.hs:Monoid"></a><pre id="DList.hs:Monoid" class="programlisting">-- file: ch13/DList.hs
+instance Monoid (DList a) where
+    mempty = empty
+    mappend = append</pre><p id="x_qq"><a name="x_qq"></a>Let's try our the methods of the <span class="type">Monoid</span> type
+	class in <span class="command"><strong>ghci</strong></span>.</p><a name="monoid.ghci:mappend"></a><pre id="monoid.ghci:mappend" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>"foo" `mappend` "bar"</code></strong>
+"foobar"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>toList (fromList [1,2] `mappend` fromList [3,4])</code></strong>
+[1,2,3,4]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>mempty `mappend` [1]</code></strong>
+[1]
+</pre><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_rq"><a name="x_rq"></a>Although from a mathematical perspective, integers can
+	  be monoids in two different ways, we can't write two
+	  differing <span class="type">Monoid</span> instances for <span class="type">Int</span>
+	  in Haskell: the compiler would complain about duplicate
+	  instances.</p><p id="x_sq"><a name="x_sq"></a>In those rare cases where we really need several
+	  <span class="type">Monoid</span> instances for the same type, we can use
+	  some <code class="code">newtype</code> trickery to create distinct types for the
+	  purpose.</p><a name="Monoid.hs:int"></a><pre id="Monoid.hs:int" class="programlisting">-- file: ch13/Monoid.hs
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+                   
+newtype AInt = A { unA :: Int }
+    deriving (Show, Eq, Num)
+
+-- monoid under addition
+instance Monoid AInt where
+    mempty = 0
+    mappend = (+)
+
+newtype MInt = M { unM :: Int }
+    deriving (Show, Eq, Num)
+
+-- monoid under multiplication
+instance Monoid MInt where
+    mempty = 1
+    mappend = (*)</pre><p id="x_tq"><a name="x_tq"></a>We'll then get different behaviour depending on the type
+	  we use.</p><a name="monoid.ghci:int"></a><pre id="monoid.ghci:int" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>2 `mappend` 5 :: MInt</code></strong>
+M {unM = 10}
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>2 `mappend` 5 :: AInt</code></strong>
+A {unA = 7}
+</pre></td></tr></table></div><p id="x_uq"><a name="x_uq"></a>We will have more to say about difference lists and their
+	monoidal nature in <a class="xref" href="programming-with-monads.html#monadcase.writer.dlist" title="The writer monad and lists">the section called “The writer monad and lists”</a>.</p><div class="tip"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p id="x_KG1"><a name="x_KG1"></a>As with the rules for functors, Haskell cannot check the
+	  rules for monoids on our behalf.  If we're defining a
+	  <span class="type">Monoid</span> instance, we can easily write QuickCheck
+	  properties to give us high statistical confidence that our
+	  code is following the monoid rules.</p></td></tr></table></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="data.seq">General purpose sequences</h2></div></div></div><p id="x_LG1"><a name="x_LG1"></a>Both Haskell's built-in list type and the <span class="type">DList</span>
+      type that we defined above have poor performance characteristics
+      under some circumstances.  The <code class="code">Data.Sequence</code> module
+      defines a <span class="type">Seq</span> container type that gives good
+      performance for a wider variety of operations.</p><p id="x_MG1"><a name="x_MG1"></a>As with other modules, <code class="code">Data.Sequence</code> is
+      intended to be used via qualified import.</p><a name="DataSequence.hs:import1"></a><pre id="DataSequence.hs:import1" class="programlisting">-- file: ch13/DataSequence.hs
+import qualified Data.Sequence as Seq</pre><p id="x_NG1"><a name="x_NG1"></a>We can construct an empty <span class="type">Seq</span> using
+      <code class="function">empty</code>, and a single-element container using
+      <code class="function">singleton</code>.</p><a name="dataSequence.ghci:simple"></a><pre id="dataSequence.ghci:simple" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>Seq.empty</code></strong>
+Loading package array-0.1.0.0 ... linking ... done.
+Loading package containers-0.1.0.1 ... linking ... done.
+fromList []
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>Seq.singleton 1</code></strong>
+fromList [1]
+</pre><p id="x_OG1"><a name="x_OG1"></a>We can create a <span class="type">Seq</span> from a list using
+      <code class="function">fromList</code>.</p><a name="dataSequence.ghci:list"></a><pre id="dataSequence.ghci:list" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let a = Seq.fromList [1,2,3]</code></strong>
+</pre><p id="x_PG1"><a name="x_PG1"></a>The <code class="code">Data.Sequence</code> module provides some
+      constructor functions in the form of operators. When we perform
+      a qualified import, we must qualify the name of an operator in
+      our code, which is ugly.</p><a name="dataSequence.ghci:ugly"></a><pre id="dataSequence.ghci:ugly" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>1 Seq.&lt;| Seq.singleton 2</code></strong>
+fromList [1,2]
+</pre><p id="x_QG1"><a name="x_QG1"></a>If we import the operators explicitly, we can avoid the need
+      to qualify them.</p><a name="DataSequence.hs:import2"></a><pre id="DataSequence.hs:import2" class="programlisting">-- file: ch13/DataSequence.hs
+import Data.Sequence ((&gt;&lt;), (&lt;|), (|&gt;))</pre><p id="x_RG1"><a name="x_RG1"></a>By removing the qualification from the operator, we improve
+      the readability of our code.</p><a name="dataSequence.ghci:nice"></a><pre id="dataSequence.ghci:nice" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>Seq.singleton 1 |&gt; 2</code></strong>
+fromList [1,2]
+</pre><p id="x_SG1"><a name="x_SG1"></a>A useful way to remember the <code class="function">(&lt;|)</code>
+      and <code class="function">(|&gt;)</code> functions is that the
+      “<span class="quote">arrow</span>” points to the element we're adding to the
+      <code class="code">Seq</code>.  The element will be added on the side to which the
+      arrow points: <code class="function">(&lt;|)</code> adds on the left,
+      <code class="function">(|&gt;)</code> on the right.</p><p id="x_TG1"><a name="x_TG1"></a>Both adding on the left and adding on the right are
+      constant-time operations.  Appending two <code class="code">Seq</code>s is
+      also cheap, occurring in time proportional to the logarithm of
+      whichever is shorter.  To append, we use the
+      <code class="function">(&gt;&lt;)</code> operator.</p><a name="dataSequence.ghci:append"></a><pre id="dataSequence.ghci:append" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let left = Seq.fromList [1,3,3]</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let right = Seq.fromList [7,1]</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>left &gt;&lt; right</code></strong>
+fromList [1,3,3,7,1]
+</pre><p id="x_UG1"><a name="x_UG1"></a>If we want to create a list from a <span class="type">Seq</span>, we must
+      use the <code class="code">Data.Foldable</code> module, which is best
+      imported qualified.</p><a name="DataSequence.hs:import3"></a><pre id="DataSequence.hs:import3" class="programlisting">-- file: ch13/DataSequence.hs
+import qualified Data.Foldable as Foldable</pre><p id="x_VG1"><a name="x_VG1"></a>This module defines a typeclass, <span class="type">Foldable</span>,
+      which <span class="type">Seq</span> implements.</p><a name="dataSequence.ghci:toList"></a><pre id="dataSequence.ghci:toList" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>Foldable.toList (Seq.fromList [1,2,3])</code></strong>
+[1,2,3]
+</pre><p id="x_WG1"><a name="x_WG1"></a>If we want to fold over a <span class="type">Seq</span>, we use the fold
+      functions from the <code class="code">Data.Foldable</code> module.</p><a name="dataSequence.ghci:foldl"></a><pre id="dataSequence.ghci:foldl" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>Foldable.foldl' (+) 0 (Seq.fromList [1,2,3])</code></strong>
+6
+</pre><p id="x_XG1"><a name="x_XG1"></a>The <code class="code">Data.Sequence</code> module provides a number of
+      other useful list-like functions.  Its documentation is very
+      thorough, giving time bounds for each operation.</p><p id="x_YG1"><a name="x_YG1"></a>If <span class="type">Seq</span> has so many desirable characteristics,
+      why is it not the default sequence type?  Lists are simpler and
+      have less overhead, and so quite often they are good enough for
+      the task at hand.  They are also well suited to a lazy setting,
+      where <span class="type">Seq</span> does not fare well.</p></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id634459" href="#id634459" class="para">31</a>] </sup>The type we use for the key must be a
+      member of the <code class="literal">Eq</code> typeclass.</p></div><div class="footnote"><p><sup>[<a name="ftn.id637094" href="#id637094" class="para">32</a>] </sup>Non-strict evaluation makes the cost calculation more
+	  subtle.  We only pay for an append if we actually use the
+	  resulting list.  Even then, we only pay for as much as we
+	  actually use.</p></div><div class="footnote"><p><sup>[<a name="ftn.id637789" href="#id637789" class="para">33</a>] </sup>Indeed, monoids are ubiquitous throughout programming.
+	    The difference is that in Haskell, we recognize them, and
+	    talk about them.</p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="barcode-recognition.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="monads.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 12. Barcode recognition </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 14. Monads</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

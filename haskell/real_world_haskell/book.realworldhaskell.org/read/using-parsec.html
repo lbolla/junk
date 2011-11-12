@@ -1,0 +1,984 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Chapter 16. Using Parsec</title><link rel="stylesheet" href="/support/styles.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><link rel="start" href="index.html" title="Real World Haskell"><link rel="up" href="index.html" title="Real World Haskell"><link rel="prev" href="programming-with-monads.html" title="Chapter 15. Programming with monads"><link rel="next" href="interfacing-with-c-the-ffi.html" title="Chapter 17. Interfacing with C: the FFI"><link rel="alternate" type="application/atom+xml" title="Comments" href="/feeds/comments/"><link rel="shortcut icon" type="image/png" href="/support/figs/favicon.png"><script type="text/javascript" src="/support/jquery-min.js"></script><script type="text/javascript" src="/support/form.js"></script><script type="text/javascript" src="/support/hsbook.js"></script></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><h2 class="booktitle"><a href="/">Real World Haskell</a><span class="authors">by Bryan O'Sullivan, Don Stewart, and John Goerzen</span></h2></div><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 16. Using Parsec</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="programming-with-monads.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="interfacing-with-c-the-ffi.html">Next</a></td></tr></table></div><div class="chapter" lang="en" id="parsec"><div class="titlepage"><div><div><h2 class="title">Chapter 16. Using Parsec</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="using-parsec.html#parsec.firststeps">First Steps with Parsec: Simple CSV Parsing</a></span></dt><dt><span class="sect1"><a href="using-parsec.html#parsec.sep">The sepBy and endBy Combinators</a></span></dt><dt><span class="sect1"><a href="using-parsec.html#parsec.choices">Choices and Errors</a></span></dt><dd><dl><dt><span class="sect2"><a href="using-parsec.html#parsec.lookahead">Lookahead</a></span></dt><dt><span class="sect2"><a href="using-parsec.html#parsec.error">Error Handling</a></span></dt></dl></dd><dt><span class="sect1"><a href="using-parsec.html#csv">Extended Example: Full CSV Parser</a></span></dt><dt><span class="sect1"><a href="using-parsec.html#id651983">Parsec and MonadPlus</a></span></dt><dt><span class="sect1"><a href="using-parsec.html#applicative.urlencoded">Parsing an URL-encoded query string</a></span></dt><dt><span class="sect1"><a href="using-parsec.html#id652269">Supplanting regular expressions for casual parsing</a></span></dt><dt><span class="sect1"><a href="using-parsec.html#id652299">Parsing without variables</a></span></dt><dt><span class="sect1"><a href="using-parsec.html#id652399">Applicative functors for parsing</a></span></dt><dt><span class="sect1"><a href="using-parsec.html#id652517">Applicative parsing by example</a></span></dt><dt><span class="sect1"><a href="using-parsec.html#id653027">Parsing JSON data</a></span></dt><dt><span class="sect1"><a href="using-parsec.html#id653365">Parsing a HTTP request</a></span></dt><dd><dl><dt><span class="sect2"><a href="using-parsec.html#id653464">Backtracking and its discontents</a></span></dt><dt><span class="sect2"><a href="using-parsec.html#id653579">Parsing headers</a></span></dt><dt><span class="sect2"><a href="using-parsec.html#id653614">Exercises</a></span></dt></dl></dd></dl></div><p id="x_DJ"><a name="x_DJ"></a>
+    The task of parsing a file, or data of various types, is a common
+    one for programmers.  We already learned about Haskell's support
+    for regular expressions back in <a class="xref" href="efficient-file-processing-regular-expressions-and-file-name-matching.html#glob.regex" title="Regular expressions in Haskell">the section called “Regular expressions in Haskell”</a>.
+    Regular expressions are nice for many tasks, but they rapidly
+    become unwieldy, or cannot be used at all, when dealing with a
+    complex data format.  For instance, we cannot use regular
+    expressions to parse source code from most programming languages.
+  </p><p id="x_EJ"><a name="x_EJ"></a>
+    Parsec is a useful parser combinator library, with which we
+    combine small parsing functions to build more sophisticated
+    parsers.  Parsec provides some simple parsing functions, as well
+    as functions to tie them all together.  It should come as no
+    surprise that this parser library for Haskell is built around the
+    notion of functions.
+  </p><p id="x_FJ"><a name="x_FJ"></a>
+    It's helpful to know where Parsec fits compared to the tools used
+    for parsing in other languages.  Parsing is sometimes divided into
+    two stages: lexical analysis (the domain of tools like
+    <span class="command"><strong>flex</strong></span>) and parsing itself (performed by programs
+    such as <span class="command"><strong>bison</strong></span>). Parsec can perform both lexical
+    analysis and parsing.
+  </p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="parsec.firststeps">First Steps with Parsec: Simple CSV Parsing</h2></div></div></div><p id="x_HJ"><a name="x_HJ"></a>
+      Let's jump right in by writing some code for parsing a CSV file.
+      CSV files are often used as a plain text representation of spreadsheets
+      or databases.  Each line is a record, and each field in the record is
+      separated from the next by a comma.  There are ways of dealing with
+      fields that contain commas, but to start with, we won't worry about it.
+    </p><p id="x_IJ"><a name="x_IJ"></a>
+      This first example is much longer than it really needs to be.  We will
+      introduce more Parsec features in a little bit that will shrink the
+      parser down to only four lines!
+    </p><a name="csv1.hs:all"></a><pre id="csv1.hs:all" class="programlisting">-- file: ch16/csv1.hs
+import Text.ParserCombinators.Parsec
+
+{- A CSV file contains 0 or more lines, each of which is terminated
+   by the end-of-line character (eol). -}
+csvFile :: GenParser Char st [[String]]
+csvFile = 
+    do result &lt;- many line
+       eof
+       return result
+
+-- Each line contains 1 or more cells, separated by a comma
+line :: GenParser Char st [String]
+line = 
+    do result &lt;- cells
+       eol                       -- end of line
+       return result
+       
+-- Build up a list of cells.  Try to parse the first cell, then figure out 
+-- what ends the cell.
+cells :: GenParser Char st [String]
+cells = 
+    do first &lt;- cellContent
+       next &lt;- remainingCells
+       return (first : next)
+
+-- The cell either ends with a comma, indicating that 1 or more cells follow,
+-- or it doesn't, indicating that we're at the end of the cells for this line
+remainingCells :: GenParser Char st [String]
+remainingCells =
+    (char ',' &gt;&gt; cells)            -- Found comma?  More cells coming
+    &lt;|&gt; (return [])                -- No comma?  Return [], no more cells
+
+-- Each cell contains 0 or more characters, which must not be a comma or
+-- EOL
+cellContent :: GenParser Char st String
+cellContent = 
+    many (noneOf ",\n")
+       
+
+-- The end of line character is \n
+eol :: GenParser Char st Char
+eol = char '\n'
+
+parseCSV :: String -&gt; Either ParseError [[String]]
+parseCSV input = parse csvFile "(unknown)" input</pre><p id="x_NJ"><a name="x_NJ"></a>
+      Let's take a look at the code for this example.  We didn't use many
+      shortcuts here, so remember that this will get shorter and simpler!
+    </p><p id="x_OJ"><a name="x_OJ"></a>
+      We've built it from the
+      top down,
+      so our first function is <code class="literal">csvFile</code>.  The type of this
+      function is <code class="literal">GenParser Char st [[String]]</code>.  This
+      means that the type of the input is a sequence of characters, which is
+      exactly what a Haskell string is, since <code class="literal">String</code> is
+      the same as <code class="literal">[Char]</code>.  It also means that we will
+      return a value of type <code class="literal">[[String]]</code>: a list of a list
+      of strings.  The <code class="literal">st</code> can be ignored for now.
+    </p><p id="x_PJ"><a name="x_PJ"></a>
+      Parsec programmers often omit type declarations, since we write so
+      many small functions.  Haskell's type inference can figure it out.
+      We've listed the types for the first example here so you can get a
+      better idea of what's going on.  You can always use
+      <code class="literal">:t</code> in <span class="command"><strong>ghci</strong></span> to inspect types as well.
+    </p><p id="x_QJ"><a name="x_QJ"></a>
+      The <code class="literal">csvFile</code> uses a <code class="literal">do</code> block.  As this
+      implies, Parsec is a monadic library: it defines its own special
+      parsing monad<sup>[<a name="id650124" href="#ftn.id650124" class="footnote">34</a>]</sup>, <span class="type">GenParser</span>.
+    </p><p id="x_RJ"><a name="x_RJ"></a>
+      We start by running <code class="literal">many line</code>.
+      <code class="literal">many</code> is a function that takes a function as an
+      argument.  It tries to repeatedly
+      parse the input using the function passed to it.  It gathers up the
+      results from all that repeated parsing and returns a list of them.  So,
+      here, we are storing the results of parsing all lines in
+      <code class="literal">result</code>.  Then we look for the end-of-file indicator,
+      called <code class="literal">eof</code>.  Finally, we return the
+      <code class="literal">result</code>.  So, a CSV file is made up of many lines,
+      then the end of file.  We can often read out Parsec functions in plain
+      English just like this.
+    </p><p id="x_SJ"><a name="x_SJ"></a>
+      Now we must answer the question: what is a line?  We define the
+      <code class="literal">line</code> function to do just that.  Reading the
+      function, we can see that a line consists of cells followed by the end
+      of line character.
+    </p><p id="x_TJ"><a name="x_TJ"></a>
+      So what are cells?  We defined them in the <code class="literal">cells</code>
+      function.  The cells of a line start with the content of the first
+      cell, then continue with the content of the remaining cells, if any.
+      The result is simply the first cell and the remaining cells assembled
+      into a list.
+    </p><p id="x_UJ"><a name="x_UJ"></a>Let's skip over <code class="literal">remainingCells</code> for a minute and
+      look at <code class="literal">cellContent</code>.  A cell contains any number of
+      characters, but each character must not be a comma or end of line
+      character.  The <code class="literal">noneOf</code> function matches one item, so
+      long as it isn't in the list of items that we pass.  So, saying
+      <code class="literal">many (noneOf ",\n")</code> defines a cell the way we want
+      it.
+    </p><p id="x_VJ"><a name="x_VJ"></a>
+      Back in <code class="literal">remainingCells</code>, we have the first example of
+      a choice in Parsec.  The choice operator is <code class="literal">&lt;|&gt;</code>.  This operator
+      behaves like this: it will first try the parser on the left.  If it
+      consumed no input<sup>[<a name="id650268" href="#ftn.id650268" class="footnote">35</a>]</sup>, it will try the parser on the right.
+    </p><p id="x_WJ"><a name="x_WJ"></a>
+      So, in <code class="literal">remainingCells</code>, our task is to come up with
+      all the cells after the first.  Recall that
+      <code class="literal">cellContent</code> uses <code class="literal">noneOf ",\n"</code>.
+      So it will not consume the comma or end-of-line character from the
+      input.  If we see a comma after parsing a cell, it means that at least
+      one more cell follows.  Otherwise, we're done.  So, our first choice in
+      <code class="literal">remainingCells</code> is <code class="literal">char ','</code>.  This
+      parser simply matches the passed character in the input.  If we found a
+      comma, we want this function to return the remaining cells on the line.
+      At this point, the "remaining cells" looks exactly like the start of
+      the line, so we call <code class="literal">cells</code> recursively to parse
+      them.  If we didn't find a comma, we return the empty list, signifying
+      no remaining cells on the line.
+    </p><p id="x_XJ"><a name="x_XJ"></a>
+      Finally, we must define what the end-of-line indicator is.  We set it
+      to <code class="literal">char '\n'</code>, which will suit our purposes fine for
+      now.
+    </p><p id="x_YJ"><a name="x_YJ"></a>
+      At the very end of the program, we define a function
+      <code class="literal">parseCSV</code> that takes a <code class="literal">String</code> and parses it as a
+      CSV file.  This function is just a shortcut that calls Parsec's
+      <code class="literal">parse</code> function, filling in a few parameters.
+      <code class="literal">parse</code> returns <code class="literal">Either ParseError
+        [[String]]</code> for the CSV file.  If there was an error, the
+      return value will be <code class="literal">Left</code> with the error; otherwise, it will be
+      <code class="literal">Right</code> with the result.
+    </p><p id="x_JJ"><a name="x_JJ"></a>
+      Now that we understand this code, 
+      let's play with it a bit and see what
+      it does.
+    </p><a name="csv1.ghci:s1"></a><pre id="csv1.ghci:s1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l csv1.hs</code></strong>
+[1 of 1] Compiling Main             ( csv1.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV ""</code></strong>
+Loading package parsec-2.1.0.0 ... linking ... done.
+Right []
+</pre><p id="x_KJ"><a name="x_KJ"></a>
+      That makes sense: parsing the empty string returns an empty list.
+      Let's try parsing a single cell.
+    </p><a name="csv1.ghci:s2"></a><pre id="csv1.ghci:s2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV "hi"</code></strong>
+Left "(unknown)" (line 1, column 3):
+unexpected end of input
+expecting "," or "\n"
+</pre><p id="x_LJ"><a name="x_LJ"></a>
+      Look at that.  Recall how we defined that each line must end with the
+      end-of-line character, and we didn't give it.  Parsec's error message
+      helpfully indicated the line number and column number of the problem,
+      and even told us what it was expecting!  Let's give it an end-of-line
+      character and continue experimenting.
+    </p><a name="csv1.ghci:s3"></a><pre id="csv1.ghci:s3" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV "hi\n"</code></strong>
+Right [["hi"]]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV "line1\nline2\nline3\n"</code></strong>
+Right [["line1"],["line2"],["line3"]]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV "cell1,cell2,cell3\n"</code></strong>
+Right [["cell1","cell2","cell3"]]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV "l1c1,l1c2\nl2c1,l2c2\n"</code></strong>
+Right [["l1c1","l1c2"],["l2c1","l2c2"]]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV "Hi,\n\n,Hello\n"</code></strong>
+Right [["Hi",""],[""],["","Hello"]]
+</pre><p id="x_MJ"><a name="x_MJ"></a>
+      You can see that <code class="literal">parseCSV</code> is doing exactly what we
+      wanted it to do.  It's even handling empty cells and empty lines
+      properly.
+    </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="parsec.sep">The sepBy and endBy Combinators</h2></div></div></div><p id="x_ZJ"><a name="x_ZJ"></a>
+      We promised you earlier that we could simplify our CSV parser
+      significantly by using a few Parsec helper functions.  There are two
+      that will dramatically simplify this code.  
+    </p><p id="x_aJ"><a name="x_aJ"></a>
+      The first tool is the <code class="literal">sepBy</code> function.  This
+      function takes two functions as arguments: the first function
+      parses some sort of content, while the second function parses a
+      separator.  <code class="literal">sepBy</code> starts by trying to parse
+      content, then separators, and alternates back and forth until it
+      can't parse a separator.  It returns a list of all the content
+      that it was able to parse.
+    </p><p id="x_C31"><a name="x_C31"></a>
+      The second tool is <code class="literal">endBy</code>.  It's similar to
+      <code class="literal">sepBy</code>, but expects the very last item to be
+      followed by the separator.  That is, it continues parsing until
+      it can't parse any more content.
+    </p><p id="x_bJ"><a name="x_bJ"></a>
+      So, we can use <code class="literal">endBy</code> to parse lines, since every
+      line must end with the end-of-line character.  We can use
+      <code class="literal">sepBy</code> to parse cells, since the last cell will not
+      end with a comma.  Take a look at how much simpler our parser is now:
+    </p><a name="csv2.hs:all"></a><pre id="csv2.hs:all" class="programlisting">-- file: ch16/csv2.hs
+import Text.ParserCombinators.Parsec
+
+csvFile = endBy line eol
+line = sepBy cell (char ',')
+cell = many (noneOf ",\n")
+eol = char '\n'
+
+parseCSV :: String -&gt; Either ParseError [[String]]
+parseCSV input = parse csvFile "(unknown)" input</pre><p id="x_cJ"><a name="x_cJ"></a>
+      This program behaves exactly the same as the first one.  We can verify
+      this by using <span class="command"><strong>ghci</strong></span> to re-run our examples from the earlier example.
+      We'll get the same result from every one.  Yet the program is much
+      shorter and more readable.  It won't be long before you can translate
+      Parsec code like this into a file format definition in plain English.
+      As you read over this code, you can see that:
+    </p><div class="itemizedlist"><ul type="disc"><li><p id="x_dJ"><a name="x_dJ"></a>A CSV file contains 0 or more lines, 
+          each of which is terminated
+          by the end-of-line character.</p></li><li><p id="x_eJ"><a name="x_eJ"></a>A line contains 1 or more cells,
+          separated by a comma.
+        </p></li><li><p id="x_fJ"><a name="x_fJ"></a>A cell contains 0 or more characters, which must be
+          neither the comma nor the end-of-line character.
+        </p></li><li><p id="x_gJ"><a name="x_gJ"></a>The end-of-line character is the newline,
+          <code class="literal">\n</code>.
+        </p></li></ul></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="parsec.choices">Choices and Errors</h2></div></div></div><p id="x_hJ"><a name="x_hJ"></a>
+      Different operating systems use different characters to mark the
+      end-of-line.  Unix/Linux systems, plus Windows in text mode, use
+      simply <code class="literal">"\n"</code>.
+      DOS and Windows systems use <code class="literal">"\r\n"</code>, and Macs
+      traditionally used <code class="literal">"\r"</code>.  We could add in
+      support for <code class="literal">"\n\r"</code> too, just in case anybody
+      uses that.
+    </p><p id="x_iJ"><a name="x_iJ"></a>
+      We could easily adapt our example to be able to handle all these types
+      of line endings in a single file.  We would need to make two
+      modifications: adjust <code class="literal">eol</code> to recognize the different
+      endings, and adjust the <code class="literal">noneOf</code> pattern in
+      <code class="literal">cell</code> to ignore <code class="literal">\r</code>.
+    </p><p id="x_jJ"><a name="x_jJ"></a>
+      This must be done carefully.  Recall that our earlier definition of
+      <code class="literal">eol</code> was simply <code class="literal">char '\n'</code>.  There
+      is a parser called <code class="literal">string</code> that we can use to match
+      the multi-character patterns.  Let's start by thinking of how we would
+      add support for <code class="literal">\n\r</code>.
+    </p><p id="x_kJ"><a name="x_kJ"></a>
+      Our first attempt might look like this:
+    </p><a name="csv3.hs:eol"></a><pre id="csv3.hs:eol" class="programlisting">-- file: ch16/csv3.hs
+-- This function is not correct!
+eol = string "\n" &lt;|&gt; string "\n\r"</pre><p id="x_lJ"><a name="x_lJ"></a>
+      This isn't quite right.  Recall that the <code class="literal">&lt;|&gt;</code> operator always
+      tries the left alternative first.  Looking for the single character
+      <code class="literal">\n</code> will match both types of line endings, so it will
+      look to the system that the following line begins with
+      <code class="literal">\r</code>.  Not what we want.  Try it in <span class="command"><strong>ghci</strong></span>:
+    </p><a name="csv3.ghci:s1"></a><pre id="csv3.ghci:s1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m Text.ParserCombinators.Parsec</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let eol = string "\n" &lt;|&gt; string "\n\r"</code></strong>
+Loading package parsec-2.1.0.0 ... linking ... done.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse eol "" "\n"</code></strong>
+Right "\n"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse eol "" "\n\r"</code></strong>
+Right "\n"
+</pre><p id="x_mJ"><a name="x_mJ"></a>
+      It may seem like the parser worked for both endings, but
+      actually looking at it this way, we can't tell.  If it left
+      something un-parsed, we don't know, because we're not trying to
+      consume anything else from the input.  So let's look for the
+      end-of-file after our end of line:
+    </p><a name="csv3.ghci:s2"></a><pre id="csv3.ghci:s2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (eol &gt;&gt; eof) "" "\n\r"</code></strong>
+Left (line 2, column 1):
+unexpected "\r"
+expecting end of input
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (eol &gt;&gt; eof) "" "\n"</code></strong>
+Right ()
+</pre><p id="x_nJ"><a name="x_nJ"></a>
+      As expected, we got an error from the <code class="literal">\n\r</code> ending.
+      So the next temptation may
+      be to try it this way:
+    </p><a name="csv4.hs:eol"></a><pre id="csv4.hs:eol" class="programlisting">-- file: ch16/csv4.hs
+-- This function is not correct!
+eol = string "\n\r" &lt;|&gt; string "\n"</pre><p id="x_oJ"><a name="x_oJ"></a>
+      This also isn't right.  Recall that <code class="literal">&lt;|&gt;</code> only attempts the option
+      on the right if the option on the left consumed no input.  But by the
+      time we are able to see if there is a <code class="literal">\r</code> after the
+      <code class="literal">\n</code>, we've already consumed the
+      <code class="literal">\n</code>.  This time, we fail on the other case in <span class="command"><strong>ghci</strong></span>:
+    </p><a name="csv4.ghci:s1"></a><pre id="csv4.ghci:s1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:m Text.ParserCombinators.Parsec</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>let eol = string "\n\r" &lt;|&gt; string "\n"</code></strong>
+Loading package parsec-2.1.0.0 ... linking ... done.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (eol &gt;&gt; eof) "" "\n\r"</code></strong>
+Right ()
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (eol &gt;&gt; eof) "" "\n"</code></strong>
+Left (line 1, column 1):
+unexpected end of input
+expecting "\n\r"
+</pre><p id="x_pJ"><a name="x_pJ"></a>
+      We've stumbled upon the lookahead problem.  It turns out that, when
+      writing parsers, it's often very convenient to be able to "look ahead"
+      at the data that's coming in.  Parsec supports this, but before showing
+      you how to use it, let's see how you would have to write this to get
+      along without it.  You'd have to manually expand all the options after
+      the <code class="literal">\n</code> like this:
+    </p><a name="csv5.hs:eol"></a><pre id="csv5.hs:eol" class="programlisting">-- file: ch16/csv5.hs
+eol = 
+    do char '\n'
+       char '\r' &lt;|&gt; return '\n'</pre><p id="x_qJ"><a name="x_qJ"></a>
+      This function first looks for <code class="literal">\n</code>.  If it is found,
+      then it will look for <code class="literal">\r</code>, consuming it if possible.
+      Since the return type of <code class="literal">char '\r'</code> is a
+      <code class="literal">Char</code>, the alternative action is to simply return a
+      <code class="literal">Char</code> without attempting to parse anything.  Parsec
+      has a function <code class="literal">option</code> that can also express this
+      idiom as <code class="literal">option '\n' (char '\r')</code>.  Let's test this
+      with <span class="command"><strong>ghci</strong></span>.
+    </p><a name="csv5.ghci:s1"></a><pre id="csv5.ghci:s1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l csv5.hs</code></strong>
+[1 of 1] Compiling Main             ( csv5.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (eol &gt;&gt; eof) "" "\n\r"</code></strong>
+Loading package parsec-2.1.0.0 ... linking ... done.
+Right ()
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (eol &gt;&gt; eof) "" "\n"</code></strong>
+Right ()
+</pre><p id="x_rJ"><a name="x_rJ"></a>
+      This time, we got the right result!  But we could have done it easier
+      with Parsec's lookahead support.
+    </p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="parsec.lookahead">Lookahead</h3></div></div></div><p id="x_sJ"><a name="x_sJ"></a>
+        Parsec has a function called <code class="literal">try</code> that is used to express
+        lookaheads.  <code class="literal">try</code> takes one function, a parser.  It applies that
+        parser.  If the parser doesn't succeed, <code class="literal">try</code> behaves as if it hadn't
+        consumed any input at all.  So, when you use <code class="literal">try</code> on the left side
+        of <code class="literal">&lt;|&gt;</code>, Parsec will try the option on the right even if the
+        left side failed after consuming some input.  <code class="literal">try</code> only has an
+        effect if it is on the left of a <code class="literal">&lt;|&gt;</code>.  Keep in mind, though,
+        that many functions use
+        <code class="literal">&lt;|&gt;</code> internally.  Here's a way to add
+        expanded end-of-line support to our CSV parser using <code class="literal">try</code>:
+      </p><a name="csv6.hs:all"></a><pre id="csv6.hs:all" class="programlisting">-- file: ch16/csv6.hs
+import Text.ParserCombinators.Parsec
+
+csvFile = endBy line eol
+line = sepBy cell (char ',')
+cell = many (noneOf ",\n\r")
+
+eol =   try (string "\n\r")
+    &lt;|&gt; try (string "\r\n")
+    &lt;|&gt; string "\n"
+    &lt;|&gt; string "\r"
+
+parseCSV :: String -&gt; Either ParseError [[String]]
+parseCSV input = parse csvFile "(unknown)" input</pre><p id="x_tJ"><a name="x_tJ"></a>
+        Here we put both of the two-character endings first, and run both
+        tests under <code class="literal">try</code>.  Both of them occur to the left of a <code class="literal">&lt;|&gt;</code>, so
+        they will do the right thing.  We could have put <code class="literal">string
+          "\n"</code> within a <code class="literal">try</code>, but it wouldn't have altered any
+        behavior since they look at only one character anyway.  We can load
+        this up and test the <code class="literal">eol</code> function in <span class="command"><strong>ghci</strong></span>.
+      </p><a name="csv6.ghci:s1"></a><pre id="csv6.ghci:s1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l csv6.hs</code></strong>
+[1 of 1] Compiling Main             ( csv6.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (eol &gt;&gt; eof) "" "\n\r"</code></strong>
+Loading package parsec-2.1.0.0 ... linking ... done.
+Right ()
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (eol &gt;&gt; eof) "" "\n"</code></strong>
+Right ()
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (eol &gt;&gt; eof) "" "\r\n"</code></strong>
+Right ()
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parse (eol &gt;&gt; eof) "" "\r"</code></strong>
+Right ()
+</pre><p id="x_uJ"><a name="x_uJ"></a>
+        All four endings were handled properly.  You can also test the full
+        CSV parser with some different endings like this:
+      </p><a name="csv6.ghci:s2"></a><pre id="csv6.ghci:s2" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV "line1\r\nline2\nline3\n\rline4\rline5\n"</code></strong>
+Right [["line1"],["line2"],["line3"],["line4"],["line5"]]
+</pre><p id="x_vJ"><a name="x_vJ"></a>
+        As you can see, this program even supports different line endings
+        within a single file.
+      </p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="parsec.error">Error Handling</h3></div></div></div><p id="x_wJ"><a name="x_wJ"></a>
+        At the beginning of this chapter, you saw how Parsec could generate
+        error messages that list the location where the error occurred as well
+        as what was expected.  As parsers get more complex, the list of what
+        was expected can become cumbersome.  Parsec provides a way for you to
+        specify custom error messages in the event of parse failures.
+      </p><p id="x_xJ"><a name="x_xJ"></a>
+        Let's look at what happens when our current CSV parser
+      encounters an error:
+      </p><a name="csv6.ghci:error"></a><pre id="csv6.ghci:error" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV "line1"</code></strong>
+Left "(unknown)" (line 1, column 6):
+unexpected end of input
+expecting ",", "\n\r", "\r\n", "\n" or "\r"
+</pre><p id="x_yJ"><a name="x_yJ"></a>
+        That's a pretty long, and technical, error message.  We could make an
+        attempt to resolve this by using the monad <code class="function">fail</code> function like so:
+      </p><a name="csv7.hs:eol"></a><pre id="csv7.hs:eol" class="programlisting">-- file: ch16/csv7.hs
+eol =   try (string "\n\r")
+    &lt;|&gt; try (string "\r\n")
+    &lt;|&gt; string "\n"
+    &lt;|&gt; string "\r"
+    &lt;|&gt; fail "Couldn't find EOL"</pre><p id="x_zJ"><a name="x_zJ"></a>
+        Under <span class="command"><strong>ghci</strong></span>, we can see the result:
+      </p><a name="csv7.ghci:s1"></a><pre id="csv7.ghci:s1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l csv7.hs</code></strong>
+[1 of 1] Compiling Main             ( csv7.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV "line1"</code></strong>
+Loading package parsec-2.1.0.0 ... linking ... done.
+Left "(unknown)" (line 1, column 6):
+unexpected end of input
+expecting ",", "\n\r", "\r\n", "\n" or "\r"
+Couldn't find EOL
+</pre><p id="x_AK"><a name="x_AK"></a>
+        We added to the error result, but didn't really help clean up the
+        output.  Parsec has an <code class="literal">&lt;?&gt;</code> operator that is designed for just these
+        situations.  It is similar to <code class="literal">&lt;|&gt;</code> in that it first tries the
+        parser on its left.  Instead of trying another parser in the event of
+        a failure, it presents an error message.  Here's how we'd use it:
+      </p><a name="csv8.hs:eol"></a><pre id="csv8.hs:eol" class="programlisting">-- file: ch16/csv8.hs
+eol =   try (string "\n\r")
+    &lt;|&gt; try (string "\r\n")
+    &lt;|&gt; string "\n"
+    &lt;|&gt; string "\r"
+    &lt;?&gt; "end of line"</pre><p id="x_BK"><a name="x_BK"></a>
+        Now, when you generate an error, you'll get more helpful output:
+      </p><a name="csv8.ghci:s1"></a><pre id="csv8.ghci:s1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l csv8.hs</code></strong>
+[1 of 1] Compiling Main             ( csv8.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV "line1"</code></strong>
+Loading package parsec-2.1.0.0 ... linking ... done.
+Left "(unknown)" (line 1, column 6):
+unexpected end of input
+expecting "," or end of line
+</pre><p id="x_CK"><a name="x_CK"></a>
+        That's pretty helpful!  The general rule of thumb is that you put a
+        human description of what you're looking for to the right of
+        <code class="literal">&lt;?&gt;</code>.
+      </p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="csv">Extended Example: Full CSV Parser</h2></div></div></div><p id="x_DK"><a name="x_DK"></a>
+      Our earlier CSV examples have had an important flaw: they weren't able
+      to handle cells that contain a comma.  CSV generating programs
+      typically put quotation marks around such data.  But then you have
+      another problem: what to do if a cell contains a quotation mark and a
+      comma.  In these cases, the embedded quotation marks are doubled up.
+    </p><p id="x_EK"><a name="x_EK"></a>
+      Here is a full CSV parser.  You can use this from <span class="command"><strong>ghci</strong></span>, or if you
+      compile it to a standalone program, it will parse a CSV file on
+      standard input and convert it to a different format on output.
+    </p><a name="csv9.hs:all"></a><pre id="csv9.hs:all" class="programlisting">-- file: ch16/csv9.hs
+import Text.ParserCombinators.Parsec
+
+csvFile = endBy line eol
+line = sepBy cell (char ',')
+cell = quotedCell &lt;|&gt; many (noneOf ",\n\r")
+
+quotedCell = 
+    do char '"'
+       content &lt;- many quotedChar
+       char '"' &lt;?&gt; "quote at end of cell"
+       return content
+
+quotedChar =
+        noneOf "\""
+    &lt;|&gt; try (string "\"\"" &gt;&gt; return '"')
+
+eol =   try (string "\n\r")
+    &lt;|&gt; try (string "\r\n")
+    &lt;|&gt; string "\n"
+    &lt;|&gt; string "\r"
+    &lt;?&gt; "end of line"
+
+parseCSV :: String -&gt; Either ParseError [[String]]
+parseCSV input = parse csvFile "(unknown)" input
+
+main =
+    do c &lt;- getContents
+       case parse csvFile "(stdin)" c of
+            Left e -&gt; do putStrLn "Error parsing input:"
+                         print e
+            Right r -&gt; mapM_ print r</pre><p id="x_FK"><a name="x_FK"></a>
+      That's a full-featured CSV parser in just 21 lines of code, plus an
+      additional 10 lines for the <code class="literal">parseCSV</code> and
+      <code class="literal">main</code> utility functions.
+    </p><p id="x_GK"><a name="x_GK"></a>
+      Let's look at the changes in this program from the previous versions.
+      First, a cell may now be either a bare cell or a "quoted" cell.  We
+      give the <code class="literal">quotedCell</code> option first, because we want to
+      follow that path if the first character in a cell is the quote mark.
+    </p><p id="x_HK"><a name="x_HK"></a>
+      The <code class="literal">quotedCell</code> begins and ends with a quote mark,
+      and contains zero or more characters.  These characters can't be copied
+      directly, though, because they may contain embedded, doubled-up, quote
+      marks themselves.  So we define a custom <code class="literal">quotedChar</code>
+      to process them.
+    </p><p id="x_IK"><a name="x_IK"></a>
+      When we're processing characters inside a quoted cell, we first say
+      <code class="literal">noneOf "\""</code>.  This will match and return any single
+      character as long as it's not the quote mark.  Otherwise, if it is the
+      quote mark, we see if we have two of them in a row.  If so, we return a
+      single quote mark to go on our result string.
+    </p><p id="x_JK"><a name="x_JK"></a>
+      Notice that <code class="literal">try</code> in <code class="literal">quotedChar</code> on the
+      <span class="emphasis"><em>right</em></span> side of <code class="literal">&lt;|&gt;</code>.  Recall that I said that
+      <code class="literal">try</code> only has an effect if it is on the left side of <code class="literal">&lt;|&gt;</code>.  This
+      <code class="literal">try</code> does occur on the left side of a <code class="literal">&lt;|&gt;</code>, but on the left of
+      one that must be within the implementation of <code class="literal">many</code>.
+    </p><p id="x_KK"><a name="x_KK"></a>
+      This <code class="literal">try</code> is important.  Let's say we are parsing a
+      quoted cell, and are getting towards the end of it.  There will be
+      another cell following.  So we will expect to see a quote to end the
+      current cell, followed by a comma.  When we hit
+      <code class="literal">quotedChar</code>, we will fail the
+      <code class="literal">noneOf</code> test and proceed to the test that looks for
+      two quotes in a row.  We'll also fail that one because we'll have a
+      quote, then a comma.  If we hadn't used <code class="literal">try</code>, we'd crash with an
+      error at this point, saying that it was expecting the second quote,
+      because the first quote was already consumed.  Since we use <code class="literal">try</code>, this
+      is properly recognized as not a character that's part of the cell, so
+      it terminates the <code class="literal">many quotedChar</code> expression as
+      expected.  Lookahead has once again proven very useful, and the fact
+      that it is so easy to add makes it a remarkable tool in Parsec.
+    </p><p id="x_LK"><a name="x_LK"></a>
+      We can test this program with <span class="command"><strong>ghci</strong></span> over some quoted cells.
+    </p><a name="csv9.ghci:s1"></a><pre id="csv9.ghci:s1" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:l csv9.hs</code></strong>
+[1 of 1] Compiling Main             ( csv9.hs, interpreted )
+Ok, modules loaded: Main.
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV "\"This, is, one, big, cell\"\n"</code></strong>
+Loading package parsec-2.1.0.0 ... linking ... done.
+Right [["This, is, one, big, cell"]]
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseCSV "\"Cell without an end\n"</code></strong>
+Left "(unknown)" (line 2, column 1):
+unexpected end of input
+expecting "\"\"" or quote at end of cell
+</pre><p id="x_MK"><a name="x_MK"></a>
+      Let's run it over a real CSV file.  Here's one generated by a
+      spreadsheet program:
+    </p><pre id="id651955" class="programlisting">
+"Product","Price"
+"O'Reilly Socks",10
+"Shirt with ""Haskell"" text",20
+"Shirt, ""O'Reilly"" version",20
+"Haskell Caps",15
+    </pre><p id="x_NK"><a name="x_NK"></a>
+      Now, we can run this under our test program and watch:
+    </p><pre id="id651969" class="screen">
+$ <strong class="userinput"><code>runhaskell csv9.hs &lt; test.csv</code></strong>
+["Product","Price"]
+["O'Reilly Socks","10"]
+["Shirt with \"Haskell\" text","20"]
+["Shirt, \"O'Reilly\" version","20"]
+["Haskell Caps","15"]
+    </pre></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id651983">Parsec and MonadPlus</h2></div></div></div><p id="x_Wj"><a name="x_Wj"></a>Parsec's <span class="type">GenParser</span> monad is an
+      instance of the <span class="type">MonadPlus</span> typeclass that we
+      introduced in
+	<a class="xref" href="programming-with-monads.html#monadcase.monadplus" title="Looking for alternatives">the section called “Looking for alternatives”</a>.  The value
+      <code class="code">mzero</code> represents a parse failure, while
+      <code class="function">mplus</code> combines two alternative parses into
+      one, using <code class="function">(&lt;|&gt;)</code>.</p><a name="ParsecPlus.hs:instance"></a><pre id="ParsecPlus.hs:instance" class="programlisting">-- file: ch16/ParsecPlus.hs
+instance MonadPlus (GenParser tok st) where
+    mzero = fail "mzero"
+    mplus = (&lt;|&gt;)</pre></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="applicative.urlencoded">Parsing an URL-encoded query string</h2></div></div></div><p id="x_Xj"><a name="x_Xj"></a>When we introduced
+      <code class="code">application/x-www-form-urlencoded</code> text in <a class="xref" href="programming-with-monads.html#monadcase.urlencoded" title="Golfing practice: association lists">the section called “Golfing practice: association lists”</a>, we mentioned that we'd write a
+      parser for these strings.  We can quickly and easily do this
+      using Parsec.</p><p id="x_Yj"><a name="x_Yj"></a>Each key-value pair is separated by the
+      <code class="literal">&amp;</code> character.</p><a name="FormParse.hs:p_query"></a><pre id="FormParse.hs:p_query" class="programlisting">-- file: ch16/FormParse.hs
+p_query :: CharParser () [(String, Maybe String)]
+p_query = p_pair `sepBy` char '&amp;'</pre><p id="x_Zj"><a name="x_Zj"></a>Notice that in the type signature, we're using
+      <span class="type">Maybe</span> to represent a value: the HTTP specification
+      is unclear about whether a key <span class="emphasis"><em>must</em></span> have an
+      associated value, and we'd like to be able to distinguish
+      between “<span class="quote">no value</span>” and “<span class="quote">empty
+	value</span>”.</p><a name="FormParse.hs:p_pair"></a><pre id="FormParse.hs:p_pair" class="programlisting">-- file: ch16/FormParse.hs
+p_pair :: CharParser () (String, Maybe String)
+p_pair = do
+  name &lt;- many1 p_char
+  value &lt;- optionMaybe (char '=' &gt;&gt; many p_char)
+  return (name, value)</pre><p id="x_aj"><a name="x_aj"></a>The <code class="function">many1</code> function is similar to
+      <code class="function">many</code>: it applies its parser repeatedly,
+      returning a list of their results.  While
+      <code class="function">many</code> will succeed and return an empty list
+      if its parser never succeeds, <code class="function">many1</code> will
+      fail if its parser never succeeds, and will otherwise return a
+      list of at least one element.</p><p id="x_bj"><a name="x_bj"></a>The <code class="function">optionMaybe</code> function modifies the
+      behaviour of a parser.  If the parser fails,
+      <code class="function">optionMaybe</code> doesn't fail: it returns
+      <code class="code">Nothing</code>.  Otherwise, it wraps the parser's
+      successful result with <code class="code">Just</code>.  This gives us the
+      ability to distinguish between “<span class="quote">no value</span>” and
+      “<span class="quote">empty value</span>”, as we mentioned above.</p><p id="x_cj"><a name="x_cj"></a>Individual characters can be encoded in one of several
+      ways.</p><a name="FormParse.hs:p_char"></a><pre id="FormParse.hs:p_char" class="programlisting">-- file: ch16/FormParse.hs
+p_char :: CharParser () Char
+p_char = oneOf urlBaseChars
+     &lt;|&gt; (char '+' &gt;&gt; return ' ')
+     &lt;|&gt; p_hex
+
+urlBaseChars = ['a'..'z']++['A'..'Z']++['0'..'9']++"$-_.!*'(),"
+
+p_hex :: CharParser () Char
+p_hex = do
+  char '%'
+  a &lt;- hexDigit
+  b &lt;- hexDigit
+  let ((d, _):_) = readHex [a,b]
+  return . toEnum $ d</pre><p id="x_dj"><a name="x_dj"></a>Some characters can be represented literally.  Spaces are
+      treated specially, using a <code class="code">+</code> character.  Other
+      characters must be encoded as a <code class="code">%</code> character
+      followed by two hexadecimal digits.  The <code class="code">Numeric</code>
+      module's <code class="function">readHex</code> parses a hex string as
+      a number.</p><a name="formParse.ghci:test"></a><pre id="formParse.ghci:test" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseTest p_query "foo=bar&amp;a%21=b+c"</code></strong>
+Loading package parsec-2.1.0.0 ... linking ... done.
+[("foo",Just "bar"),("a!",Just "b c")]
+</pre><p id="x_ej"><a name="x_ej"></a>As appealing and readable as this parser is, we can profit
+      from stepping back and taking another look at some of our
+      building blocks.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id652269">Supplanting regular expressions for casual parsing</h2></div></div></div><p id="x_fj"><a name="x_fj"></a>In many popular languages, people tend to put regular
+      expressions to work for “<span class="quote">casual</span>” parsing. They're
+      notoriously tricky for this purpose: hard to write, difficult to
+      debug, nearly incomprehensible after a few months of neglect,
+      and provide no error messages on failure.</p><p id="x_gj"><a name="x_gj"></a>If we can write compact Parsec parsers, we'll gain in
+      readability, expressiveness, and error reporting.  Our parsers
+      won't be as short as regular expressions, but they'll be close
+      enough to negate much of the temptation of regexps.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id652299">Parsing without variables</h2></div></div></div><p id="x_hj"><a name="x_hj"></a>A few of our parsers above use <code class="literal">do</code> notation and bind the
+      result of an intermediate parse to a variable, for later use.
+      One such function is <code class="function">p_pair</code>.</p><pre id="id652324" class="programlisting">-- file: ch16/FormParse.hs
+p_pair :: CharParser () (String, Maybe String)
+p_pair = do
+  name &lt;- many1 p_char
+  value &lt;- optionMaybe (char '=' &gt;&gt; many p_char)
+  return (name, value)</pre><p id="x_ij"><a name="x_ij"></a>We can get rid of the need for explicit variables by using
+      the <code class="function">liftM2</code> combinator from
+      <code class="code">Control.Monad</code>.</p><a name="FormParse.hs:p_pair_app1"></a><pre id="FormParse.hs:p_pair_app1" class="programlisting">-- file: ch16/FormParse.hs
+p_pair_app1 =
+    liftM2 (,) (many1 p_char) (optionMaybe (char '=' &gt;&gt; many p_char))</pre><p id="x_jj"><a name="x_jj"></a>This parser has exactly the same type and behaviour as
+      <code class="function">p_pair</code>, but it's one line long.  Instead of
+      writing our parser in a “<span class="quote">procedural</span>” style, we've
+      simply switched to a programming style that emphasises that
+      we're <span class="emphasis"><em>applying</em></span> parsers and
+      <span class="emphasis"><em>combining</em></span> their results.</p><p id="x_kj"><a name="x_kj"></a>We can take this applicative style of writing a parser much
+      further.  In most cases, the extra compactness that we will gain
+      will <span class="emphasis"><em>not</em></span> come at any cost in readability,
+      beyond the initial effort of coming to grips with the
+      idea.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id652399">Applicative functors for parsing</h2></div></div></div><p id="x_lj"><a name="x_lj"></a>The standard Haskell libraries include a module named
+      <code class="code">Control.Applicative</code>, which we already encountered
+      in <a class="xref" href="code-case-study-parsing-a-binary-data-format.html#binary.fmap" title="Infix use of fmap">the section called “Infix use of fmap”</a>.  This module defines a
+      typeclass named <span class="type">Applicative</span>, which represents an
+      <span class="emphasis"><em>applicative functor</em></span>.  This is a little bit
+      more structured than a functor, but a little bit less than a
+      monad.  It also defines <span class="type">Alternative</span>, which is
+      similar to <span class="type">MonadPlus</span></p><p id="x_mj"><a name="x_mj"></a>As usual, we think that the best way to introduce
+      applicative functors is by putting them to work.  In theory,
+      every monad is an applicative functor, but not every applicative
+      functor is a monad.  Because applicative functors were added to
+      the standard Haskell libraries long after monads, we often don't
+      get an <span class="type">Applicative</span> instance for free: frequently,
+      we have to declare the monad we're using to be
+      <span class="type">Applicative</span> or <span class="type">Alternative</span>.</p><p id="x_nj"><a name="x_nj"></a>To do this for <code class="code">Parsec</code>, we'll write a small
+      module that we can import instead of the normal
+      <code class="code">Parsec</code> module.</p><a name="ApplicativeParsec.hs:ApplicativeParsec"></a><pre id="ApplicativeParsec.hs:ApplicativeParsec" class="programlisting">-- file: ch16/ApplicativeParsec.hs
+module ApplicativeParsec
+    (
+      module Control.Applicative
+    , module Text.ParserCombinators.Parsec
+    ) where
+
+import Control.Applicative
+import Control.Monad (MonadPlus(..), ap)
+-- Hide a few names that are provided by Applicative.
+import Text.ParserCombinators.Parsec hiding (many, optional, (&lt;|&gt;))
+
+-- The Applicative instance for every Monad looks like this.
+instance Applicative (GenParser s a) where
+    pure  = return
+    (&lt;*&gt;) = ap
+
+-- The Alternative instance for every MonadPlus looks like this.
+instance Alternative (GenParser s a) where
+    empty = mzero
+    (&lt;|&gt;) = mplus</pre><p id="x_oj"><a name="x_oj"></a>For convenience, our module's export section
+      exports all the names we imported from both the
+      <code class="code">Applicative</code> and <code class="code">Parsec</code> modules.
+      Because we hid Parsec's version of
+      <code class="function">(&lt;|&gt;)</code> when importing, the one that
+      will be exported is from <code class="code">Control.Applicative</code>, as we
+      would like.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id652517">Applicative parsing by example</h2></div></div></div><p id="x_pj"><a name="x_pj"></a>We'll begin by rewriting our existing form parser from the
+      bottom up, beginning with <code class="function">p_hex</code>, which
+      parses a hexadecimal escape sequence.  Here's the code in normal
+      <code class="literal">do</code>-notation style.</p><a name="FormApp.hs:p_hex"></a><pre id="FormApp.hs:p_hex" class="programlisting">-- file: ch16/FormApp.hs
+p_hex :: CharParser () Char
+p_hex = do
+  char '%'
+  a &lt;- hexDigit
+  b &lt;- hexDigit
+  let ((d, _):_) = readHex [a,b]
+  return . toEnum $ d</pre><p id="x_qj"><a name="x_qj"></a>And here's our applicative version.</p><a name="FormApp.hs:a_hex"></a><pre id="FormApp.hs:a_hex" class="programlisting">-- file: ch16/FormApp.hs
+a_hex = hexify &lt;$&gt; (char '%' *&gt; hexDigit) &lt;*&gt; hexDigit
+    where hexify a b = toEnum . fst . head . readHex $ [a,b]</pre><p id="x_rj"><a name="x_rj"></a>Although the individual parsers are mostly untouched, the
+      combinators that we're gluing them together with have changed.
+      The only familiar one is <code class="function">(&lt;$&gt;)</code>, which
+      we already know is a synonym for
+      <code class="function">fmap</code>.</p><p id="x_sj"><a name="x_sj"></a>From our definition of <span class="type">Applicative</span>, we know
+      that <code class="function">(&lt;*&gt;)</code> is
+      <code class="function">ap</code>.</p><p id="x_tj"><a name="x_tj"></a>The remaining unfamiliar combinator is
+      <code class="function">(*&gt;)</code>, which applies its first argument,
+      throws away its result, then applies the second and returns its
+      result.  In other words, it's similar to
+      <code class="function">(&gt;&gt;)</code>.</p><div class="tip"><table border="0" summary="Tip: A handy tip about angle brackets"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/support/figs/tip.png"></td><th align="left">A handy tip about angle brackets</th></tr><tr><td align="left" valign="top"><p id="x_uj"><a name="x_uj"></a>Before we continue, here's a useful aid for remembering
+	what all the angle brackets are for in the combinators from
+	<code class="code">Control.Applicative</code>: if there's an angle bracket
+	pointing to some side, the result from that side should be
+	used.</p><p id="x_vj"><a name="x_vj"></a>For example, <code class="function">(*&gt;)</code> returns the
+	result on its right; <code class="function">(&lt;*&gt;)</code> returns
+	results from both sides; and <code class="function">(&lt;*)</code>,
+	which we have not yet seen, returns the result on its
+	left.</p></td></tr></table></div><p id="x_wj"><a name="x_wj"></a>Although the concepts here should mostly be familiar from
+      our earlier coverage of functors and monads, we'll walk through
+      this function to explain what's happening.  First, to get a grip
+      on our types, we'll hoist <code class="function">hexify</code> to the top
+      level and give it a signature.</p><a name="FormApp.hs:hexify"></a><pre id="FormApp.hs:hexify" class="programlisting">-- file: ch16/FormApp.hs
+hexify :: Char -&gt; Char -&gt; Char
+hexify a b = toEnum . fst . head . readHex $ [a,b]</pre><p id="x_xj"><a name="x_xj"></a>Parsec's <code class="function">hexDigit</code> parser parses a
+      single hexadecimal digit.</p><a name="formApp.ghci:hexDigit"></a><pre id="formApp.ghci:hexDigit" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type hexDigit</code></strong>
+hexDigit :: CharParser st Char
+</pre><p id="x_yj"><a name="x_yj"></a>Therefore, <code class="code">char '%' *&gt; hexDigit</code> has the same
+      type, since <code class="function">(*&gt;)</code> returns the result on
+      its right.  (The <span class="type">CharParser</span> type is nothing
+      more than a synonym for <span class="type">GenParser Char</span>.)</p><a name="formApp.ghci:char"></a><pre id="formApp.ghci:char" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type char '%' *&gt; hexDigit</code></strong>
+char '%' *&gt; hexDigit :: GenParser Char st Char
+</pre><p id="x_zj"><a name="x_zj"></a>The expression <code class="code">hexify &lt;$&gt; (char '%' *&gt;
+	hexDigit)</code> is a parser that matches a “<span class="quote">%</span>”
+      character followed by hex digit, and whose result is a
+      function.</p><a name="formApp.ghci:func"></a><pre id="formApp.ghci:func" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type hexify &lt;$&gt; (char '%' *&gt; hexDigit)</code></strong>
+hexify &lt;$&gt; (char '%' *&gt; hexDigit) :: GenParser Char st (Char -&gt; Char)
+</pre><p id="x_Ak"><a name="x_Ak"></a>Finally, <code class="function">(&lt;*&gt;)</code> applies the parser
+      on its left, then the parser on its right, and applies the
+      function that's the result of the left parse to the value that's
+      the result of the right.</p><p id="x_Bk"><a name="x_Bk"></a>If you've been able to follow this, then you understand the
+      <code class="function">(&lt;*&gt;)</code> and <code class="function">ap</code>
+      combinators: <code class="function">(&lt;*&gt;)</code> is plain old
+      <code class="function">($)</code> lifted to applicative functors, and
+      <code class="function">ap</code> the same thing lifted to monads.</p><a name="formApp.ghci:ap"></a><pre id="formApp.ghci:ap" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type ($)</code></strong>
+($) :: (a -&gt; b) -&gt; a -&gt; b
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type (&lt;*&gt;)</code></strong>
+(&lt;*&gt;) :: (Applicative f) =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>:type ap</code></strong>
+ap :: (Monad m) =&gt; m (a -&gt; b) -&gt; m a -&gt; m b
+</pre><p id="x_Ck"><a name="x_Ck"></a>Next, we'll consider the <code class="function">p_char</code>
+      parser.</p><a name="FormApp.hs:p_char"></a><pre id="FormApp.hs:p_char" class="programlisting">-- file: ch16/FormApp.hs
+p_char :: CharParser () Char
+p_char = oneOf urlBaseChars
+     &lt;|&gt; (char '+' &gt;&gt; return ' ')
+     &lt;|&gt; p_hex
+
+urlBaseChars = ['a'..'z']++['A'..'Z']++['0'..'9']++"$-_.!*'(),"</pre><p id="x_Dk"><a name="x_Dk"></a>This remains almost the same in an applicative style, save
+      for one piece of convenient notation.</p><a name="FormApp.hs:a_char"></a><pre id="FormApp.hs:a_char" class="programlisting">-- file: ch16/FormApp.hs
+a_char = oneOf urlBaseChars
+     &lt;|&gt; (' ' &lt;$ char '+')
+     &lt;|&gt; a_hex</pre><p id="x_Ek"><a name="x_Ek"></a>Here, the <code class="function">(&lt;$)</code> combinator uses the
+      value on the left if the parser on the right succeeds.</p><p id="x_Fk"><a name="x_Fk"></a>Finally, the equivalent of <code class="function">p_pair_app1</code> is
+      almost identical.</p><pre id="id652988" class="programlisting">-- file: ch16/FormParse.hs
+p_pair_app1 =
+    liftM2 (,) (many1 p_char) (optionMaybe (char '=' &gt;&gt; many p_char))</pre><p id="x_Gk"><a name="x_Gk"></a>All we've changed is the combinator we use for lifting: the
+      <code class="function">liftA</code> functions act in the same ways as
+      their <code class="function">liftM</code> cousins.</p><a name="FormApp.hs:a_pair"></a><pre id="FormApp.hs:a_pair" class="programlisting">-- file: ch16/FormApp.hs
+a_pair :: CharParser () (String, Maybe String)
+a_pair = liftA2 (,) (many1 a_char) (optionMaybe (char '=' *&gt; many a_char))</pre></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id653027">Parsing JSON data</h2></div></div></div><p id="x_Hk"><a name="x_Hk"></a>To give ourselves a better feel for parsing with applicative
+      functors, and to explore a few more corners of Parsec, we'll
+      write a JSON parser that follows the definition in RFC
+      4627.</p><p id="x_Ik"><a name="x_Ik"></a>At the top level, a JSON value must be either an object or
+      an array.</p><a name="JSONParsec.hs:p_text"></a><pre id="JSONParsec.hs:p_text" class="programlisting">-- file: ch16/JSONParsec.hs
+p_text :: CharParser () JValue
+p_text = spaces *&gt; text
+     &lt;?&gt; "JSON text"
+    where text = JObject &lt;$&gt; p_object
+             &lt;|&gt; JArray &lt;$&gt; p_array</pre><p id="x_Jk"><a name="x_Jk"></a>These are structurally similar, with an opening character,
+      followed by one or more items separated by commas, followed by
+      a closing character.  We capture this similarity by writing a
+      small helper function.</p><a name="JSONParsec.hs:p_series"></a><pre id="JSONParsec.hs:p_series" class="programlisting">-- file: ch16/JSONParsec.hs
+p_series :: Char -&gt; CharParser () a -&gt; Char -&gt; CharParser () [a]
+p_series left parser right =
+    between (char left &lt;* spaces) (char right) $
+            (parser &lt;* spaces) `sepBy` (char ',' &lt;* spaces)</pre><p id="x_Kk"><a name="x_Kk"></a>Here, we finally have a use for the
+      <code class="function">(&lt;*)</code> combinator that we introduced
+      earlier.  We use it to skip over any white space that might
+      follow certain tokens.  With this <code class="function">p_series</code>
+      function, parsing an array is simple.</p><a name="JSONParsec.hs:p_array"></a><pre id="JSONParsec.hs:p_array" class="programlisting">-- file: ch16/JSONParsec.hs
+p_array :: CharParser () (JAry JValue)
+p_array = JAry &lt;$&gt; p_series '[' p_value ']'</pre><p id="x_Lk"><a name="x_Lk"></a>Dealing with a JSON object is hardly more complicated,
+      requiring just a little additional effort to produce a name/value pair
+      for each of the object's fields.</p><a name="JSONParsec.hs:p_object"></a><pre id="JSONParsec.hs:p_object" class="programlisting">-- file: ch16/JSONParsec.hs
+p_object :: CharParser () (JObj JValue)
+p_object = JObj &lt;$&gt; p_series '{' p_field '}'
+    where p_field = (,) &lt;$&gt; (p_string &lt;* char ':' &lt;* spaces) &lt;*&gt; p_value</pre><p id="x_Mk"><a name="x_Mk"></a>Parsing an individual value is a matter of calling an
+      existing parser, then wrapping its result with the appropriate
+      <span class="type">JValue</span> constructor.</p><a name="JSONParsec.hs:p_value"></a><pre id="JSONParsec.hs:p_value" class="programlisting">-- file: ch16/JSONParsec.hs
+p_value :: CharParser () JValue
+p_value = value &lt;* spaces
+  where value = JString &lt;$&gt; p_string
+            &lt;|&gt; JNumber &lt;$&gt; p_number
+            &lt;|&gt; JObject &lt;$&gt; p_object
+            &lt;|&gt; JArray &lt;$&gt; p_array
+            &lt;|&gt; JBool &lt;$&gt; p_bool
+            &lt;|&gt; JNull &lt;$ string "null"
+            &lt;?&gt; "JSON value"
+
+p_bool :: CharParser () Bool
+p_bool = True &lt;$ string "true"
+     &lt;|&gt; False &lt;$ string "false"</pre><p id="x_xG1"><a name="x_xG1"></a>The <code class="function">choice</code> combinator allows us to
+      represent this kind of ladder-of-alternatives as a list.  It
+      returns the result of the first parser to succeed.</p><a name="JSONParsec.hs:p_value_choice"></a><pre id="JSONParsec.hs:p_value_choice" class="programlisting">-- file: ch16/JSONParsec.hs
+p_value_choice = value &lt;* spaces
+  where value = choice [ JString &lt;$&gt; p_string
+                       , JNumber &lt;$&gt; p_number
+                       , JObject &lt;$&gt; p_object
+                       , JArray &lt;$&gt; p_array
+                       , JBool &lt;$&gt; p_bool
+                       , JNull &lt;$ string "null"
+                       ]
+                &lt;?&gt; "JSON value"</pre><p id="x_Nk"><a name="x_Nk"></a>This leads us to the two most interesting parsers, for
+      numbers and strings.  We'll deal with numbers first, since
+      they're simpler.</p><a name="JSONParsec.hs:p_number"></a><pre id="JSONParsec.hs:p_number" class="programlisting">-- file: ch16/JSONParsec.hs
+p_number :: CharParser () Double
+p_number = do s &lt;- getInput
+              case readSigned readFloat s of
+                [(n, s')] -&gt; n &lt;$ setInput s'
+                _         -&gt; empty</pre><p id="x_Ok"><a name="x_Ok"></a>Our trick here is to take advantage of Haskell's standard
+      number parsing library functions, which are defined in the
+      <code class="code">Numeric</code> module.  The <code class="function">readFloat</code>
+      function reads an unsigned floating point number, and
+      <code class="function">readSigned</code> takes a parser for an unsigned
+      number and turns it into a parser for possibly signed
+      numbers.</p><p id="x_Pk"><a name="x_Pk"></a>Since these functions know nothing about Parsec, we have to
+      work with them specially.  Parsec's
+      <code class="function">getInput</code> function gives us direct access to
+      Parsec's unconsumed input stream.  If <code class="code">readSigned
+	readFloat</code> succeeds, it returns both the parsed number
+      and the rest of the unparsed input.  We then use
+      <code class="function">setInput</code> to give this back to Parsec as its
+      new unconsumed input stream.</p><p id="x_Qk"><a name="x_Qk"></a>Parsing a string isn't difficult, merely detailed.</p><a name="JSONParsec.hs:p_string"></a><pre id="JSONParsec.hs:p_string" class="programlisting">-- file: ch16/JSONParsec.hs
+p_string :: CharParser () String
+p_string = between (char '\"') (char '\"') (many jchar)
+    where jchar = char '\\' *&gt; (p_escape &lt;|&gt; p_unicode)
+              &lt;|&gt; satisfy (`notElem` "\"\\")</pre><p id="x_Rk"><a name="x_Rk"></a>We can parse and decode an escape sequence with
+      the help of the <code class="function">choice</code> combinator that we
+      just met.</p><a name="JSONParsec.hs:p_escape"></a><pre id="JSONParsec.hs:p_escape" class="programlisting">-- file: ch16/JSONParsec.hs
+p_escape = choice (zipWith decode "bnfrt\\\"/" "\b\n\f\r\t\\\"/")
+    where decode c r = r &lt;$ char c</pre><p id="x_Tk"><a name="x_Tk"></a>Finally, JSON lets us encode a Unicode character in
+      a string as “<span class="quote"><code class="code">\u</code></span>” followed by four
+      hexadecimal digits.</p><a name="JSONParsec.hs:p_unicode"></a><pre id="JSONParsec.hs:p_unicode" class="programlisting">-- file: ch16/JSONParsec.hs
+p_unicode :: CharParser () Char
+p_unicode = char 'u' *&gt; (decode &lt;$&gt; count 4 hexDigit)
+    where decode x = toEnum code
+              where ((code,_):_) = readHex x</pre><p id="x_Uk"><a name="x_Uk"></a>The only piece of functionality that applicative
+      functors are missing, compared to monads, is the ability to bind a
+      value to a variable, which we need here in order to be able to
+      validate the value we're trying to decode.</p><p id="x_Vk"><a name="x_Vk"></a>This is the one place in our parser that we've needed to
+      use a monadic function.  This pattern extends to more
+      complicated parsers, too: only infrequently do we need the extra
+      bit of power that monads offer.</p><p id="x_Wk"><a name="x_Wk"></a>As we write this book, applicative functors are still quite
+      new to Haskell, and people are only beginning to explore the
+      possible uses for them beyond the realm of parsing.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both" id="id653365">Parsing a HTTP request</h2></div></div></div><p id="x_Kv"><a name="x_Kv"></a>As another example of applicative parsing, we will develop a
+      basic parser for HTTP requests.</p><a name="HttpRequestParser.hs:module"></a><pre id="HttpRequestParser.hs:module" class="programlisting">-- file: ch16/HttpRequestParser.hs
+module HttpRequestParser
+    (
+      HttpRequest(..)
+    , Method(..)
+    , p_request
+    , p_query
+    ) where
+
+import ApplicativeParsec
+import Numeric (readHex)
+import Control.Monad (liftM4)
+import System.IO (Handle)</pre><p id="x_Lv"><a name="x_Lv"></a>An HTTP request consists of a method, an identifier, a
+      series of headers, and an optional body.  For simplicity, we'll
+      focus on just two of the six method types specified by the HTTP
+      1.1 standard.  A <code class="code">POST</code> method has a body; a
+      <code class="code">GET</code> has none.</p><a name="HttpRequestParser.hs:HttpRequest"></a><pre id="HttpRequestParser.hs:HttpRequest" class="programlisting">-- file: ch16/HttpRequestParser.hs
+data Method = Get | Post
+          deriving (Eq, Ord, Show)
+
+data HttpRequest = HttpRequest {
+      reqMethod :: Method
+    , reqURL :: String
+    , reqHeaders :: [(String, String)]
+    , reqBody :: Maybe String
+    } deriving (Eq, Show)</pre><p id="x_Mv"><a name="x_Mv"></a>Because we're writing in an applicative style, our parser
+      can be both brief and readable.  Readable, that is, if you're
+      becoming used to the applicative parsing notation.</p><a name="HttpRequestParser.hs:p_request"></a><pre id="HttpRequestParser.hs:p_request" class="programlisting">-- file: ch16/HttpRequestParser.hs
+p_request :: CharParser () HttpRequest
+p_request = q "GET" Get (pure Nothing)
+        &lt;|&gt; q "POST" Post (Just &lt;$&gt; many anyChar)
+  where q name ctor body = liftM4 HttpRequest req url p_headers body
+            where req = ctor &lt;$ string name &lt;* char ' '
+        url = optional (char '/') *&gt;
+              manyTill notEOL (try $ string " HTTP/1." &lt;* oneOf "01")
+              &lt;* crlf</pre><p id="x_Nv"><a name="x_Nv"></a>Briefly, the <code class="function">q</code> helper
+      function accepts a method name, the type constructor to apply to
+      it, and a parser for a request's optional body.  The
+      <code class="function">url</code> helper does not attempt to validate a
+      URL, because the HTTP specification does not specify what
+      characters an URL contain. The function just consumes input
+      until either the line ends or it reaches a HTTP version
+      identifier.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id653464">Backtracking and its discontents</h3></div></div></div><p id="x_Uv"><a name="x_Uv"></a>The <code class="literal">try</code> combinator has to hold onto input in
+	case it needs to restore it, so that an alternative parser can
+	be used.  This practice is referred to as
+	<span class="emphasis"><em>backtracking</em></span>. Because
+	<code class="function">try</code> must save input, it is expensive to
+	use.  Sprinkling a parser with unnecessary uses of
+	<code class="function">try</code> is a very effective way to slow it
+	down, sometimes to the point of unacceptable
+	performance.</p><p id="x_Vv"><a name="x_Vv"></a>The standard way to avoid the need for backtracking is to
+	tidy up a parser so that we can decide whether it will succeed
+	or fail using only a single token of input.  In this case, the
+	two parsers consume the same initial tokens, so we turn them
+	into a single parser.</p><a name="try.ghci:factor"></a><pre id="try.ghci:factor" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>let parser = (++) &lt;$&gt; string "HT" &lt;*&gt; (string "TP" &lt;|&gt; string "ML")</code></strong>
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseTest parser "HTTP"</code></strong>
+"HTTP"
+<code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseTest parser "HTML"</code></strong>
+"HTML"
+</pre><p id="x_Wv"><a name="x_Wv"></a>Even better, Parsec gives us an improved error message if
+	we feed it non-matching input.</p><a name="try.ghci:error"></a><pre id="try.ghci:error" class="screen"><code class="prompt">ghci&gt; </code><strong class="userinput"><code>parseTest parser "HTXY"</code></strong>
+parse error at (line 1, column 3):
+unexpected "X"
+expecting "TP" or "ML"
+</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id653579">Parsing headers</h3></div></div></div><p id="x_Xv"><a name="x_Xv"></a>Following the first line of a HTTP request is a series of
+	zero or more headers.  A header begins with a field name,
+	followed by a colon, followed by the content.  If the lines
+	that follow begin with spaces, they are treated as
+	<span class="emphasis"><em>continuations</em></span> of the current
+	content.</p><a name="HttpRequestParser.hs:p_headers"></a><pre id="HttpRequestParser.hs:p_headers" class="programlisting">-- file: ch16/HttpRequestParser.hs
+p_headers :: CharParser st [(String, String)]
+p_headers = header `manyTill` crlf
+  where header = liftA2 (,) fieldName (char ':' *&gt; spaces *&gt; contents)
+        contents = liftA2 (++) (many1 notEOL &lt;* crlf)
+                               (continuation &lt;|&gt; pure [])
+        continuation = liftA2 (:) (' ' &lt;$ many1 (oneOf " \t")) contents
+        fieldName = (:) &lt;$&gt; letter &lt;*&gt; many fieldChar
+        fieldChar = letter &lt;|&gt; digit &lt;|&gt; oneOf "-_"
+
+crlf :: CharParser st ()
+crlf = (() &lt;$ string "\r\n") &lt;|&gt; (() &lt;$ newline)
+
+notEOL :: CharParser st Char
+notEOL = noneOf "\r\n"</pre></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title" id="id653614">Exercises</h3></div></div></div><p id="x_Yv"><a name="x_Yv"></a>Our HTTP request parser is too simple to be useful in real
+	deployments.  It is missing vital functionality, and is not
+	resistant to even the most basic denial of service
+	attacks.</p><div class="qandaset"><table border="0" summary="Q and A Set"><col align="left" width="1%"><tbody><tr class="question"><td align="left" valign="top"><a name="id653631"></a><a name="id653633"></a><p><b>1.</b></p></td><td align="left" valign="top"><p id="x_Zv"><a name="x_Zv"></a>Make the parser honour the
+	      <code class="code">Content-Length</code> field properly, if it is
+	      present.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id653648"></a><a name="id653650"></a><p><b>2.</b></p></td><td align="left" valign="top"><p id="x_av"><a name="x_av"></a>A popular denial of service attack against naive web
+	      servers is simply to send unreasonably long headers.  A
+	      single header might contain tens or hundreds of
+	      megabytes of garbage text, causing a server to run out
+	      of memory.</p><p id="x_bv"><a name="x_bv"></a>Restructure the header parser so that it will fail
+	      if any line is longer than 4096 characters.  It must
+	      fail immediately when this occurs; it cannot wait until
+	      the end of a line eventually shows up.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id653673"></a><a name="id653675"></a><p><b>3.</b></p></td><td align="left" valign="top"><p id="x_cv"><a name="x_cv"></a>Add the ability to honour the
+	      <code class="code">Transfer-Encoding: chunked</code> header if it is
+	      present.  See <a class="ulink" href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.6.1" target="_top">section 
+		3.6.1 of RFC 2616</a> for details.</p></td></tr><tr class="question"><td align="left" valign="top"><a name="id653697"></a><a name="id653699"></a><p><b>4.</b></p></td><td align="left" valign="top"><p id="x_dv"><a name="x_dv"></a>Another popular attack is to open a
+	      connection and either leave it idle or send data
+	      extremely slowly.  Write a wrapper in the <span class="type">IO</span> monad
+	      that will invoke the parser.  Use the
+	      <code class="code">System.Timeout</code> module to close the
+	      connection if the parser has not completed within 30
+	      seconds.</p></td></tr></tbody></table></div></div></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a name="ftn.id650124" href="#id650124" class="para">34</a>] </sup>For more on monads, refer to
+          <a class="xref" href="monads.html" title="Chapter 14. Monads">Chapter 14, <i>Monads</i></a></p></div><div class="footnote"><p><sup>[<a name="ftn.id650268" href="#id650268" class="para">35</a>] </sup>For information on dealing with
+      choices that may consume some input before failing, see 
+          <a class="xref" href="using-parsec.html#parsec.lookahead" title="Lookahead">the section called “Lookahead”</a>.</p></div></div></div><div class="rwhfooter"><p><img src="/support/figs/rss.png"> Want to stay up to date? Subscribe to the comment feed for <a id="chapterfeed" class="feed" href="/feeds/comments/">this chapter</a>, or the <a class="feed" href="/feeds/comments/">entire book</a>.</p><p>Copyright 2007, 2008 Bryan O'Sullivan, Don Stewart, and
+      John Goerzen. This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative
+      Commons Attribution-Noncommercial 3.0 License</a>. Icons by <a href="mailto:mattahan@gmail.com">Paul Davey</a> aka <a href="http://mattahan.deviantart.com/">Mattahan</a>.</p></div><div class="navfooter"><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="programming-with-monads.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="interfacing-with-c-the-ffi.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 15. Programming with monads </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 17. Interfacing with C: the FFI</td></tr></table></div><script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script><script type="text/javascript">_uacct = "UA-1805907-3"; urchinTracker();</script></body></html>

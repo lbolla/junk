@@ -1,0 +1,293 @@
+
+
+
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+
+<style type="text/css">
+  @import url(/css/powells_main_20110812133251.min.css);
+    
+</style>
+
+<!--[if IE]>
+<style>
+  ul#nav li>ul.left { position:absolute; top: 1em; margin: 9px 0px 0px -10px; z-index:1000; }
+  ul#nav li>ul.right { position:absolute; top: 1em; left:auto; right: -10px; margin-top: 9px; z-index:1000; }
+  ul#nav li {position:relative; z-index:1;}
+  ul#nav li ul { position:absolute; z-index:100;}
+  #search-button { height:28px; margin-top:0; }
+  #search-box { margin-left:2px; line-height:18px; }
+  ol.content-list li { display:inline; }
+  ol.form-list li.clear-4 {   margin-top:-6.6em;   }
+</style>
+<![endif]-->
+  
+<!--[if lt IE 8]>
+<style>
+  ol.table-style li,ol.content-list li { display:inline; }
+  #nav li.header ul li.divider { border-bottom:1px dotted #4A3A2D; margin-bottom:.25em; padding-bottom:.75em; margin-right:10px; }
+  #nav li.header ul hr { display:none; }
+</style>
+<![endif]-->
+
+
+
+  
+  <!-- any product page stuff here -->
+  <link rel='image_src' href='http://www.powells.com/bookcovers/9780596514983.jpg' />
+  
+  <meta name="Description" content="
+    
+      Real World Haskell by Bryan Osullivan:  This easy-to-use, fast-moving tutorial introduces you to functional programming with Haskell. You'll learn how to use Haskell in a variety of practical ways, from short scripts to large and demanding applications. Real World Haskell takes you through the basics of functional programming at a...
+    
+  " />
+
+   
+  <meta name="Keywords" content="
+    
+Powell's, Powells, Powellsbooks, powells.com, New, Used, Used Books, Rare, Books, Arts, Business, Careers, Computers, Internet, Cooking, Education, Engineering, Erotica, Fiction, Poetry, Remainders, Sale, Health, Sell Used Books, Well Being, History, Home, Garden, Humanities, Languages, Foreign, Leisure, Linguistics, Literature, Math, Mathematics, Physics, Technical, Popular Reading, Rare Books, Antiquarian, Religion, Spirituality, Science Fiction, Fantasy, Horror, Science, Engineering, Children's Books, Social Science, Travel, Reference, Audio Books, internet
+    
+  " />
+    
+
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    
+
+<!-- NOTE: encoding=entity to strip HTML from title tags -->
+    <title>Real World Haskell by Bryan Osullivan - Powell's Books</title>
+  
+
+
+<!-- Non-Blocking jsapi Load -->
+<script>
+(function() {
+    var jsapi = document.createElement('script');
+    jsapi.type = 'text/javascript';
+    jsapi.async = true;
+    jsapi.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'www.google.com/jsapi?key=';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('head')[0]).appendChild(jsapi);
+  })();
+</script>
+
+<!-- Pull Our AJAX Libraries Straight From Google's CDN -->
+<script src='//ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js' type='text/javascript'></script>
+<script src='//ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js' type='text/javascript'></script>
+
+<!-- Powells Main -->
+<script type="text/javascript">
+if (document.domain.match(/^www\.powells\.com|^powells\.com/g) === null) {
+  document.write([
+     "\<script src='/js/powells_main_20110930101727.min.js' type='text/javascript'>\<\/script>"
+  ].join(''));
+} else {
+  document.write([
+       "\<script src='/js/powells_main_20110930101727.min.js' type='text/javascript'>\<\/script>"
+    ].join(''));
+}
+</script>
+
+
+    
+
+<script type="text/javascript">
+  window.name = 'daddy';
+</script>
+
+<script type="text/javascript">
+<!-- We Only Call general_startup From Here... -->
+   jQuery(document).ready(function(){
+      general_startup();
+      //browser_size_event_tracking();
+      //setTimeout(function() {random_banner()}, 1000);
+   });
+
+
+   function random_banner() {
+      var ab_array = ['a','b'];
+      if (!jQuery.cookie('a_b')) {
+         var options = { path: '/', expires: 7 };
+         var set_it = jQuery.cookie('a_b', ab_array[zero_one], options);
+         var track_the_randomness = TrackEvent('Misc','Set Cookie (' + jQuery.cookie('a_b') + ')');
+      }
+      var banner = new Array();
+      // Green color is '#939601'
+      banner['a'] = ['/images/header/masthead_freeshipping_a.jpg','ffffff'];
+      banner['b'] = ['/images/header/masthead_freeshipping_b.gif','969600'];
+      jQuery('#masthead_banner').css({
+         'background-color' : '#' + banner[jQuery.cookie('a_b')][1],
+         'background-image' : 'url(' + banner[jQuery.cookie('a_b')][0] + ')',
+         'display':'none'
+      });
+      var track_the_banner = TrackEvent('Misc',"Show Banner (" + jQuery.cookie('a_b') + ")");
+      jQuery('#masthead_banner a').attr('rel','Header:Free Shipping Banner(' + jQuery.cookie('a_b') + ')');
+      return false;
+   }
+
+   function browser_size_event_tracking() {
+      //if (typeof pageTracker != 'undefined') {
+         Math.round(Number(jQuery(window).width())/10)*10
+         setTimeout(function () {
+            var browser_on_load = TrackEvent('Browser Dimensions','Load',Math.round(Number(jQuery(window).width())/50)*50 + 'x' + Math.round(Number(jQuery(window).height())/50)*50);
+         },500);
+         jQuery(window).resize(function () {
+            if (jQuery(this).data('gatimer')) {
+               clearTimeout(jQuery(this).data('gatimer'));
+               jQuery(this).data('gatimer', null);
+            }
+            jQuery(this).data('gatimer', setTimeout(function () {
+            var browser_on_resize = TrackEvent('Browser Dimensions','Resize',Math.round(Number(jQuery(window).width())/50)*50 + 'x' + Math.round(Number(jQuery(window).height())/50)*50);
+            },500));
+         });
+      //}
+   }
+</script>
+
+<link rel="alternate" type="application/rss+xml" title="Powells.com - Overview" href="/rss/powells_content.xml" />
+<link rel="alternate" type="application/rss+xml" title="PowellsBooks.news" href="/rss/pbn.xml" />
+<link rel="alternate" type="application/rss+xml" title="Daily Dose" href="/rss/daily_dose.xml" />
+<link rel="alternate" type="application/rss+xml" title="Author Interviews" href="/rss/author_interviews.xml" />
+<link rel="alternate" type="application/rss+xml" title="Author Essays" href="/rss/author_essays.xml" />
+<link rel="alternate" type="application/rss+xml" title="INK Q&amp;A" href="/rss/author_qanda.xml" />
+<link rel="alternate" type="application/rss+xml" title="Events Calendar" href="/cgi-bin/calendar.rss" />
+<link rel="alternate" type="application/rss+xml" title="PowellsBooks.Blog" href="/blog/wp-rss.php" />
+
+</head>
+
+<body>
+
+<a name="top"></a>
+
+<style>
+/* 
+   The Takedown, or Activation of the Masthead (skinny) Banner:
+      1) add/subtract 30px to #search-box, #form-choice, #search-button
+      2) add/subtract 30px to #search-small
+      3) #masthead_banner to display:none
+      4) done.
+*/
+#search-box, #form-choice, #search-button { top: 55px; }
+#search-small{ top: 62px; }
+</style>
+
+<style>
+#puddly_stripe {background: url(/images/masthead_valentine.jpg) 30px 0px repeat-x; }
+#puddly_mod { background: url() no-repeat; }
+#masthead_banner {
+   display:none;
+   background: transparent url(/images/masthead_poetrymonth2011.gif) repeat-x scroll 25px top;
+   margin: 0pt; 
+   padding: 0pt;  
+   height: 30px; 
+   -moz-background-clip: border; 
+   -moz-background-origin: padding; 
+   -moz-background-inline-policy: continuous;
+}
+</style>
+
+<!-- standard banner handling below (without repeating background stripe) -->
+<div id="masthead_banner" class="_trackNavigation"><a href="/section/poetry/" rel="Masthead:Poetry Month"><img src="/images/clearpixel.gif" title="Poetry Month: Save 15%" alt="Poetry Month: Save 15%" border="0" height="30" hspace="0" vspace="0" width="100%"></a></div>
+<div id="main_header" class="_trackNavigation">
+   <div id="user">&nbsp;<br />&nbsp;</div>
+<div id="logo">
+   <a href="http://www.powells.com/" rel="Header:Logo" class='secret-link'>
+   &nbsp;
+   </a>
+</div>
+
+  <form action="http://www.powells.com/s" method="get" id="main-search">
+<div id="search">
+  <input name="kw" type="text" id="search-box" title="Enter Keyword, Title, Author, or ISBN" value="" />
+    <ul id='form-choice'>
+      <li class='fake-link arrowdown'><a href='javascript:void(0)'>All Books</a></li>
+      <li class='hidden fake-link'><a href='javascript:void(0)'>Used</a></li>
+      <li class='hidden fake-link'><a href='javascript:void(0)'>New</a></li>
+      <li class='hidden fake-link'><a href='javascript:void(0)'>eBooks</a></li>
+    </ul>
+   <input value="SEARCH" id="search-button" class="button" type="submit" />
+   <input type="hidden" id="shoved_in" name="class" value="" />
+   <small id="search-small">&nbsp;<a href="http://www.powells.com/s" rel="Header:Advanced Search">advanced</a></small>
+</div>
+  </form>
+
+<div id="navbar" class="_trackNavigation">
+  <ul id="nav">
+    <li class="header firstone" id="h_1"><a href="http://www.powells.com/" class="header-link" rel="Header:Discover">Discover</a>
+      <ul class="left">
+        <li><a href="http://www.powells.com/section/new-arrivals/" rel="Header:Sub|New Arrivals">New Arrivals</a></li>
+        <li><a href="http://www.powells.com/bestsellers.html" rel="Header:Sub|Bestsellers">Bestsellers</a></li>
+        <li><a href="http://www.powells.com/awards/" rel="Header:Sub|Award Winners">Award Winners</a></li>
+        <li><a href="http://www.powells.com/section/featured-titles/signed-editions/" rel="Header:Sub|Signed Editions">Signed Editions</a></li>
+        <li><a href="http://www.powells.com/sale/" rel="Header:Sub|Sale Books">Sale Books</a></li>
+        <li><a href="http://www.powells.com/features/dailydose.html" rel="Header:Sub|Daily Dose">Daily Dose</a></li>
+        <li><a href="http://www.powells.com/indiespensable/" rel="Header:Sub|Indiespensable">Indiespensable&trade;</a></li>
+        <li><a href="https://www.powells.com/cgi-bin/newsletters/list_manager" rel="Header:Sub|Newsletters">Newsletters</a></li>
+        <hr />
+        <li><b>Browse in...</b></li>
+        <li class="indented"><a href="http://www.powells.com/section/childrens/" rel="Header:Sub|Childrens">Children's</a></li>
+        <li class="indented"><a href="http://www.powells.com/section/cooking-and-food/" rel="Header:Sub|Cooking">Cooking</a></li>
+        <li class="indented"><a href="http://www.powells.com/section/literature/" rel="Header:Sub|Literature">Literature</a></li>
+        <li class="indented"><a href="http://www.powells.com/section/mystery/" rel="Header:Sub|Mystery">Mystery</a></li>
+        <li class="indented"><a href="http://www.powells.com/section/poetry/" rel="Header:Sub|Poetry">Poetry</a></li>
+        <li class="indented"><a href="http://www.powells.com/section/science-fiction-and-fantasy/" rel="Header:Sub|Sci-Fi and Fantasy">Sci-Fi & Fantasy</a></li>
+        <li class="indented"><a href="http://www.powells.com/section/textbooks/" rel="Header:Sub|Textbooks">Textbooks</a></li>
+        <li class="indented"><a href="http://www.powells.com/section/childrens-young-adult/" rel="Header:Sub|Young Adult">Young Adult</a></li>
+        <li><a href="http://www.powells.com/section/" rel="Header:Sub|See All Subjects (Discover)">See All Subjects</a></li>
+        <hr />
+        <li><a href="http://www.powells.com/section/audio-books/" rel="Header:Sub|Audio Books">Audio Books</a></li>
+        <li><a href="http://www.powells.com/section/dvds/" rel="Header:Sub|DVDs">DVDs</a></li>  
+        <li><a href="http://www.powells.com/section/blu-ray" rel="Header:Sub|Blu-ray">Blu-ray</a></li>
+      </ul>
+    </li>
+    <li class="header" id="h_2"><a href="http://www.powells.com/used/" rel="Header:Used Books" class="header-link">Used Books</a>
+      <ul class="left">
+        <li><a href="http://www.powells.com/used/" rel="Header:Sub|Used Books by Subject">Used Books by Subject</a></li>
+        <li><a href="https://www.powells.com/cgi-bin/newsletters/list_manager?ae=yes" rel="Header:Sub|Recently Arrived Used Newsletters">Recently Arrived Used Newsletters</a></li>
+        <li><a href="http://www.powells.com/section/rare-books/" rel="Header:Sub|Rare and Collectible">Rare and Collectible</a></li>
+        <hr />
+        <li><b>Browse in...</b></li>
+        <li class="indented"><a href="http://www.powells.com/used/literature/" rel="Header:Sub|Literature (Used)">Literature</a></li>
+        <li class="indented"><a href="http://www.powells.com/used/poetry/" rel="Header:Sub|Poetry (Used)">Poetry</a></li>
+        <li class="indented"><a href="http://www.powells.com/used/childrens/" rel="Header:Sub|Childrens (Used)">Children's</a></li>
+        <li class="indented"><a href="http://www.powells.com/used/mystery/" rel="Header:Sub|Mystery (Used)">Mystery</a></li>
+        <li class="indented"><a href="http://www.powells.com/used/cooking-and-food/" rel="Header:Sub|Cooking (Used)">Cooking</a></li>
+        <li class="indented"><a href="http://www.powells.com/used/science-fiction-and-fantasy/" rel="Header:Sub|Sci-Fi and Fantasy (Used)">Sci-Fi & Fantasy</a></li>
+        <li class="indented"><a href="http://www.powells.com/section/textbooks/" rel="Header:Sub|Textbooks">Textbooks</a></li>
+        <li><a href="http://www.powells.com/used/" rel="Header:Sub|See All Subjects (Used)">See All Subjects</a></li>
+      </ul>
+    </li>
+    <li class="header" id="h_3"><a href="http://www.powells.com/ebooks/" rel="Header:eBooks" class="header-link">eBooks</a>
+      <ul class="left">
+        <li><a href="http://www.powells.com/ebooks/" rel="Header:Sub|eBooks by Subject">eBooks by Subject</a></li>
+        <li><a href="http://www.powells.com/section/google-ebooks/" rel="Header:Sub|Google eBooks">Google eBooks&trade;</a></li>
+        <li><a href="http://www.powells.com/section/adobe-digital-editions/" rel="Header:Sub|Adobe Digital Editions">Adobe Digital Editions</a></li>
+        <li><a href="http://www.powells.com/section/drm-free-pdf/" rel="Header:Sub|DRM-Free PDF">DRM-Free PDF</a></li>
+      </ul>
+    </li>
+    <li class="header" id="h_4"><a href="http://www.powells.com/section/staff-picks/" rel="Header:Staff Picks" class="header-link">Staff Picks</a>
+      <ul class="left">
+  <li><a href="http://www.powells.com/section/staff-picks/" rel="Header:Sub|Staff Picks">Staff Picks</a></li>
+  <li><a href="http://www.powells.com/section/new-favorites/" rel="Header:Sub|New Favorites">New Favorites</a></li>
+  <li><a href="http://www.powells.com/staffpicks/stafftop5_2010.html" rel="Header:Sub|Staff Top 5s">Staff Top 5s</a></li>
+  <li><a href="http://www.powells.com/indiespensable/" rel="Header:Sub|Indiespensable">Indiespensable&trade;</a></li>
+<hr />
+  <li><b>Browse in...</b></li>
+  <li class="indented"><a href="http://www.powells.com/section/employee-picks/literature/" rel="Header:Sub|Literature (Staff Picks)">Literature</a></li>
+  <li class="indented"><a href="http://www.powells.com/section/employee-picks/poetry/" rel="Header:Sub|Poetry (Staff Picks)">Poetry</a></li>
+  <li class="indented"><a href="http://www.powells.com/section/employee-picks/childrens/" rel="Header:Sub|Childrens (Staff Picks)">Children's</a></li>
+  <li class="indented"><a href="http://www.powells.com/section/employee-picks/mystery/" rel="Header:Sub|Mystery (Staff Picks)">Mystery</a></li>
+  <li class="indented"><a href="http://www.powells.com/section/employee-picks/cooking-and-food/" rel="Header:Sub|Cooking (Staff Picks)">Cooking</a></li>
+  <li class="indented"><a href="http://www.powells.com/section/employee-picks/science-fiction-and-fantasy/" rel="Header:Sub|Sci-Fi and Fantasy (Staff Picks)">Sci-Fi & Fantasy</a></li>
+  <li><a href="http://www.powells.com/section/employee-picks/" rel="Header:Sub|See All Subjects (Staff Picks)">See All Subjects</a></li>
+      </ul>
+    </li>
+    <li class="header" id="h_5">
+    <a href="http://www.powells.com/powellscard.html" rel="Header:Gifts and Gift Cards" class="header-link" style="background: none;">Gifts & Gift Cards</a>
+      <ul class="left">
+        <li><a href="http://www.powells.com/powellscard.html" rel="Header:Sub|Gift Cards">Gift Cards & eGift Cards</a></li>
+        <!--
+        <li><a href="http://www.powells.com/powellscard.html" rel="Head
