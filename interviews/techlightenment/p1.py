@@ -36,11 +36,12 @@ def success(A):
 def run(A):
     i = 0
     Aold = None
+    Averyold = None
     while not success(A):
         i += 1
-        A, Aold = step(A), A
+        A, Aold, Averyold = step(A), A, Aold
         print(A)
-        if sorted(A) == sorted(Aold):
+        if A == Aold or A == Averyold:
             return -1
     return i
 
