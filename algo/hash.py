@@ -6,7 +6,7 @@ class HashTable(object):
 		self._size = size
 		self._data = [None] * size
 		self._hash = hashfunc
-	
+
 	def __str__(self):
 		return str(self._data)
 
