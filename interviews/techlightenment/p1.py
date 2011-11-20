@@ -1,7 +1,20 @@
+'''Given a sequence of numbers, find the minimum number of steps necessary to
+make all the numbers equal. If not possible, return -1.
+
+A "step" means modifying each element by either +1 or -1.
+
+Example:
+    [11, 3, 7, 1]
+can become:
+    [10, 2, 8, 0]
+and must become (it takes 5 steps):
+    [6, 6, 6, 6]
+'''
+
 import operator
 
 
-def equalization_steps ( A ):
+def equalization_steps(A):
     # write your code here
     return run(A)
 
@@ -31,9 +44,14 @@ def run(A):
             return -1
     return i
 
+
 def main():
     # test code
     A = list(range(4))
     print(run(A))
-    A = list([11,3,7,1])
+    A = list([11, 3, 7, 1])
     print(run(A))
+
+
+if __name__ == '__main__':
+    main()
