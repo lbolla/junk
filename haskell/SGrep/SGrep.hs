@@ -5,26 +5,36 @@ module Main where
 -- use more of Chunk data struct
 -- comments on SO
 -- upload on hackage
--- quickcheck
 -- usage
 
-import System.Environment (getArgs)
-import System.IO
+import Control.Exception(finally)
 import Data.List (isPrefixOf)
 import Data.Maybe (isNothing, fromJust)
-
-isNL :: Char -> Bool
-isNL c = c == '\n'
+import System.Directory(getTemporaryDirectory, removeFile)
+import System.Environment (getArgs)
+import System.IO
+import System.IO.Error(catch)
+import Test.Framework (defaultMain, testGroup)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
 
 -- Chunk of a file
 data Chunk = Chunk Handle Integer Integer
 
+-- Is char newline?
+isNL :: Char -> Bool
+isNL c = c == '\n'
+
+prop_isNL :: Char -> Bool
+prop_isNL '\n' = isNL '\n'
+prop_isNL c = not $ isNL c
+
+-- Are we at the beginning of file?
 isBOF :: Handle -> IO Bool
-isBOF h = do
-        pos <- hTell h
-        if pos == 0
-           then return True
-           else return False
+isBOF = (fmap (== 0)) . hTell
+
+--  prop_isBOF_newFile :: IO Bool
+--  prop_isBOF_newFile = withTempFile "prop_isBOF" $ \f h ->
+--          isBOF h
 
 -- Go to beginning of line
 goToBOL :: Handle -> IO ()
@@ -89,8 +99,8 @@ search (Chunk h start end) str
                                       else search (Chunk h mid end) str
            where mid = (start + end) `div` 2
 
-run :: Handle -> String -> IO ()
-run h s = do
+sgrep :: Handle -> String -> IO ()
+sgrep h s = do
         len <- hFileSize h
         match <- search (Chunk h 0 len) s
         --  putStrLn $ show match
@@ -101,5 +111,25 @@ main :: IO ()
 main = do
         args <- getArgs
         let s = head args
+        putStrLn s
         let fname = head $ tail args
-        withFile fname ReadMode (\h -> run h s)
+        withFile fname ReadMode (\h -> sgrep h s)
+
+runTests = defaultMain tests
+
+tests = [
+        testGroup "isNL" [
+                testProperty "isNL" prop_isNL
+                ]--,
+        --  testGroup "isBOF" [
+        --          testProperty "newFile" prop_isBOF_newFile
+        --          ]
+        ]
+
+withTempFile :: String -> (FilePath -> Handle -> IO a) -> IO a
+withTempFile pattern func = do
+        tempdir <- catch (getTemporaryDirectory) (\_ -> return ".")
+        (tempfile, temph) <- openTempFile tempdir pattern
+        finally (func tempfile temph)
+                (do hClose temph
+                    removeFile tempfile)
