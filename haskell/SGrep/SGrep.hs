@@ -1,5 +1,13 @@
 module Main where
 
+-- TODO
+-- less imperative
+-- use more of Chunk data struct
+-- comments on SO
+-- upload on hackage
+-- quickcheck
+-- usage
+
 import System.Environment (getArgs)
 import System.IO
 import Data.List (isPrefixOf)
@@ -25,12 +33,18 @@ goToBOL h = do
         if bof
            then return ()
            else do
-                   c <- hGetChar h
-                   if isNL c
-                      then return ()
-                      else do
+                   eof <- hIsEOF h
+                   if eof
+                      then do
                               hSeek h RelativeSeek (-2)
                               goToBOL h
+                      else do
+                              c <- hGetChar h
+                              if isNL c
+                                 then return ()
+                                 else do
+                                         hSeek h RelativeSeek (-2)
+                                         goToBOL h
 
 getCurrentLine :: Handle -> IO String
 getCurrentLine h = goToBOL h >> hGetLine h
@@ -86,6 +100,6 @@ run h s = do
 main :: IO ()
 main = do
         args <- getArgs
-        let fname = head args
-        let s = head $ tail args
+        let s = head args
+        let fname = head $ tail args
         withFile fname ReadMode (\h -> run h s)
