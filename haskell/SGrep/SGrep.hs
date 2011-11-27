@@ -9,6 +9,7 @@ module Main where
 --      use liftM to apply functions inside a monad
 -- upload on hackage
 -- usage
+-- make github repo and post to CR
 
 import Prelude hiding (catch)
 import Control.Exception (finally)
@@ -19,7 +20,7 @@ import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getArgs)
 import System.IO
 import System.IO.Error (catch)
-import Test.Framework (defaultMain, testGroup)
+import Test.Framework (defaultMain, testGroup, Test)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 
 -- Chunk of a file
@@ -60,21 +61,19 @@ getCurrentLine h = goToBOL h >> hGetLine h
 
 getPrevLine :: Handle -> IO (Maybe String)
 getPrevLine h = do
-        goToBOL h
-        bof <- isBOF h
-        if bof
-           then return Nothing
-           else do
-                   hSeek h RelativeSeek (-2)
-                   goToBOL h
-                   bof <- isBOF h
-                   if bof
-                      then return Nothing
-                      else do
-                              hSeek h RelativeSeek (-2)
-                              goToBOL h
-                              line <- hGetLine h
-                              return $ Just line
+        goToBOLAndDo h $ do
+                hSeek h RelativeSeek (-2)
+                goToBOLAndDo h $ do
+                        hSeek h RelativeSeek (-2)
+                        goToBOL h
+                        line <- hGetLine h
+                        return $ Just line
+        where goToBOLAndDo h' f = do
+                goToBOL h'
+                bof <- isBOF h'
+                if bof
+                   then return Nothing
+                   else do f
 
 goTo :: Handle -> Integer -> IO ()
 goTo h = hSeek h AbsoluteSeek
@@ -98,7 +97,7 @@ search (Chunk h start end) str
 sgrep :: String -> Handle -> IO ()
 sgrep s h = do
         len <- hFileSize h
-        match <- search (Chunk h 0 len) s
+        _ <- search (Chunk h 0 len) s
         --  putStrLn $ show match
         c <- hGetContents h
         putStrLn . unlines $ takeWhile (isPrefixOf s) (lines c)
@@ -108,8 +107,10 @@ main = do
         (s:fname:_) <- getArgs
         withFile fname ReadMode (sgrep s)
 
+runTests :: IO ()
 runTests = defaultMain tests
 
+tests :: [Test]
 tests = [
         testGroup "isNL" [
                 testProperty "isNL" prop_isNL
