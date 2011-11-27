@@ -4,6 +4,9 @@ module Main where
 -- less imperative
 -- use more of Chunk data struct
 -- comments on SO
+--      use MaybeT instead of IO Maybe
+--      (http://book.realworldhaskell.org/read/monad-transformers.html)
+--      use liftM to apply functions inside a monad
 -- upload on hackage
 -- usage
 
@@ -92,8 +95,8 @@ search (Chunk h start end) str
                                             else search (Chunk h mid end) str
            where mid = (start + end) `div` 2
 
-sgrep :: Handle -> String -> IO ()
-sgrep h s = do
+sgrep :: String -> Handle -> IO ()
+sgrep s h = do
         len <- hFileSize h
         match <- search (Chunk h 0 len) s
         --  putStrLn $ show match
@@ -102,10 +105,8 @@ sgrep h s = do
 
 main :: IO ()
 main = do
-        args <- getArgs
-        let s = head args
-        let fname = head $ tail args
-        withFile fname ReadMode (`sgrep` s)
+        (s:fname:_) <- getArgs
+        withFile fname ReadMode (sgrep s)
 
 runTests = defaultMain tests
 
