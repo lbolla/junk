@@ -51,7 +51,7 @@ Executable SGrep
   Main-is:           SGrep.hs
   
   -- Packages needed in order to build this package.
-  Build-depends:     base, QuickCheck, test-framework, test-framework-quickcheck2
+  Build-depends:     base, directory, QuickCheck, test-framework, test-framework-quickcheck2
   
   -- Modules not exported by this package.
   -- Other-modules:       
