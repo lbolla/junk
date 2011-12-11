@@ -1,0 +1,2 @@
+./WaitingQueue $1 $2 > output
+gnuplot -persist plot.gp
