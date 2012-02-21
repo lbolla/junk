@@ -2,16 +2,16 @@ module Main where
 
 import Data.List (nub, concat, findIndices)
 import Control.Monad (liftM2, forM, join)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromMaybe)
 import Debug.Trace
 
 type Board = String
 
 main :: IO ()
-main = interact $ show . solve . parseBoard
+main = interact $ showBoard . fromMaybe "Solution not found" . solve . parseBoard
 
 solve :: Board -> Maybe Board
-solve board | trace (showBoard board) False = undefined
+--  solve board | trace (showBoard board) False = undefined
 solve board = if isObviouslyWrong board
                  then Nothing
                  else go dotIdxs
