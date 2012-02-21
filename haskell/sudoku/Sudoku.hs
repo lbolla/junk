@@ -3,6 +3,7 @@ module Main where
 import Data.List (nub, concat, findIndices)
 import Control.Monad (liftM2, forM, join)
 import Data.Maybe (catMaybes)
+import Debug.Trace
 
 type Board = String
 
@@ -10,6 +11,7 @@ main :: IO ()
 main = interact $ show . solve . parseBoard
 
 solve :: Board -> Maybe Board
+solve board | trace (showBoard board) False = undefined
 solve board = if isObviouslyWrong board
                  then Nothing
                  else go dotIdxs
@@ -39,6 +41,10 @@ isObviouslyWrong board = any (isWrong board) blockIdxs
 
 parseBoard :: Board -> Board
 parseBoard = filter (`elem` "123456789.")
+
+showBoard :: Board -> String
+showBoard board = unlines $ map (showRow board) [0..8]
+        where showRow board irow = show $ take 9 $ drop (irow * 9) board
 
 --  board :: String
 --  board = parseBoard "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......"
