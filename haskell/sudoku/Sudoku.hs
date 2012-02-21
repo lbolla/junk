@@ -7,7 +7,7 @@ import Data.Maybe (catMaybes)
 type Board = String
 
 main :: IO ()
-main = interact $ show . solve
+main = interact $ show . solve . parseBoard
 
 solve :: Board -> Maybe Board
 solve board = if isObviouslyWrong board
@@ -45,4 +45,5 @@ parseBoard = filter (`elem` "123456789.")
 --  board = parseBoard "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
 --  board = parseBoard "483921657967345821251876493548132976729564138136798245372689514814253769695417382"
 --  board = parseBoard "483...6..967345....51....93548132976..95641381367982453..689514814253769695417..2"
+--  board = parseBoard "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
 --  other examples: http://norvig.com/top95.txt
