@@ -1,6 +1,6 @@
 module Main where
 
-import Data.List (nub, concat, findIndices)
+import Data.List (nubBy, concat, findIndices)
 import Control.Monad (liftM2, forM, join, guard)
 import Data.Maybe (catMaybes, fromMaybe)
 import Debug.Trace
@@ -64,9 +64,11 @@ blockIdxs = concat [
 --  part from '.'
 isObviouslyWrong :: Board -> Bool
 isObviouslyWrong board = any (isWrong board) blockIdxs
-        where isWrong board blockIdx = nub blockNoDots /= blockNoDots
-               where blockNoDots = filter (/= '.') block
-                     block = map (board !!) blockIdx
+        where isWrong board blockIdx = hasDups $ map (board !!) blockIdx
+
+--  Check if a string has duplicates, a part from '.'
+hasDups :: String -> Bool
+hasDups s = nubBy (\x y -> x == y && x /= '.') s /= s
 
 --  Filter out spurious chars
 parseBoard :: Board -> Board
