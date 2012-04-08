@@ -1,0 +1,2 @@
+#!/bin/sh
+nice xboard -fcp phalanx -scp gnuchess

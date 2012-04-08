@@ -1,0 +1,17 @@
+BASEDIR=/sys/class/rfkill/rfkill1
+
+usage() {
+	echo "`basename $0` [on|off]"
+}
+
+if [ "x$1" = "x" ]; then
+	cat  $BASEDIR/state 
+elif [ "x$1" = "xon" ]; then
+	# enable
+	echo 1 >  $BASEDIR/state 
+elif [ "x$1" = "xoff" ]; then
+	# disable
+	echo 0 >  $BASEDIR/state 
+else
+	usage
+fi

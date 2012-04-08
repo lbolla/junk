@@ -1,0 +1,23 @@
+#!/bin/sh
+
+BATDIR=/sys/class/power_supply/BAT0
+
+status=`cat ${BATDIR}/status`
+
+if [[ "$status" != Discharging ]]; then
+	echo -n $status
+	exit 0
+fi;
+
+den=`cat ${BATDIR}/charge_full`
+num=`cat ${BATDIR}/charge_now`
+perc=`echo $num/$den*100 | bc -l`
+
+threshold=10
+alarm=`echo "$perc < $threshold" | bc -l`
+
+if [ "$alarm" != "0" ]; then
+	(echo "Low battery"; sleep 10) | dzen2 -bg darkred -fg grey80 -fn fixed 
+fi
+
+printf "%.1f%%" $perc
