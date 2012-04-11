@@ -16,8 +16,14 @@ def parse(inp=sys.stdin):
 
 
 def print_count(count):
+
+    def fmt(k):
+        if k == '\n':
+            return '<NEWLINE>'
+        return k
+
     for v, k in sorted(((v, k) for k, v in count.iteritems()), reverse=True):
-        print '%+10s %d' % (k, v)
+        print '%+10s %d' % (fmt(k), v)
 
 
 def main():
