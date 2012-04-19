@@ -1,11 +1,12 @@
-# TODO this eats the first N...
-# do it in python3, too
+# TODO
+# this eats the first N...
+# error handling: raise PipelineStop and propagate
+# example: xml download + parse + store
+# pipeline restart
 
 import time
 
-
 N = 0
-
 
 def P(n):
     '''Producer: only send (and yield as entry point).'''
