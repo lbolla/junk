@@ -1,15 +1,15 @@
-# TODO
-# this eats the first N...
-# error handling: raise PipelineStop and propagate
-# example: xml download + parse + store
-# pipeline restart
+'''Pipeline
+
+(yield) -> receiver
+.send -> producer
+'''
 
 import time
 
 N = 0
 
 def P(n):
-    '''Producer: only send (and yield as entry point).'''
+    '''Producer: only .send (and yield as entry point).'''
 
     def _f():
         global N
@@ -23,10 +23,11 @@ def P(n):
 
 
 def S(n):
+    '''Stage: both (yield) and .send.'''
 
     def _f(x):
         print 'Stage', x
-        return x
+        return x + 1
 
     while True:
         r = (yield)
@@ -37,7 +38,7 @@ def C():
     '''Consumer: only (yield).'''
 
     def _f(x):
-        print x
+        print 'Consumed', x
 
     while True:
         r = (yield)
@@ -45,6 +46,8 @@ def C():
 
 
 def pipeline(*args):
+    '''Chain stages together. Assumes the last is the consumer.'''
+
     c = args[-1]()
     c.next()
     t = c
@@ -52,11 +55,9 @@ def pipeline(*args):
         s = S(t)
         s.next()
         t = s
-    p = P(t)
-    p.next()
-    return p
+    return t
 
 
-# p = pipeline(P, S, S, S, C)
-p = pipeline(P, C)
-p.send(None)
+if __name__ == '__main__':
+    p = pipeline(P, S, S, S, C)
+    p.next() # to "start"
