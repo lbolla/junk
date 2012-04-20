@@ -1,6 +1,0 @@
-TODO
-====
-
-- error handling: raise PipelineStop and propagate
-- example: xml download + parse + store
-- pipeline restart
