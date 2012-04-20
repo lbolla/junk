@@ -20,6 +20,8 @@ def print_count(count):
     def fmt(k):
         if k == '\n':
             return '<NEWLINE>'
+        if k == ' ':
+            return '<SPC>'
         return k
 
     for v, k in sorted(((v, k) for k, v in count.iteritems()), reverse=True):
