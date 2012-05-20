@@ -9,6 +9,7 @@ def insertion_sort(v):
         v[i + 1] = x
 
 
-v = [1,3,2,6,4,3,3]
-insertion_sort(v)
-print v
+if __name__ == '__main__':
+    v = [1,3,2,6,4,3,3]
+    insertion_sort(v)
+    print v
