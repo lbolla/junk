@@ -50,14 +50,15 @@ def random_partition(v, p, r):
     return partition(v, p, r)
 
 
-# v = [3, 5, 4, 2, 5, 6, 1]
-# print v
+if __name__ == '__main__':
+    # v = [3, 5, 4, 2, 5, 6, 1]
+    # print v
 
-# qsort(v, 0, len(v) - 1)
-# print v
+    # qsort(v, 0, len(v) - 1)
+    # print v
 
-v = range(9999)
-# random.shuffle(v)
-qsort(v, 0, len(v) - 1)
-# random_qsort(v, 0, len(v) - 1)
-assert v == sorted(v)
+    v = range(9999)
+    # random.shuffle(v)
+    qsort(v, 0, len(v) - 1)
+    # random_qsort(v, 0, len(v) - 1)
+    assert v == sorted(v)

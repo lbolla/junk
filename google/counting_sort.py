@@ -2,6 +2,8 @@ import random
 
 
 def counting_sort(a, n, k):
+    if not a:
+        return a
     c = [0] * k
     b = [0] * n
     for i in a:
@@ -14,8 +16,9 @@ def counting_sort(a, n, k):
     return b
 
 
-k = 300
-n = 4000
-for _ in xrange(100):
-    v = [random.randrange(0, k) for _ in xrange(n)]
-    assert counting_sort(v, n, k) == sorted(v)
+if __name__ == '__main__':
+    k = 300
+    n = 4000
+    for _ in xrange(100):
+        v = [random.randrange(0, k) for _ in xrange(n)]
+        assert counting_sort(v, n, k) == sorted(v)
