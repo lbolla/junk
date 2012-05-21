@@ -7,11 +7,15 @@ def get_bucket(x, nb):
 
 
 def bucket_sort(v):
-    nb = 10
+    if not v:
+        return v
+    nb = max(10, len(v) / 10)
     b = [[] for _ in xrange(nb)]
+    m = max(v) * 1.01
     for x in v:
-        b[get_bucket(x, nb)].append(x)
+        b[get_bucket(x / m, nb)].append(x)
     res = []
+    # print min([len(x) for x in b]), max([len(x) for x in b])
     for i in b:
         insertion_sort(i)
         res += i
@@ -20,5 +24,5 @@ def bucket_sort(v):
 
 if __name__ == '__main__':
     for _ in xrange(10):
-        v = [random.random() for _ in xrange(20)]
+        v = [random.random() for _ in xrange(2000)]
         assert bucket_sort(v) == sorted(v)

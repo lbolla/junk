@@ -1,7 +1,4 @@
 # TODO
-# heapsort
-# mergesort
-# radixsort
 # bucketsort
 
 import random
@@ -13,6 +10,8 @@ from qsort import qsort
 from mergesort import mergesort
 from heap import heapsort
 from counting_sort import counting_sort
+from radix_sort import radix_sort
+from bucket_sort import bucket_sort
 
 
 def csort(v):
@@ -27,6 +26,8 @@ def main():
             ('mergesort', mergesort, False),
             ('qsort', lambda v: qsort(v, 0, len(v) - 1), True),
             ('counting_sort', csort, False),
+            ('radix_sort', radix_sort, False),
+            ('bucket_sort', bucket_sort, False),
             ]
 
     res = {}

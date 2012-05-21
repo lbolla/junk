@@ -28,6 +28,8 @@ def counting_sort(a, n, k, key):
 
 
 def radix_sort(v):
+    if not v:
+        return v
     ds = num_digits(max(v))
     for d in xrange(ds):
         v = counting_sort(v, len(v), 10, lambda x: get_digit(x, d + 1))
