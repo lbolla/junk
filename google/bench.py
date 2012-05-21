@@ -1,9 +1,17 @@
+# TODO
+# heapsort
+# mergesort
+# radixsort
+# bucketsort
+
 import random
 import time
 from math import log
 
 from insertion_sort import insertion_sort
 from qsort import qsort
+from mergesort import mergesort
+from heap import heapsort
 from counting_sort import counting_sort
 
 
@@ -12,9 +20,11 @@ def csort(v):
 
 
 def main():
-    ls = [50 * n for n in xrange(50)]
+    ls = [100 * n for n in xrange(50)]
     algo = [
             ('insertionsort', insertion_sort, True),
+            ('heapsort', heapsort, False),
+            ('mergesort', mergesort, False),
             ('qsort', lambda v: qsort(v, 0, len(v) - 1), True),
             ('counting_sort', csort, False),
             ]
@@ -38,7 +48,7 @@ def main():
                     t1 = time.time()
                     w = algo_f(v)
                     t2 = time.time()
-                assert w == sorted(v)
+                assert w == sorted(v), "%s, %s" % (w, sorted(v))
                 tot.append(t2 - t1)
             res[algo_name].append((l, min(tot)))
 

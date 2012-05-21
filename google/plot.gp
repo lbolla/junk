@@ -11,5 +11,7 @@ plot "n.csv" with points ls 1 title "O(n)", \
      "n_log_n.csv" with points ls 2 title "O(n lg n)", \
      "n2.csv" with points ls 3 title "O(n^2)", \
      "insertionsort.csv" with l ls 3 title "insertionsort", \
+     "heapsort.csv" with l ls 2 title "heapsort", \
+     "mergesort.csv" with l ls 2 title "mergesort", \
      "qsort.csv" with l ls 2 title "qsort", \
      "counting_sort.csv" with l ls 1 title "countingsort"

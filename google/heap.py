@@ -86,34 +86,47 @@ def assert_heap(h, hsize=None, i=0):
         assert_heap(h, hsize, r)
 
 
-h = [0, 6, 5, 4, 3, 2, 1]
-heapify(h, 0, len(h))
-print h
-assert_heap(h)
+def heapsort(A_):
+    A = A_[:]
+    build_heap(A)
+    hsize = len(A)
+    res = []
+    while hsize > 0:
+        m, hsize = extract_max(A, hsize)
+        res.insert(0, m)
+    return res
 
-h = [1, 2, 3, 4, 5, 6]
-build_heap(h)
-print h
-print extract_max(h, len(h)), h
-assert_heap(h)
 
-h = [6, 5, 4, 3, 2, None]
-insert(h, len(h) - 1, 10)
-print h
-assert_heap(h)
+if __name__ == '__main__':
 
-h = [-1] * 6
-for i in xrange(6):
-    insert(h, i, i)
-print h
-assert_heap(h)
+    h = [0, 6, 5, 4, 3, 2, 1]
+    heapify(h, 0, len(h))
+    print h
+    assert_heap(h)
 
-hh = range(6)
-build_heap(hh)
-print hh
-assert_heap(hh)
+    h = [1, 2, 3, 4, 5, 6]
+    build_heap(h)
+    print h
+    print extract_max(h, len(h)), h
+    assert_heap(h)
 
-hsize = len(hh)
-while hsize > 0:
-    m, hsize = extract_max(hh, hsize)
-    print m
+    h = [6, 5, 4, 3, 2, None]
+    insert(h, len(h) - 1, 10)
+    print h
+    assert_heap(h)
+
+    h = [-1] * 6
+    for i in xrange(6):
+        insert(h, i, i)
+    print h
+    assert_heap(h)
+
+    hh = range(6)
+    build_heap(hh)
+    print hh
+    assert_heap(hh)
+
+    hsize = len(hh)
+    while hsize > 0:
+        m, hsize = extract_max(hh, hsize)
+        print m
