@@ -1,9 +1,9 @@
 module Main where
 
-import Queue
-import LeftistQueue
+import Heap
+import LeftistHeap
 
 main :: IO ()
 main = do
         print $ isEmpty E
-        print $ isEmpty $ Q 1
+        print $ isEmpty $ T (1 :: Integer)
