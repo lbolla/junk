@@ -6,3 +6,6 @@
 *.fasl
 *.out
 *.core
+dist/
+build/
+.hsenv*
