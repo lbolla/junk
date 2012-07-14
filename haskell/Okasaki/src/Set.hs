@@ -23,7 +23,7 @@ instance Set UnbalancedSet where
         | otherwise = t
 
 fromList :: Ord a => [a] -> UnbalancedSet a
-fromList xs = foldr insert empty xs
+fromList = foldr insert empty
 
 -- Exercise 2.2
 member' :: Ord a => a -> UnbalancedSet a -> Bool

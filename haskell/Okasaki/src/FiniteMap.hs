@@ -24,4 +24,4 @@ instance FiniteMap KVTree where
         | otherwise = Just $ snd e
 
 fromList :: Ord k => [(k, v)] -> KVTree k v
-fromList kvs = foldr (uncurry bind) empty kvs
+fromList = foldr (uncurry bind) empty
