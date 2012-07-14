@@ -1,6 +1,11 @@
 module Set (Set(..)
           , UnbalancedSet
+          , tests
 ) where
+
+import Test.Framework (Test)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.HUnit (assert, Assertion)
 
 class Set s where
     empty :: s a
@@ -51,3 +56,23 @@ create x n
         a = create x m
         b = create x (m + 1)
         in T a x b
+
+test1 :: Assertion
+test1 = assert . member 1 $ fromList [1 :: Integer]
+
+test2 :: Assertion
+test2 = assert . member' 1 $ fromList [1 :: Integer]
+
+test3 :: Assertion
+test3 = assert . member 1 $ complete (1 :: Integer) 1
+
+test4 :: Assertion
+test4 = assert . not . member 1 $ create (1 :: Integer) 0
+
+tests :: [Test]
+tests = [
+        testCase "test1" test1
+      , testCase "test2" test2
+      , testCase "test3" test3
+      , testCase "test4" test4
+    ]

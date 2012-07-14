@@ -17,7 +17,7 @@ instance FiniteMap KVTree where
         | k < fst e = T (bind k v l) e r
         | k > fst e = T l e (bind k v r)
         | otherwise = t
-    lookup k E = Nothing
+    lookup _ E = Nothing
     lookup k (T l e r)
         | k < fst e = lookup k l
         | k > fst e = lookup k r

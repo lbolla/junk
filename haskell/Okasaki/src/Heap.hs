@@ -1,4 +1,9 @@
-module Heap (Heap(..)) where
+module Heap (Heap(..), tests) where
+
+import Test.Framework (Test)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.HUnit (assert, Assertion)
 
 class Heap h where
     empty :: h a
@@ -33,11 +38,11 @@ instance Heap LeftistHeap where
     merge h1@(T _ x a1 b1) h2@(T _ y a2 b2)
         | x < y = makeT x a1 (merge b1 h2)
         | otherwise = makeT y a2 (merge h1 b2)
-    insert x t = merge (T 1 x E E) t
+    insert x = merge (T 1 x E E)
     findMin E = error "Empty Heap"
     findMin (T _ x _ _) = x
     deleteMin E = error "Empty Heap"
-    deleteMin (T _ x a b) = merge a b
+    deleteMin (T _ _ a b) = merge a b
 
 fromList :: Ord a => [a] -> LeftistHeap a
 fromList = foldr insert empty
@@ -48,3 +53,23 @@ fromList2 [] = E
 fromList2 [x] = T 1 x E E
 fromList2 xs = merge (fromList2 xs1) (fromList2 xs2)
     where (xs1, xs2) = splitAt (length xs `div` 2) xs
+
+testEmptyHeap :: Assertion
+testEmptyHeap = assert $ isEmpty E
+
+testNonEmptyHeap :: Assertion
+testNonEmptyHeap = assert $ not . isEmpty $ fromList [1 :: Integer]
+
+testNonEmptyHeap2 :: Assertion
+testNonEmptyHeap2 = assert $ not . isEmpty $ fromList2 [1 :: Integer]
+
+propEmptyHeap :: [Integer] -> Bool
+propEmptyHeap xs = (xs :: [Integer]) == xs
+
+tests :: [Test]
+tests = [
+        testCase "Empty Heap" testEmptyHeap
+      , testCase "non-Empty Heap" testNonEmptyHeap
+      , testCase "non-Empty Heap 2" testNonEmptyHeap2
+      , testProperty "Empty Heap" propEmptyHeap
+    ]

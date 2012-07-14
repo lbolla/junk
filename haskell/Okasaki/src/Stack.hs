@@ -1,4 +1,8 @@
-module Stack (Stack(..)) where
+module Stack (Stack(..), tests) where
+
+import Test.Framework (Test)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.HUnit (assert, Assertion)
 
 class Stack s where
     empty :: s a
@@ -27,3 +31,11 @@ instance Stack ConsStack where
     hd (Cons h _) = h
     tl Nil = error "Empty ConsStack"
     tl (Cons _ t) = t
+
+testNonEmptyStack :: Assertion
+testNonEmptyStack = assert $ hd (Cons 1 Nil) == (1 :: Integer)
+
+tests :: [Test]
+tests = [
+        testCase "non-Empty Stack" testNonEmptyStack
+    ]
