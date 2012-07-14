@@ -19,6 +19,10 @@ makeT :: a -> LeftistHeap a -> LeftistHeap a -> LeftistHeap a
 makeT x a b
     | rank a >= rank b = T (rank b + 1) x a b
     | otherwise = T (rank a + 1) x b a
+-- -- Exercise 3.4b
+-- makeT x a b
+--     | rank a >= rank b = T (rank a + rank b + 1) x a b
+--     | otherwise = T (rank a + rank b + 1) x b a
 
 instance Heap LeftistHeap where
     empty = E
@@ -37,3 +41,10 @@ instance Heap LeftistHeap where
 
 fromList :: Ord a => [a] -> LeftistHeap a
 fromList = foldr insert empty
+
+-- Exercise 3.3
+fromList2 :: Ord a => [a] -> LeftistHeap a
+fromList2 [] = E
+fromList2 [x] = T 1 x E E
+fromList2 xs = merge (fromList2 xs1) (fromList2 xs2)
+    where (xs1, xs2) = splitAt (length xs `div` 2) xs
