@@ -4,6 +4,7 @@ import Test.Framework (Test)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (assert, Assertion)
+import Test.QuickCheck ((==>), Property)
 
 class Heap h where
     empty :: h a
@@ -57,22 +58,44 @@ fromList2 xs = merge (fromList2 xs1) (fromList2 xs2)
 -------------------------------------------------------------------------------
 -- TESTS
 
-testEmptyHeap :: Assertion
-testEmptyHeap = assert $ isEmpty E
+testEmpty :: Assertion
+testEmpty = assert $ isEmpty E
 
-testNonEmptyHeap :: Assertion
-testNonEmptyHeap = assert $ not . isEmpty $ fromList [1 :: Integer]
+testFromList :: Assertion
+testFromList = assert $ not . isEmpty $ fromList [1 :: Integer]
 
-testNonEmptyHeap2 :: Assertion
-testNonEmptyHeap2 = assert $ not . isEmpty $ fromList2 [1 :: Integer]
+testFromList2 :: Assertion
+testFromList2 = assert $ not . isEmpty $ fromList2 [1 :: Integer]
 
-propEmptyHeap :: [Integer] -> Bool
-propEmptyHeap xs = (xs :: [Integer]) == xs
+propMin :: [Integer] -> Property
+propMin xs = not (null xs) ==> findMin (fromList xs) == minimum xs
+
+isLeftist :: LeftistHeap a -> Bool
+isLeftist E = True
+isLeftist (T r _ a b) = (rank a >= rank b) && (r == rank b + 1)
+
+propLeftist :: [Integer] -> Bool
+propLeftist = isLeftist . fromList
+
+checkRank :: LeftistHeap a -> Bool
+checkRank E = rank E == 0
+checkRank t@(T r _ a b) = (r == lengthRightSpine t) && 
+                          (checkRank a) &&
+                          (checkRank b)
+
+lengthRightSpine :: LeftistHeap a -> Integer
+lengthRightSpine E = 0
+lengthRightSpine (T _ _ _ r) = 1 + lengthRightSpine r
+
+propRank :: [Integer] -> Bool
+propRank = checkRank . fromList
 
 tests :: [Test]
 tests = [
-        testCase "Empty Heap" testEmptyHeap
-      , testCase "non-Empty Heap" testNonEmptyHeap
-      , testCase "non-Empty Heap 2" testNonEmptyHeap2
-      , testProperty "Empty Heap" propEmptyHeap
+        testCase "Empty" testEmpty
+      , testCase "fromList" testFromList
+      , testCase "fromList2" testFromList2
+      , testProperty "Min" propMin
+      , testProperty "Leftist" propLeftist
+      , testProperty "Rank" propRank
     ]
