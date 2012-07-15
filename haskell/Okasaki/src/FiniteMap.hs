@@ -46,7 +46,8 @@ propLookup :: [(Integer, Integer)] -> Bool
 propLookup xs = let m = fromList xs in all (\x -> isJust (lookup (fst x) m)) xs
 
 propBind :: (Integer, String) -> Bool
-propBind (k, v) = let m = bind k v (empty :: KVTree Integer String) in lookup k m == Just v
+propBind (k, v) = let m = bind k v (empty :: KVTree Integer String)
+                      in lookup k m == Just v
 
 tests :: [Test]
 tests = [
