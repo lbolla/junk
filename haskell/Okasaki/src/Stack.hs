@@ -32,10 +32,25 @@ instance Stack ConsStack where
     tl Nil = error "Empty ConsStack"
     tl (Cons _ t) = t
 
-testNonEmptyStack :: Assertion
-testNonEmptyStack = assert $ hd (Cons 1 Nil) == (1 :: Integer)
+-------------------------------------------------------------------------------
+-- TESTS
+
+testHead :: Assertion
+testHead = assert $ hd (Cons 1 empty) == (1 :: Integer)
+
+testEmptyStack :: Assertion
+testEmptyStack = assert $ isEmpty (empty :: ConsStack Int)
+
+testCons :: Assertion
+testCons = assert . not . isEmpty $ Cons (1 :: Integer) empty
+
+testTail :: Assertion
+testTail = assert . isEmpty . tl $ Cons (1 :: Integer) empty
 
 tests :: [Test]
 tests = [
-        testCase "non-Empty Stack" testNonEmptyStack
+        testCase "Head" testHead
+      , testCase "Tail" testTail
+      , testCase "Empty Stack" testEmptyStack
+      , testCase "Cons" testCons
     ]

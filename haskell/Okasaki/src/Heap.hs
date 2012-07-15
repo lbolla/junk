@@ -54,6 +54,9 @@ fromList2 [x] = T 1 x E E
 fromList2 xs = merge (fromList2 xs1) (fromList2 xs2)
     where (xs1, xs2) = splitAt (length xs `div` 2) xs
 
+-------------------------------------------------------------------------------
+-- TESTS
+
 testEmptyHeap :: Assertion
 testEmptyHeap = assert $ isEmpty E
 

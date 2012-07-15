@@ -11,6 +11,6 @@ main = defaultMain tests
 
 tests = [
         testGroup "Stack" Stack.tests
-      , testGroup "Heap" Heap.tests
       , testGroup "Set" Set.tests
+      , testGroup "Heap" Heap.tests
     ]
