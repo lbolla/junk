@@ -58,7 +58,7 @@ deleteMin [] = error "Empty heap"
 deleteMin h = let (Node _ _ ts', ts) = getMin h in merge (reverse ts') ts
 
 fromList :: Ord a => [a] -> BinomialHeap a
-fromList xs = foldr insert [] xs
+fromList = foldr insert []
 
 -------------------------------------------------------------------------------
 -- TESTS
@@ -76,7 +76,7 @@ propDeleteMin :: [Integer] -> Property
 propDeleteMin xs = length xs > 1 ==>
         let h = fromList xs
             h' = deleteMin h
-         in findMin h' == (sort xs) !! 1
+         in findMin h' == sort xs !! 1
 
 tests :: [Test]
 tests = [
