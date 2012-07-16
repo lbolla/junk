@@ -21,6 +21,7 @@ library
                    , Heap
                    , FiniteMap
                    , BinomialHeap
+                   , RBTree
     -- other-modules:       
     build-depends:   base -any
                    , QuickCheck -any
