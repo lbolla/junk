@@ -1,5 +1,6 @@
 module Set (Set(..)
           , UnbalancedSet
+          , fromList
           , tests
 ) where
 

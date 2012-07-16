@@ -1,4 +1,8 @@
-module Heap (Heap(..), tests) where
+module Heap (Heap(..)
+           , fromList
+           , fromList2
+           , tests
+) where
 
 import Test.Framework (Test)
 import Test.Framework.Providers.HUnit (testCase)
