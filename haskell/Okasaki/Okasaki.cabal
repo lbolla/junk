@@ -18,8 +18,9 @@ cabal-version:       >=1.8
 library
   exposed-modules: Stack
                  , Set
-                 , FiniteMap
                  , Heap
+                 , FiniteMap
+                 , BinomialHeap
   -- other-modules:       
   build-depends:   base -any
                  , QuickCheck -any
