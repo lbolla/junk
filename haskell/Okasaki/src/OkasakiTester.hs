@@ -7,7 +7,7 @@ import qualified Set
 import qualified Heap
 import qualified FiniteMap
 import qualified BinomialHeap
--- import qualified RBTree
+import qualified RBTree
 import qualified Queue
 
 main :: IO ()
@@ -20,6 +20,6 @@ tests = [
       , testGroup "Heap" Heap.tests
       , testGroup "FiniteMap" FiniteMap.tests
       , testGroup "BinomialHeap" BinomialHeap.tests
---       , testGroup "RBTree" RBTree
+      , testGroup "RBTree" RBTree.tests
       , testGroup "Queue" Queue.tests
     ]
