@@ -1,9 +1,9 @@
 module RBTree(tests) where
 
 import Test.Framework (Test)
--- import Test.Framework.Providers.HUnit (testCase)
+import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
--- import Test.HUnit (assert, Assertion)
+import Test.HUnit (assert, Assertion)
 import Test.QuickCheck ((==>), Property)
 
 import Data.List (nub)
@@ -16,10 +16,10 @@ insert :: Ord a => a -> RBTree a -> RBTree a
 insert z t = T Black l' y' r'
     where
         insert' x E = T Red E x E
-        insert' x (T c l y r)
+        insert' x s@(T c l y r)
             | x < y = balance c (insert' x l) y r
             | x > y = balance c l y (insert' x r)
-            | otherwise = t
+            | otherwise = s
         (T _ l' y' r') = insert' z t
 
 balance :: Color -> RBTree a -> a -> RBTree a -> RBTree a
@@ -51,6 +51,10 @@ minMaxDepth q = let d = depths 0 q in (minimum d, maximum d)
 -------------------------------------------------------------------------------
 -- TESTS
 
+testInsert :: Assertion
+testInsert = let t = fromList [25,1,26,24,24,-1,27,28,-2,0,-3,-4,2,0]
+                 in assert $ member (1 :: Integer) t
+
 propMember :: [Integer] -> Bool
 propMember xs = let t = fromList xs in all (`member` t) xs
 
@@ -63,6 +67,7 @@ propDepth xs = not (null xs) && (length xs < 10) ==>
 
 tests :: [Test]
 tests = [
-        testProperty "Member" propMember
+        testCase "Insert" testInsert
+      , testProperty "Member" propMember
       , testProperty "Depth" propDepth
     ]
