@@ -1,4 +1,4 @@
-module Heap (Heap(..)
+module Okasaki.Heap (Heap(..)
            , fromList
            , fromList2
            , tests

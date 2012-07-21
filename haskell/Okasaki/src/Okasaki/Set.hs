@@ -1,4 +1,4 @@
-module Set (Set(..)
+module Okasaki.Set (Set(..)
           , UnbalancedSet
           , fromList
           , tests

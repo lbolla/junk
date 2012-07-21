@@ -1,4 +1,4 @@
-module FiniteMap where
+module Okasaki.FiniteMap where
 
 import Prelude hiding (lookup)
 import Test.Framework (Test)

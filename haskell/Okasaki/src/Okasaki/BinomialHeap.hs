@@ -1,4 +1,4 @@
-module BinomialHeap (tests) where
+module Okasaki.BinomialHeap (tests) where
 
 import Data.List (sort)
 import Test.Framework (Test)

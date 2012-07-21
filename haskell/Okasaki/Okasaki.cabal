@@ -16,13 +16,15 @@ build-type:          Simple
 cabal-version:       >=1.8
 
 library
-    exposed-modules: Stack
-                   , Set
-                   , Heap
-                   , FiniteMap
-                   , BinomialHeap
-                   , RBTree
-                   , Queue
+    exposed-modules: Okasaki.Stack
+                     Okasaki.ConsStack
+                     Okasaki.ListStack
+                     Okasaki.Set
+                     Okasaki.Heap
+                     Okasaki.FiniteMap
+                     Okasaki.BinomialHeap
+                     Okasaki.RBTree
+                     Okasaki.Queue
     -- other-modules:       
     build-depends:   base -any
                    , QuickCheck -any
@@ -30,9 +32,9 @@ library
                    , test-framework -any
                    , test-framework-hunit -any
                    , test-framework-quickcheck2 -any
-                   , criterion -any
     hs-source-dirs: src
-    ghc-options: -O2 -Wall -Werror
+--    ghc-options: -O2 -Wall -Werror
+    ghc-options: -O2 -Wall
 
 test-suite okasaki-test
     build-depends: base -any
@@ -41,12 +43,12 @@ test-suite okasaki-test
                  , test-framework -any
                  , test-framework-hunit -any
                  , test-framework-quickcheck2 -any
-                 , criterion -any
     type: exitcode-stdio-1.0
-    main-is: OkasakiTester.hs
+    main-is: Okasaki/Tests/Main.hs
     buildable: True
     hs-source-dirs: src
-    ghc-options: -O2 -Wall -Werror
+--    ghc-options: -O2 -Wall -Werror
+    ghc-options: -O2 -Wall
 
 benchmark okasaki-bench
     build-depends: base -any
@@ -57,7 +59,8 @@ benchmark okasaki-bench
                  , test-framework-quickcheck2 -any
                  , criterion -any
     type: exitcode-stdio-1.0
-    main-is: OkasakiBench.hs
+    main-is: Okasaki/Benchmarks/Main.hs
     buildable: True
     hs-source-dirs: src
-    ghc-options: -O2 -Wall -Werror
+--    ghc-options: -O2 -Wall -Werror
+    ghc-options: -O2 -Wall

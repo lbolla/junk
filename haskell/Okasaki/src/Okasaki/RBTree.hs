@@ -1,4 +1,4 @@
-module RBTree(tests) where
+module Okasaki.RBTree(tests) where
 
 import Test.Framework (Test)
 import Test.Framework.Providers.HUnit (testCase)
