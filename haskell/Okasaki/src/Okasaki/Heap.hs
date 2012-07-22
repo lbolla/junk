@@ -5,5 +5,5 @@ class Heap h where
     isEmpty :: h a -> Bool
     merge :: Ord a => h a -> h a -> h a
     insert :: Ord a => a -> h a -> h a
-    findMin :: h a -> a
+    findMin :: Ord a => h a -> a
     deleteMin :: Ord a => h a -> h a

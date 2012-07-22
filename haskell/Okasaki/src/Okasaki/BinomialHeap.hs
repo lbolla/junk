@@ -1,5 +1,5 @@
 module Okasaki.BinomialHeap (
-    BinomialHeap
+    BinomialHeap(..)
   , rank
   , root
   , singleton
@@ -10,9 +10,31 @@ module Okasaki.BinomialHeap (
   , fromList
 ) where
 
+import Okasaki.Heap
+
 data Tree a = Node Integer a [Tree a] deriving Show
 
-type BinomialHeap a = [Tree a]
+newtype BinomialHeap a = BH [Tree a]
+
+instance Heap BinomialHeap where
+    empty = BH []
+
+    isEmpty (BH []) = True
+    isEmpty _ = False
+
+    merge h (BH []) = h
+    merge (BH []) h = h
+    merge (BH ts1@(t1:ts1')) (BH ts2@(t2:ts2'))
+        | rank t1 < rank t2 = let (BH x) = merge (BH ts1') (BH ts2) in BH $ t1 : x
+        | rank t1 > rank t2 = let (BH x) = merge (BH ts1) (BH ts2') in BH $ t2 : x
+        | otherwise = insTree (link t1 t2) (merge (BH ts1') (BH ts2'))
+
+    insert x = insTree (singleton x)
+
+    findMin h = let (t, _) = getMin h in root t
+
+    deleteMin (BH []) = error "Empty heap"
+    deleteMin h = let (Node _ _ ts', h') = getMin h in merge (BH (reverse ts')) h'
 
 rank :: Tree a -> Integer
 rank (Node r _ _) = r
@@ -29,36 +51,18 @@ link t1@(Node r x ts1) t2@(Node r2 y ts2)
     | x < y = Node (r + 1) x (t2:ts1)
     | otherwise = Node (r + 1) y (t1:ts2)
 
-insert :: Ord a => a -> BinomialHeap a -> BinomialHeap a
-insert x = insTree (singleton x)
-
 insTree :: Ord a => Tree a -> BinomialHeap a -> BinomialHeap a
-insTree t [] = [t]
-insTree t ts@(t':ts')
-    | rank t == rank t' = insTree (link t t') ts'
-    | rank t < rank t' = t:ts
+insTree t (BH []) = BH [t]
+insTree t (BH ts@(t':ts'))
+    | rank t == rank t' = insTree (link t t') (BH ts')
+    | rank t < rank t' = BH $ t:ts
     | otherwise = error "Wrong ranks!"
 
-merge :: Ord a => BinomialHeap a -> BinomialHeap a -> BinomialHeap a
-merge h [] = h
-merge [] h = h
-merge ts1@(t1:ts1') ts2@(t2:ts2')
-    | rank t1 < rank t2 = t1 : merge ts1' ts2
-    | rank t1 > rank t2 = t2 : merge ts1 ts2'
-    | otherwise = insTree (link t1 t2) (merge ts1' ts2')
-
-findMin :: Ord a => BinomialHeap a -> a
-findMin h = let (t, _) = getMin h in root t
-
 getMin :: Ord a => BinomialHeap a -> (Tree a, BinomialHeap a)
-getMin [] = error "Empty heap"
-getMin [t] = (t, [])
-getMin (t:ts) = let (t', ts') = getMin ts in
-    if root t < root t' then (t, ts) else (t', t:ts')
-
-deleteMin :: Ord a => BinomialHeap a -> BinomialHeap a
-deleteMin [] = error "Empty heap"
-deleteMin h = let (Node _ _ ts', ts) = getMin h in merge (reverse ts') ts
+getMin (BH []) = error "Empty heap"
+getMin (BH [t]) = (t, empty)
+getMin (BH (t:ts)) = let (t', BH ts') = getMin (BH ts) in
+    if root t < root t' then (t, BH ts) else (t', BH (t:ts'))
 
 fromList :: Ord a => [a] -> BinomialHeap a
-fromList = foldr insert []
+fromList = foldr insert empty
