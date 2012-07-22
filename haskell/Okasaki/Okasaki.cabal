@@ -20,8 +20,11 @@ library
                      Okasaki.ConsStack
                      Okasaki.ListStack
                      Okasaki.Set
+                     Okasaki.UnbalancedSet
                      Okasaki.Heap
+                     Okasaki.LeftistHeap
                      Okasaki.FiniteMap
+                     Okasaki.KVTree
                      Okasaki.BinomialHeap
                      Okasaki.RBTree
                      Okasaki.Queue

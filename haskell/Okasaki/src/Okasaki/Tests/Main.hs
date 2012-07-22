@@ -4,10 +4,10 @@ import Test.Framework (defaultMain, testGroup, Test)
 
 import qualified Okasaki.Tests.ConsStack
 import qualified Okasaki.Tests.ListStack
-import qualified Okasaki.Set
-import qualified Okasaki.Heap
-import qualified Okasaki.FiniteMap
-import qualified Okasaki.BinomialHeap
+import qualified Okasaki.Tests.UnbalancedSet
+import qualified Okasaki.Tests.LeftistHeap
+import qualified Okasaki.Tests.KVTree
+import qualified Okasaki.Tests.BinomialHeap
 import qualified Okasaki.RBTree
 import qualified Okasaki.Queue
 
@@ -18,10 +18,10 @@ tests :: [Test]
 tests = [
         testGroup "ConsStack" Okasaki.Tests.ConsStack.tests
       , testGroup "ListStack" Okasaki.Tests.ListStack.tests
-      , testGroup "Set" Okasaki.Set.tests
-      , testGroup "Heap" Okasaki.Heap.tests
-      , testGroup "FiniteMap" Okasaki.FiniteMap.tests
-      , testGroup "BinomialHeap" Okasaki.BinomialHeap.tests
+      , testGroup "UnbalancedSet" Okasaki.Tests.UnbalancedSet.tests
+      , testGroup "LeftistHeap" Okasaki.Tests.LeftistHeap.tests
+      , testGroup "FiniteMap" Okasaki.Tests.KVTree.tests
+      , testGroup "BinomialHeap" Okasaki.Tests.BinomialHeap.tests
       , testGroup "RBTree" Okasaki.RBTree.tests
       , testGroup "Queue" Okasaki.Queue.tests
     ]
