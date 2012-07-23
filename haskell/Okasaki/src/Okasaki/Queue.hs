@@ -1,10 +1,12 @@
-module Okasaki.Queue (tests) where
-
-import Test.Framework (Test)
-import Test.Framework.Providers.HUnit (testCase)
-import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.HUnit (assert, Assertion)
-import Test.QuickCheck ((==>), Property)
+module Okasaki.Queue (
+     Queue
+   , empty
+   , isEmpty
+   , snoc
+   , hd
+   , tl
+   , fromList
+) where
 
 import Data.List (foldl')
 
@@ -33,18 +35,3 @@ tl q = case (front q) of
 
 fromList :: [a] -> Queue a
 fromList = foldl' (flip snoc) empty
-
--------------------------------------------------------------------------------
--- TESTS
-
-testEmpty :: Assertion
-testEmpty = assert $ isEmpty empty
-
-propHd :: [Integer] -> Property
-propHd xs = not (null xs) ==> hd (fromList xs) == head xs
-
-tests :: [Test]
-tests = [
-        testCase "Empty" testEmpty
-      , testProperty "Hd" propHd
-    ]

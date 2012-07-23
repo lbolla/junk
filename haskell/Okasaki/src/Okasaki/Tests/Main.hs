@@ -8,8 +8,8 @@ import qualified Okasaki.Tests.UnbalancedSet
 import qualified Okasaki.Tests.LeftistHeap
 import qualified Okasaki.Tests.KVTree
 import qualified Okasaki.Tests.BinomialHeap
-import qualified Okasaki.RBTree
-import qualified Okasaki.Queue
+import qualified Okasaki.Tests.RBTree
+import qualified Okasaki.Tests.Queue
 
 main :: IO ()
 main = defaultMain tests
@@ -22,6 +22,6 @@ tests = [
       , testGroup "LeftistHeap" Okasaki.Tests.LeftistHeap.tests
       , testGroup "FiniteMap" Okasaki.Tests.KVTree.tests
       , testGroup "BinomialHeap" Okasaki.Tests.BinomialHeap.tests
-      , testGroup "RBTree" Okasaki.RBTree.tests
-      , testGroup "Queue" Okasaki.Queue.tests
+      , testGroup "RBTree" Okasaki.Tests.RBTree.tests
+      , testGroup "Queue" Okasaki.Tests.Queue.tests
     ]

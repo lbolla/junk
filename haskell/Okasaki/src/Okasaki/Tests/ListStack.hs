@@ -13,10 +13,10 @@ testEmptyStack :: Assertion
 testEmptyStack = assert $ isEmpty (empty :: ListStack Integer)
 
 testCons :: Assertion
-testCons = assert . not . isEmpty $ ListStack [1]
+testCons = assert . not . isEmpty $ ListStack [1 :: Integer]
 
 testTail :: Assertion
-testTail = assert . isEmpty . tl $ ListStack [1]
+testTail = assert . isEmpty . tl $ ListStack [1 :: Integer]
 
 tests :: [Test]
 tests = [
