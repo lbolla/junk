@@ -10,28 +10,29 @@ module Okasaki.Queue (
 
 import Data.List (foldl')
 
-data Queue a = Queue {front :: [a], back :: [a]} deriving Show
+data Queue a = Queue [a] [a] deriving Show
 
 empty :: Queue a
 empty = Queue [] []
 
 isEmpty :: Queue a -> Bool
-isEmpty q = null (front q) && null (back q)
+isEmpty (Queue [] _) = True
+isEmpty _ = False
+
+checkf :: [a] -> [a] -> Queue a
+checkf [] b = Queue (reverse b) []
+checkf f b = Queue f b
 
 snoc :: a -> Queue a -> Queue a
-snoc x q = Queue { front = front q, back = x : back q}
+snoc x (Queue f b) = checkf f (x:b)
 
 hd :: Queue a -> a
-hd q | isEmpty q = error "Empty queue"
-hd q = case (front q) of
-           [] -> hd $ Queue { front = reverse (back q), back = [] }
-           _ -> head $ front q
+hd (Queue [] _) = error "Empty queue"
+hd (Queue f _) = head f
 
 tl :: Queue a -> Queue a
-tl q | isEmpty q = error "Empty queue"
-tl q = case (front q) of
-           [] -> tl $ Queue { front = reverse (back q), back = [] }
-           _ -> Queue { front = tail (front q) ++ reverse (back q), back = [] }
+tl (Queue [] _) = error "Empty queue"
+tl (Queue f b) = checkf (tail f) b
 
 fromList :: [a] -> Queue a
 fromList = foldl' (flip snoc) empty
