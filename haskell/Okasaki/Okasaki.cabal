@@ -36,8 +36,8 @@ library
                    , test-framework-hunit -any
                    , test-framework-quickcheck2 -any
     hs-source-dirs: src
---    ghc-options: -O2 -Wall -Werror
-    ghc-options: -O2 -Wall
+    ghc-options: -O2 -Wall -Werror
+    extensions: Safe
 
 test-suite okasaki-test
     build-depends: base -any
@@ -50,8 +50,7 @@ test-suite okasaki-test
     main-is: Okasaki/Tests/Main.hs
     buildable: True
     hs-source-dirs: src
---    ghc-options: -O2 -Wall -Werror
-    ghc-options: -O2 -Wall
+    ghc-options: -O2 -Wall -Werror
 
 benchmark okasaki-bench
     build-depends: base -any
@@ -65,5 +64,4 @@ benchmark okasaki-bench
     main-is: Okasaki/Benchmarks/Main.hs
     buildable: True
     hs-source-dirs: src
---    ghc-options: -O2 -Wall -Werror
-    ghc-options: -O2 -Wall
+    ghc-options: -O2 -Wall -Werror
