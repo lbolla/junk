@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+
+# Watch for modified files in dir and react.
+# ./watch <dir> <cmd>
+# If cmd ends with '-', then modified filename is appended to cmd
+# i.e.: ./watch /src/scripts pylint -E -
+
+from pyinotify import WatchManager, EventsCodes, ProcessEvent, Notifier
+from subprocess import call
+import os
+import sys
+
+
+class ProcessManager(ProcessEvent):
+
+    def __init__(self, cmds, append_filename):
+        super(ProcessEvent, self).__init__()
+        self.cmds = cmds
+        self.append_filename = append_filename
+    
+    def get_file_from_event(self, event):
+        return os.path.join(event.path, event.name)
+                
+    def process_IN_CLOSE_WRITE(self, event):
+        fname = self.get_file_from_event(event)
+        print fname, "modified."
+        
+        cmds = self.cmds
+        if self.append_filename:
+            cmds += [fname]    
+        call(cmds)
+
+
+def main():
+    
+    dir = sys.argv[1]
+    cmds = sys.argv[2:]
+    
+    if cmds[-1] == '-':
+        append_filename = True
+    else:
+        append_filename = False
+    
+    wm = WatchManager()
+    
+    mask = EventsCodes.ALL_FLAGS['IN_CLOSE_WRITE']
+    
+    notifier = Notifier(wm, ProcessManager(cmds, append_filename))
+    wdd = wm.add_watch(dir, mask, rec=True)
+    
+    while True:
+        try:
+            notifier.process_events()
+            if notifier.check_events():
+                notifier.read_events()
+        except KeyboardInterrupt:
+            notifier.stop()
+            break
+
+
+if __name__ == '__main__':
+    main()
