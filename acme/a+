@@ -1,3 +1,2 @@
-#!/usr/bin/env rc
-
-sed 's/^/	/'
+#!/bin/sh
+sed 's/^/    /'
