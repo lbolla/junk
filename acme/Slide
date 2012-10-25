@@ -1,0 +1,6 @@
+#!/usr/bin/env rc
+
+cd $ACMEMOUNTPOINT/$winid
+echo name `{pwd}^/$1 > ctl
+#echo clean > $ACMEMOUNTPOINT/$winid/ctl
+#echo get > $ACMEMOUNTPOINT/$winid/ctl
