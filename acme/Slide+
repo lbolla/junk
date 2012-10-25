@@ -4,13 +4,8 @@ name=$%
 current=`{basename $name}
 currentx=`{9 grep -n '^'$current'([ ]|$)' index | sed 's/:.*//'}
 
-echo $current
-echo $currentx
-
 pagex=`{echo $currentx + 1 | hoc}
 page=`{sed -n $pagex^p index | awk '{print $1}'}
-
-echo $page
 
 if (~ $#page 0) {
 	echo no such page
