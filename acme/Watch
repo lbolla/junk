@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-# Watch for modified files in dir and react.
+# Watch for modified files in localdir (.) and react.
 # ./Watch <cmd>
-# If cmd ends with '-', then modified filename is appended to cmd
 # i.e.: ./Watch flake8 .
 
 # TODO
@@ -12,35 +11,40 @@
 
 from pyinotify import WatchManager, EventsCodes, ProcessEvent, Notifier
 from subprocess import call
-import os
 import sys
+import time
 
 
 class ProcessManager(ProcessEvent):
 
+    LAST_TIME = None
+
     def __init__(self, cmds):
         super(ProcessEvent, self).__init__()
         self.cmds = cmds
-    
-#    def get_file_from_event(self, event):
-#        return os.path.join(event.path, event.name)
-#                
+
+    def is_too_soon(self):
+        return self.LAST_TIME and time.time() - self.LAST_TIME < 3
+
     def process_IN_CLOSE_WRITE(self, event):
-        call(self.cmds)
+        # For some reason, this event is triggered twice
+        if not self.is_too_soon():
+            call(self.cmds)
+            self.LAST_TIME = time.time()
 
 
 def main():
-    
+
     dir = '.'
     cmds = sys.argv[1:]
-    
+
     wm = WatchManager()
-    
+
     mask = EventsCodes.ALL_FLAGS['IN_CLOSE_WRITE']
-    
+
     notifier = Notifier(wm, ProcessManager(cmds))
-    wdd = wm.add_watch(dir, mask, rec=True)
-    
+    wm.add_watch(dir, mask, rec=True)
+
     while True:
         try:
             notifier.process_events()
