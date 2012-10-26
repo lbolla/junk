@@ -65,7 +65,7 @@ class Heap(object):
                                 break
 
                         if (right is None and val >= left) or \
-                           (left  is None and val >= right) or \
+                           (left is None and val >= right) or \
                            (val >= left and val >= right):
                                 # heap ok
                                 break
