@@ -5,4 +5,9 @@ type is text
 data matches '([a-zA-Z¡-￿0-9_\-./]+)\.xls'
 plumb start rc -c 'xls2txt '$file' | plumb -i -d edit -a ''action=showdata filename='$file''''
 
+# git commits
+type is text
+data matches 'commit ([a-zA-Z0-9]+)'
+plumb start rc -c 'cd '$wdir' && git show '$1' | plumb -i -d edit -a ''action=showdata filename=/git/'$1''''
+
 include basic
