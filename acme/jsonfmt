@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+import json
+import sys
+import pprint
+
+pprint.pprint(json.load(sys.stdin))
