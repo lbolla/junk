@@ -1,3 +1,13 @@
+import sys
+
+
+def getInput():
+    if len(sys.argv) > 1:
+        return open(sys.argv[1])
+    else:
+        return sys.stdin
+
+
 def _getText(root, rc):
     for node in root.childNodes:
         if node.nodeType == node.TEXT_NODE:
