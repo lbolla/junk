@@ -2,8 +2,13 @@ editor = acme
 
 # xls files to xls2txt
 type is text
-data matches '([a-zA-Z¡-￿0-9_\-./]+)\.xls'
+data matches '([a-zA-Z¡-0-9_\-./]+)\.xls'
 plumb start rc -c 'xls2txt '$file' | plumb -i -d edit -a ''action=showdata filename='$file''''
+
+# doc files to antiword
+type is text
+data matches '([a-zA-Z¡-0-9_\-./]+)\.doc'
+plumb start rc -c 'antiword '$file' | plumb -i -d edit -a ''action=showdata filename='$file''''
 
 # git commits
 type is text
