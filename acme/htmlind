@@ -1,6 +1,0 @@
-#!/usr/bin/env python2
-
-import sys
-from BeautifulSoup import BeautifulSoup as bs
-
-print bs(sys.stdin.read()).prettify(),

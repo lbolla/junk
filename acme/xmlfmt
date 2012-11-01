@@ -1,7 +1,0 @@
-#!/usr/bin/env python
-
-import xml.dom.minidom
-from xmlutil import getText, getInput
-
-dom = xml.dom.minidom.parse(getInput())
-print(getText(dom))

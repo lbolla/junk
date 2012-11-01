@@ -1,4 +1,0 @@
-#!/usr/bin/env rc
-
-# Remove trailing spaces
-sed 's/ +$//g'

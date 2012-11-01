@@ -1,8 +1,0 @@
-#!/usr/bin/env python
-
-import csv
-import sys
-import pprint
-
-for row in csv.DictReader(sys.stdin):
-    pprint.pprint(row)
