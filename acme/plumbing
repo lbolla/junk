@@ -20,4 +20,10 @@ type is text
 data matches 'commit ([a-zA-Z0-9]+)'
 plumb start rc -c 'cd '$wdir' && git show '$1' | plumb -i -d edit -a ''action=showdata filename=/git/'$1''''
 
+# Gerrit's ChangeIDs
+type is text
+data matches 'Change-Id: ([a-zA-Z0-9]+)'
+plumb to web
+plumb start web 'http://gerrit.raid/r/#q,'$1',n,z'
+
 include basic
