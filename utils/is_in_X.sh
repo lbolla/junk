@@ -1,3 +1,3 @@
 #!/bin/sh
 
-test "$TERM" != "linux"
+test -n "$DISPLAY"
