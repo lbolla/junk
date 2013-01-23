@@ -1,0 +1,3 @@
+#!/bin/sh
+
+anytopnm "$1" | pnmscale -xsize `tput cols` | ppmtopgm | pgmtopbm | pbmtoascii
