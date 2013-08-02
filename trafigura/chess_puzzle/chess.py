@@ -3,12 +3,12 @@ import itertools
 # N = M = 3
 # pieces = 2 * ['K'] + ['R']
 
-# N = M = 4
-# pieces = 2 * ['R'] + 4 * ['N']
+N = M = 4
+pieces = 2 * ['R'] + 4 * ['N']
 
-N = 6
-M = 9
-pieces = 2 * ['K'] + ['Q', 'B', 'R', 'K']
+# N = 6
+# M = 9
+# pieces = 2 * ['K'] + ['Q', 'B', 'R', 'K']
 
 
 def influenced_by(pos, piece):
@@ -75,16 +75,12 @@ def print_cells(cells):
     print
 
 
-# valid_cells = set()
-# for positions in itertools.permutations(
-    # itertools.product(range(N), range(M)), len(pieces)):
-    # cells = zip(positions, pieces)
-    # if is_valid(cells):
-        # valid_cells.add(tuple(sorted(cells)))
 valid_cells = set()
 done_cells = set()
+i = 0
 for positions in itertools.permutations(
     itertools.product(range(N), range(M)), len(pieces)):
+    i += 1
     cells = tuple(sorted(zip(positions, pieces)))
     if cells in done_cells:
         continue
@@ -93,5 +89,8 @@ for positions in itertools.permutations(
     if is_valid(cells):
         valid_cells.add(cells)
 
+print 'Analyzed %d positions' % i
+print 'Found %d valid ones' % len(valid_cells)
+print
 for cell in valid_cells:
     print_cells(cell)
