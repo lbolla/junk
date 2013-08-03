@@ -3,12 +3,16 @@ import itertools
 # N = M = 3
 # pieces = 2 * ['K'] + ['R']
 
-N = M = 4
-pieces = 2 * ['R'] + 4 * ['N']
+# N = M = 4
+# pieces = 2 * ['R'] + 4 * ['N']
 
 # N = 6
 # M = 9
-# pieces = 2 * ['K'] + ['Q', 'B', 'R', 'K']
+# pieces = 2 * ['K'] + ['Q', 'B', 'R', 'N']
+
+N = 5
+M = 5
+pieces = 2 * ['K'] + ['Q', 'R', 'B', 'N']
 
 
 def influenced_by(pos, piece):
@@ -75,22 +79,60 @@ def print_cells(cells):
     print
 
 
-valid_cells = set()
-done_cells = set()
-i = 0
-for positions in itertools.permutations(
-    itertools.product(range(N), range(M)), len(pieces)):
-    i += 1
-    cells = tuple(sorted(zip(positions, pieces)))
-    if cells in done_cells:
-        continue
-    else:
-        done_cells.add(cells)
-    if is_valid(cells):
-        valid_cells.add(cells)
+def main():
+    valid_cells = set()
+    done_cells = set()
+    i = 0
+    for positions in itertools.permutations(
+        itertools.product(range(N), range(M)), len(pieces)):
+        i += 1
+        cells = tuple(sorted(zip(positions, pieces)))
+        if cells in done_cells:
+            continue
+        else:
+            done_cells.add(cells)
+        if is_valid(cells):
+            valid_cells.add(cells)
 
-print 'Analyzed %d positions' % i
-print 'Found %d valid ones' % len(valid_cells)
-print
-for cell in valid_cells:
-    print_cells(cell)
+    print 'Analyzed %d positions' % i
+    print 'Found %d valid ones' % len(valid_cells)
+    print
+    for cell in valid_cells:
+        print_cells(cell)
+
+
+def main2():
+
+    def generate_boards(initial_board, piece, other_pieces, done_cells):
+
+        available_cells = set(itertools.product(range(N), range(M))) - {
+            pos for pos, _ in initial_board}
+
+        for cell in available_cells:
+            board = tuple(sorted(initial_board + ((cell, piece), )))
+
+            if board in done_cells:
+                continue
+            done_cells.add(board)
+
+            if not is_valid(board):
+                continue
+
+            if other_pieces:
+                for b in generate_boards(board, other_pieces[0],
+                                         other_pieces[1:], done_cells):
+                    yield b
+            else:
+                yield board
+
+    done_cells = set()
+    i = 0
+    for board in generate_boards((), pieces[0], pieces[1:], done_cells):
+        i += 1
+        # print_cells(board)
+    print 'Found %d valid cells' % i
+
+
+if __name__ == '__main__':
+    # main()
+    main2()
