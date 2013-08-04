@@ -6,24 +6,20 @@ import itertools
 # N = M = 4
 # pieces = 2 * ['R'] + 4 * ['N']
 
-# N = 6
-# M = 9
-# pieces = 2 * ['K'] + ['Q', 'B', 'R', 'N']
+N = 6
+M = 9
+pieces = 2 * ['K'] + ['Q', 'B', 'R', 'N']
 
-N = 5
-M = 5
-pieces = 2 * ['K'] + ['Q', 'R', 'B', 'N']
+# N = 6
+# M = 5
+# pieces = 2 * ['K'] + ['Q', 'R', 'B', 'N']
 
 
 def influenced_by(pos, piece):
 
-    def valid(cell):
-        x, y = cell
-        return 0 <= x <= N and 0 <= y <= M
-
     def trim(grid):
-        return {cell for cell in grid if valid(cell)}
-
+        return {cell for cell in grid if
+                0 <= cell[0] <= N and 0 <= cell[1] <= M}
     x, y = pos
     if piece == 'K':
         return trim([
@@ -61,7 +57,13 @@ def influenced_by(pos, piece):
         raise Exception('Piece!')
 
 
+N_IS_VALID = 0
+
+
 def is_valid(cells):
+    global N_IS_VALID
+
+    N_IS_VALID += 1
     occupied_positions = {c[0] for c in cells}
     for position, piece in cells:
         influenced_cells = influenced_by(position, piece)
@@ -95,7 +97,8 @@ def main():
             valid_cells.add(cells)
 
     print 'Analyzed %d positions' % i
-    print 'Found %d valid ones' % len(valid_cells)
+    print 'Found %d valid ones (%d calls to is_valid)' % (
+        len(valid_cells), N_IS_VALID)
     print
     for cell in valid_cells:
         print_cells(cell)
@@ -115,6 +118,9 @@ def main2():
                 continue
             done_cells.add(board)
 
+            # print 'Analyzing'
+            # print_cells(board)
+
             if not is_valid(board):
                 continue
 
@@ -130,7 +136,7 @@ def main2():
     for board in generate_boards((), pieces[0], pieces[1:], done_cells):
         i += 1
         # print_cells(board)
-    print 'Found %d valid cells' % i
+    print 'Found %d valid cells (%d calls to is_valid)' % (i, N_IS_VALID)
 
 
 if __name__ == '__main__':
